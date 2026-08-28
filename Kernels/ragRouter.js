@@ -1,13 +1,13 @@
-/**
+﻿/**
  * AXIAL KERNEL
  * RAG Router
  *
- * Decide qué módulo o módulos del RAG
+ * Decide quÃ© mÃ³dulo o mÃ³dulos del RAG
  * deben consultarse.
  *
- * Módulo 1: documentación oficial
- * Módulo 2: bibliografía
- * Módulo 3: material web
+ * MÃ³dulo 1: documentaciÃ³n oficial
+ * MÃ³dulo 2: bibliografÃ­a
+ * MÃ³dulo 3: material web
  */
 
 function route(question, analysis = {}) {
@@ -16,40 +16,40 @@ function route(question, analysis = {}) {
 
     const modules = [];
 
-    // MÓDULO 1 — DOCUMENTACIÓN OFICIAL
+    // MÃ“DULO 1 â€” DOCUMENTACIÃ“N OFICIAL
     const officialTerms = [
         "decreto",
         "ley",
-        "resolución",
+        "resoluciÃ³n",
         "acta",
         "estatuto",
         "autoridad",
         "presidente",
-        "fundación",
-        "creación",
+        "fundaciÃ³n",
+        "creaciÃ³n",
         "reconocimiento",
         "sede"
     ];
 
-    // MÓDULO 2 — BIBLIOGRAFÍA
+    // MÃ“DULO 2 â€” BIBLIOGRAFÃA
     const bibliographyTerms = [
         "historia",
-        "contexto histórico",
-        "historiografía",
-        "investigación",
+        "contexto histÃ³rico",
+        "historiografÃ­a",
+        "investigaciÃ³n",
         "libro",
-        "bibliografía",
+        "bibliografÃ­a",
         "estudio",
         "autor",
-        "análisis"
+        "anÃ¡lisis"
     ];
 
-    // MÓDULO 3 — WEB
+    // MÃ“DULO 3 â€” WEB
     const webTerms = [
         "sitio",
         "web",
-        "página",
-        "publicación",
+        "pÃ¡gina",
+        "publicaciÃ³n",
         "noticia",
         "actualidad",
         "actual",
@@ -68,8 +68,8 @@ function route(question, analysis = {}) {
         modules.push("web");
     }
 
-    // Si no pudo determinar un módulo concreto,
-    // consulta primero el núcleo oficial.
+    // Si no pudo determinar un mÃ³dulo concreto,
+    // consulta primero el nÃºcleo oficial.
     if (modules.length === 0) {
         modules.push("oficial");
     }
@@ -82,4 +82,4 @@ function route(question, analysis = {}) {
 
 module.exports = {
     route
-};v
+};

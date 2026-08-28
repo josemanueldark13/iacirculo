@@ -11,7 +11,7 @@ function route(analysis) {
 
     // La pregunta pertenece claramente
     // al dominio institucional.
-    if (domain === "institucional" && confidence >= 0.60) {
+    if (domain === "institucional" && confidence >= 0.50) {
 
         return {
             estado: "aceptada",

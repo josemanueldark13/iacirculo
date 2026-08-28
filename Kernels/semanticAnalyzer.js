@@ -25,7 +25,11 @@ const DOMAIN_CONCEPTS = [
     "ley",
     "resolución",
     "acta",
-    "estatuto"
+    "estatuto",
+    "creación del círculo",
+    "creado",
+    "fundación",
+    "fecha de creación"
 ];
 
 function normalize(text) {
@@ -52,7 +56,7 @@ function analyze(question) {
 
     let domain;
 
-    if (score >= 0.60) {
+    if (score >= 0.50) {
         domain = "institucional";
     } else if (score >= 0.30) {
         domain = "ambiguo";
