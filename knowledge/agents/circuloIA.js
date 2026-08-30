@@ -1,4 +1,4 @@
-const documentos = require("../knowledge/documentos.json");
+const documentos = require("../documentos.json");
 
 const circuloIA = {
 

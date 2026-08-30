@@ -8,6 +8,7 @@
  */
 
 const DOMAIN_CONCEPTS = [
+    "círculo ia",
     "círculo de legisladores",
     "círculo de ex legisladores",
     "legisladores",
@@ -48,11 +49,13 @@ function analyze(question) {
         normalized.includes(normalize(concept))
     );
 
-    let score = 0;
+let score = 0;
 
-    if (matches.length > 0) {
-        score = Math.min(1, matches.length * 0.18);
-    }
+if (matches.includes("círculo ia")) {
+    score = 0.70;
+} else if (matches.length > 0) {
+    score = Math.min(1, matches.length * 0.18);
+}
 
     let domain;
 
