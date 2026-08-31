@@ -1,9 +1,8 @@
-/**
+﻿/**
  * AXIAL KERNEL
  * Semantic Analyzer
  *
- * Primera función:
- * determinar si una consulta pertenece al dominio
+ * Determina si una consulta pertenece al dominio
  * institucional de CÍRCULO IA.
  */
 
@@ -33,6 +32,12 @@ const DOMAIN_CONCEPTS = [
     "fecha de creación"
 ];
 
+const STRONG_CONCEPTS = [
+    "círculo ia",
+    "círculo de legisladores",
+    "círculo de ex legisladores"
+];
+
 function normalize(text) {
     return text
         .toLowerCase()
@@ -49,13 +54,26 @@ function analyze(question) {
         normalized.includes(normalize(concept))
     );
 
-let score = 0;
+    let score = 0;
 
-if (matches.includes("círculo ia")) {
-    score = 0.70;
-} else if (matches.length > 0) {
-    score = Math.min(1, matches.length * 0.18);
-}
+    // Conceptos institucionales centrales
+    if (matches.includes("círculo ia")) {
+        score = 0.70;
+    } else if (
+        matches.includes("círculo de legisladores") ||
+        matches.includes("círculo de ex legisladores")
+    ) {
+        score = 0.60;
+    } else if (matches.length > 0) {
+        score = Math.min(1, matches.length * 0.18);
+    }
+
+    // Conceptos adicionales aumentan la confianza
+    if (score > 0 && matches.length > 1) {
+        score += Math.min(0.20, (matches.length - 1) * 0.08);
+    }
+
+    score = Math.min(1, score);
 
     let domain;
 
