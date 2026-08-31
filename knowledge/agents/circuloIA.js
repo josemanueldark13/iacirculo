@@ -162,6 +162,7 @@ Historia legislativa, Publicaciones, Biblioteca, Patrimonio documental.
 
         if (
             preguntaNormalizada.includes("presidente") &&
+            !preguntaNormalizada.includes("vicepresidente") &&
             principal.titulo === "Autoridades"
         ) {
 
