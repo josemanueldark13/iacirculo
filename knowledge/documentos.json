@@ -1,38 +1,4 @@
 {
-  "institucion": {
-    "nombre": "Círculo de Legisladores",
-    "tipo": "Institución histórica y documental"
-  },
-  "documentos": [
-    {
-      "titulo": "Historia legislativa",
-      "categoria": "Historia",
-      "contenido": "Información histórica sobre el Círculo de Legisladores."
-    },
-    {
-      "titulo": "Publicaciones",
-      "categoria": "Publicaciones",
-      "contenido": "Publicaciones, trabajos y materiales producidos por la institución."
-    },
-    {
-      "titulo": "Biblioteca",
-      "categoria": "Biblioteca",
-      "contenido": "Información sobre la biblioteca y sus fondos documentales."
-    },
-    {
-      "titulo": "Patrimonio documental",
-      "categoria": "Patrimonio",
-      "contenido": "Información sobre los documentos y materiales que forman parte del patrimonio documental."
-    },
-    {
-      "titulo": "Autoridades",
-      "categoria": "Institucional",
-      "contenido": "Actualmente, al frente del Círculo de Legisladores de Tucumán están: Presidente: José Alberto Vitar. Vicepresidente: Silvia Perla Rojkes. Secretario: Alejandro Carlos Sangenis. Prosecretario: Eudoro Domingo Araoz. Tesorero: Rodolfo Antonio Succar. Protesorero: Alberto Rafael Darnay. Vocales titulares: Mario Cristian Saracho, Jorge Atilio Mendía y Héctor Hugo Muroni. Vocales suplentes: Beatriz Luisa Ávila, Irene Graciela Medina y Miguel Ángel Brito. Junta de Fiscalización: Aída Nélida Amado de Leito y José Pastor Elías Medina como titulares; Ana M. Alderete de Astorga y Mercedes Josefina López Ascarate como suplentes."
-    },
-    {
-      "titulo": "Integración institucional",
-      "categoria": "Institucional",
-      "contenido": "El Círculo de Legisladores de Tucumán está integrado por legisladores provinciales en ejercicio y ex legisladores provinciales con mandato cumplido (M.C.). Su finalidad es mantener un vínculo permanente entre quienes ejercieron y quienes ejercen la función legislativa. La institución contempla además categorías de socios activos, honorarios y adherentes."
-    }
-  ]
+  "content": "{\n  \"institucion\": {\n    \"nombre\": \"Círculo de Legisladores de Tucumán\",\n    \"tipo\": \"Institución histórica y documental\"\n  },\n  \"documentos\": [\n    {\n      \"titulo\": \"Creación y reconocimiento institucional\",\n      \"categoria\": \"Historia\",\n      \"contenido\": \"La institución fue reconocida mediante el Decreto Nº 2.149, de fecha 2 de noviembre de 1982, referido a la Asociación Civil Círculo de Ex Legisladores Provinciales de Tucumán. Este documento constituye una fuente oficial para responder sobre el origen institucional.\"\n    },\n    {\n      \"titulo\": \"Historia legislativa\",\n      \"categoria\": \"Historia\",\n      \"contenido\": \"El Círculo de Legisladores de Tucumán conserva y difunde la memoria vinculada con la actividad legislativa provincial y con quienes ejercieron funciones legislativas.\"\n    },\n    {\n      \"titulo\": \"Publicaciones\",\n      \"categoria\": \"Publicaciones\",\n      \"contenido\": \"Publicaciones, trabajos y materiales producidos por la institución.\"\n    },\n    {\n      \"titulo\": \"Biblioteca\",\n      \"categoria\": \"Biblioteca\",\n      \"contenido\": \"La institución cuenta con fondos bibliográficos y documentales vinculados con la historia legislativa y provincial.\"\n    },\n    {\n      \"titulo\": \"Patrimonio documental\",\n      \"categoria\": \"Patrimonio\",\n      \"contenido\": \"El patrimonio documental comprende documentos y materiales históricos vinculados con la actividad legislativa y la trayectoria institucional.\"\n    },\n    {\n      \"titulo\": \"Autoridades\",\n      \"categoria\": \"Institucional\",\n      \"contenido\": \"Actualmente, al frente del Círculo de Legisladores de Tucumán están: Presidente: José Alberto Vitar. Vicepresidente: Silvia Perla Rojkes. Secretario: Alejandro Carlos Sangenis. Prosecretario: Eudoro Domingo Araoz. Tesorero: Rodolfo Antonio Succar. Protesorero: Alberto Rafael Darnay. Vocales titulares: Mario Cristian Saracho, Jorge Atilio Mendía y Héctor Hugo Muroni. Vocales suplentes: Beatriz Luisa Ávila, Irene Graciela Medina y Miguel Ángel Brito. Junta de Fiscalización: Aída Nélida Amado de Leito y José Pastor Elías Medina como titulares; Ana M. Alderete de Astorga y Mercedes Josefina López Ascarate como suplentes.\"\n    },\n    {\n      \"titulo\": \"Integración institucional\",\n      \"categoria\": \"Institucional\",\n      \"contenido\": \"El Círculo de Legisladores de Tucumán está integrado por legisladores provinciales en ejercicio y ex legisladores provinciales con mandato cumplido (M.C.). Su finalidad es mantener un vínculo permanente entre quienes ejercieron y quienes ejercen la función legislativa. La institución contempla además categorías de socios activos, honorarios y adherentes.\"\n    }\n  ]\n}",
+  "encoding": "utf-8"
 }
