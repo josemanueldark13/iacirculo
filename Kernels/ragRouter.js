@@ -33,7 +33,7 @@ function route(question, analysis = {}) {
         "otras instituciones", "otros lugares", "otros circulos", "otros paises",
         "argentina", "fuentes externas", "informacion externa", "consultar fuentes",
         "fuentes adicionales", "donde podria consultar", "fuentes adicionales sobre",
-        "contextualizar", "contexto externo"
+        "contextualizar", "contexto externo", "verificar", "verificarse", "definitiva"
     ];
 
     if (officialTerms.some(term => text.includes(term))) modules.push("oficial");
