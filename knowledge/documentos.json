@@ -5,6 +5,11 @@
   },
   "documentos": [
     {
+      "titulo": "Identidad institucional",
+      "categoria": "Institucional",
+      "contenido": "El nombre institucional es Círculo de Legisladores de Tucumán. La institución tiene carácter histórico y documental y mantiene un vínculo permanente con la actividad legislativa provincial."
+    },
+    {
       "titulo": "Creación y reconocimiento institucional",
       "categoria": "Historia",
       "contenido": "La institución fue reconocida mediante el Decreto Nº 2.149, de fecha 2 de noviembre de 1982, referido a la Asociación Civil Círculo de Ex Legisladores Provinciales de Tucumán. Este documento constituye una fuente oficial para responder sobre el origen institucional."
@@ -13,6 +18,11 @@
       "titulo": "Historia legislativa",
       "categoria": "Historia",
       "contenido": "El Círculo de Legisladores de Tucumán conserva y difunde la memoria vinculada con la actividad legislativa provincial y con quienes ejercieron funciones legislativas."
+    },
+    {
+      "titulo": "Sede institucional",
+      "categoria": "Institucional",
+      "contenido": "La sede institucional del Círculo de Legisladores de Tucumán se encuentra en San Lorenzo 226, San Miguel de Tucumán, Tucumán."
     },
     {
       "titulo": "Publicaciones",

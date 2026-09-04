@@ -1,82 +1,54 @@
-﻿/**
- * AXIAL KERNEL
- * RAG Router
- *
- * Decide quÃ© mÃ³dulo o mÃ³dulos del RAG
- * deben consultarse.
- *
- * MÃ³dulo 1: documentaciÃ³n oficial
- * MÃ³dulo 2: bibliografÃ­a
- * MÃ³dulo 3: material web
+/**
+ * AXIAL KERNEL - RAG Router
+ * Decide qué módulo o módulos del RAG deben consultarse.
+ * Módulo 1: documentación oficial
+ * Módulo 2: bibliografía
+ * Módulo 3: material web
  */
 
+function normalizar(texto) {
+    return (texto || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
+
 function route(question, analysis = {}) {
-
-    const text = question.toLowerCase();
-
+    const text = normalizar(question);
     const modules = [];
 
-    // MÃ“DULO 1 â€” DOCUMENTACIÃ“N OFICIAL
     const officialTerms = [
-        "decreto",
-        "ley",
-        "resoluciÃ³n",
-        "acta",
-        "estatuto",
-        "autoridad",
-        "presidente",
-        "fundaciÃ³n",
-        "creaciÃ³n",
-        "reconocimiento",
-        "sede"
+        "decreto", "ley", "resolucion", "acta", "estatuto", "autoridad",
+        "presidente", "vicepresidente", "fundacion", "creacion", "reconocimiento",
+        "sede", "direccion", "domicilio", "nombre completo", "fuente oficial", "fuentes oficiales"
     ];
 
-    // MÃ“DULO 2 â€” BIBLIOGRAFÃA
     const bibliographyTerms = [
-        "historia",
-        "contexto histÃ³rico",
-        "historiografÃ­a",
-        "investigaciÃ³n",
-        "libro",
-        "bibliografÃ­a",
-        "estudio",
-        "autor",
-        "anÃ¡lisis"
+        "historia", "contexto historico", "historiografia", "investigacion",
+        "libro", "bibliografia", "estudio", "autor", "analisis", "fuentes adicionales"
     ];
 
-    // MÃ“DULO 3 â€” WEB
+    // Solo señales explícitas de consulta externa.
+    // Términos como "actual" o "actualmente" no deben desviar
+    // consultas institucionales al Núcleo 3.
     const webTerms = [
-        "sitio",
-        "web",
-        "pÃ¡gina",
-        "publicaciÃ³n",
-        "noticia",
-        "actualidad",
-        "actual",
-        "internet"
+        "sitio", "web", "pagina", "noticia", "internet",
+        "otras instituciones", "otros lugares", "otros circulos", "otros paises",
+        "argentina", "fuentes externas", "informacion externa", "consultar fuentes",
+        "fuentes adicionales", "donde podria consultar", "fuentes adicionales sobre",
+        "contextualizar", "contexto externo", "verificar", "verificarse", "definitiva"
     ];
 
-    if (officialTerms.some(term => text.includes(term))) {
-        modules.push("oficial");
-    }
+    if (officialTerms.some(term => text.includes(term))) modules.push("oficial");
+    if (bibliographyTerms.some(term => text.includes(term))) modules.push("bibliografico");
+    if (webTerms.some(term => text.includes(term))) modules.push("web");
 
-    if (bibliographyTerms.some(term => text.includes(term))) {
-        modules.push("bibliografico");
-    }
-
-    if (webTerms.some(term => text.includes(term))) {
-        modules.push("web");
-    }
-
-    // Si no pudo determinar un mÃ³dulo concreto,
-    // consulta primero el nÃºcleo oficial.
-    if (modules.length === 0) {
-        modules.push("oficial");
-    }
+    if (modules.length === 0) modules.push("oficial");
 
     return {
         modules,
-        priority: modules[0]
+        priority: modules[0],
+        requiere_web: modules.includes("web")
     };
 }
 
