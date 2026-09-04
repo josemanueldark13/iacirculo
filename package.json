@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/run30.js"
+    "test": "node tests/run30.js && node tests/run-natural.js"
   },
   "keywords": [],
   "author": "",
