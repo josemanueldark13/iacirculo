@@ -17,18 +17,11 @@ const ragRouter = require("./ragRouter");
 const responsePolicy = require("./responsePolicy");
 
 function process(question) {
-
-    // 1. Analizar la pregunta
     const analysis = semanticAnalyzer.analyze(question);
-
-    // 2. Determinar el dominio
     const domainDecision = domainRouter.route(analysis);
 
-    // 3. Si es ambigua, pedir reformulación
     if (domainDecision.estado === "requiere_reformulacion") {
-
         const suggestions = reformulator.suggest(question);
-
         return {
             estado: "requiere_reformulacion",
             pregunta: question,
@@ -38,9 +31,7 @@ function process(question) {
         };
     }
 
-    // 4. Si está fuera del dominio
     if (domainDecision.estado === "fuera_de_dominio") {
-
         return {
             estado: "fuera_de_dominio",
             pregunta: question,
@@ -49,37 +40,20 @@ function process(question) {
         };
     }
 
-    // 5. Determinar módulos del RAG
-    const ragDecision = ragRouter.route(
-        question,
-        analysis
-    );
+    const ragDecision = ragRouter.route(question, analysis);
+    const responseType = responsePolicy.determine(question);
+    const requiereFuenteExterna = ragDecision.requiere_web === true;
 
-    // 6. Determinar tipo de respuesta
-    const responseType = responsePolicy.determine(
-        question
-    );
-
-    // 7. Devolver la decisión completa del Kernel
     return {
         estado: "aceptada",
         dominio: "institucional",
-
         confianza: analysis.confidence,
-
-        conceptos_detectados:
-            analysis.concepts,
-
-        modulos_rag:
-            ragDecision.modules,
-
-        modulo_prioritario:
-            ragDecision.priority,
-
-        tipo_respuesta:
-            responseType,
-
-        internet: false
+        conceptos_detectados: analysis.concepts,
+        modulos_rag: ragDecision.modules,
+        modulo_prioritario: ragDecision.priority,
+        tipo_respuesta: responseType,
+        internet: requiereFuenteExterna,
+        requiere_fuente_externa: requiereFuenteExterna
     };
 }
 
