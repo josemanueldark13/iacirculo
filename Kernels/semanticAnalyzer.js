@@ -93,7 +93,15 @@ const CONCEPT_ALIASES = {
     "como se creo el circulo de legisladores": "creación del círculo",
     "como se creo el circulo": "creación del círculo",
     "como fue creado el circulo": "creación del círculo",
-    "como se fundo el circulo": "fundación"
+    "como se fundo el circulo": "fundación",
+    "donde esta el circulo": "dónde queda",
+    "en que direccion funciona el circulo": "dirección",
+    "cual es la direccion del circulo": "dirección",
+    "cual es la finalidad del circulo": "finalidad",
+    "cual es el proposito del circulo": "propósito",
+    "que funciones cumple el circulo": "función",
+    "quienes integran las autoridades": "quiénes son las autoridades",
+    "que decreto reconoce al circulo": "qué decreto"
 };
 
 function normalize(text) {
