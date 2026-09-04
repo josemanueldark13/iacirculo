@@ -8,5 +8,14 @@ module.exports = [
   { q: '¿Quiénes son las autoridades?', intent: 'institucional', concept: 'quiénes son las autoridades' },
   { q: '¿Cómo se creó el Círculo de Legisladores?', intent: 'institucional', concept: 'creación del círculo' },
   { q: '¿Cuándo fue creado?', intent: 'institucional', concept: 'creado' },
-  { q: '¿Qué decreto lo reconoce?', intent: 'institucional', concept: 'qué decreto' }
+  { q: '¿Qué decreto lo reconoce?', intent: 'institucional', concept: 'qué decreto' },
+  { q: '¿Cómo se fundó el Círculo?', intent: 'institucional', concept: 'fundación' },
+  { q: '¿Dónde está el Círculo?', intent: 'institucional', concept: 'dónde queda' },
+  { q: '¿En qué dirección funciona el Círculo?', intent: 'institucional', concept: 'dirección' },
+  { q: '¿Cuál es la dirección del Círculo?', intent: 'institucional', concept: 'dirección' },
+  { q: '¿Cuál es la finalidad del Círculo?', intent: 'institucional', concept: 'finalidad' },
+  { q: '¿Cuál es el propósito del Círculo?', intent: 'institucional', concept: 'propósito' },
+  { q: '¿Qué funciones cumple el Círculo?', intent: 'institucional', concept: 'función' },
+  { q: '¿Quiénes integran las autoridades?', intent: 'institucional', concept: 'quiénes son las autoridades' },
+  { q: '¿Qué decreto reconoce al Círculo?', intent: 'institucional', concept: 'qué decreto' }
 ];
