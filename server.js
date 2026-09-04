@@ -1,5 +1,6 @@
-﻿const express = require("express");
+const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const chatRoutes = require("./routes/chat");
 
 const app = express();
@@ -7,15 +8,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use((req, res, next) => {
-    res.setHeader("Content-Type", "application/json; charset=utf-8");
-    next();
-});
+// Frontend institucional servido por el mismo deployment.
+app.use(express.static(path.join(__dirname, "public")));
 
+// API del Kernel AXIAL / CÍRCULO IA.
 app.use("/api/chat", chatRoutes);
 
 app.get("/", (req, res) => {
-    res.send("CÍRCULO IA Backend funcionando");
+    res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 const PORT = process.env.PORT || 3000;
