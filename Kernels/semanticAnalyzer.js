@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AXIAL KERNEL
  * Semantic Analyzer
  *
@@ -6,16 +6,18 @@
  * institucional de CÍRCULO IA.
  */
 
-const DOMAIN_CONCEPTS = [
+const CORE_CONCEPTS = [
     "círculo ia",
     "círculo de legisladores",
     "círculo de ex legisladores",
+    "círculos de legisladores",
     "legisladores",
     "ex legisladores",
     "legislatura",
     "tucumán",
     "institución",
     "historia institucional",
+    "historia legislativa",
     "autoridades",
     "biblioteca",
     "publicaciones",
@@ -29,51 +31,101 @@ const DOMAIN_CONCEPTS = [
     "creación del círculo",
     "creado",
     "fundación",
-    "fecha de creación"
+    "fecha de creación",
+    "memoria legislativa",
+    "memoria institucional"
 ];
 
-const STRONG_CONCEPTS = [
-    "círculo ia",
-    "círculo de legisladores",
-    "círculo de ex legisladores"
+const INTENT_CONCEPTS = [
+    "nombre completo",
+    "dónde funciona",
+    "donde funciona",
+    "dirección institucional",
+    "direccion institucional",
+    "dirección",
+    "direccion",
+    "sede",
+    "presidente",
+    "vicepresidencia",
+    "vicepresidente",
+    "estructura de autoridades",
+    "finalidad",
+    "propósito",
+    "proposito",
+    "motivo de la creación",
+    "motivo de la creacion",
+    "función",
+    "funcion",
+    "materiales",
+    "documentación histórica",
+    "documentacion historica",
+    "patrimonio documental",
+    "preservación",
+    "preservacion",
+    "conservación",
+    "conservacion",
+    "investigadores",
+    "fuentes adicionales",
+    "fuentes oficiales",
+    "continuidad institucional"
 ];
 
 function normalize(text) {
-    return text
+    return String(text)
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9ñ\s]/gi, " ")
+        .replace(/\s+/g, " ")
         .trim();
 }
 
 function analyze(question) {
-
     const normalized = normalize(question);
 
-    const matches = DOMAIN_CONCEPTS.filter(concept =>
+    const coreMatches = CORE_CONCEPTS.filter(concept =>
         normalized.includes(normalize(concept))
     );
 
+    const intentMatches = INTENT_CONCEPTS.filter(concept =>
+        normalized.includes(normalize(concept))
+    );
+
+    const matches = [...new Set([...coreMatches, ...intentMatches])];
+
     let score = 0;
 
-    // Conceptos institucionales centrales
-    if (matches.includes("círculo ia")) {
-        score = 0.70;
+    if (coreMatches.includes("circulo ia")) {
+        score = 0.80;
     } else if (
-        matches.includes("círculo de legisladores") ||
-        matches.includes("círculo de ex legisladores")
+        coreMatches.includes("circulo de legisladores") ||
+        coreMatches.includes("circulo de ex legisladores") ||
+        coreMatches.includes("circulos de legisladores")
     ) {
-        score = 0.60;
-    } else if (matches.length > 0) {
-        score = Math.min(1, matches.length * 0.18);
+        score = 0.65;
+    } else {
+        score += Math.min(0.60, coreMatches.length * 0.16);
+        score += Math.min(0.30, intentMatches.length * 0.10);
+
+        // Una consulta sobre historia legislativa de Tucumán,
+        // investigación o memoria institucional es suficiente
+        // cuando aparece además un contexto institucional.
+        if (
+            normalized.includes("historia legislativa") &&
+            normalized.includes("tucuman")
+        ) {
+            score = Math.max(score, 0.62);
+        }
+
+        if (
+            normalized.includes("investigador") &&
+            (normalized.includes("historia") || normalized.includes("fuentes"))
+        ) {
+            score = Math.max(score, 0.52);
+        }
     }
 
-    // Conceptos adicionales aumentan la confianza
-    if (score > 0 && matches.length > 1) {
-        score += Math.min(0.20, (matches.length - 1) * 0.08);
-    }
-
-    score = Math.min(1, score);
+    score = Math.min(1, Number(score.toFixed(2)));
 
     let domain;
 
@@ -88,7 +140,7 @@ function analyze(question) {
     return {
         question,
         domain,
-        confidence: Number(score.toFixed(2)),
+        confidence: score,
         concepts: matches
     };
 }
