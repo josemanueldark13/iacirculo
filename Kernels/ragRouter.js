@@ -28,8 +28,11 @@ function route(question, analysis = {}) {
         "libro", "bibliografia", "estudio", "autor", "analisis", "fuentes adicionales"
     ];
 
+    // Solo señales explícitas de consulta externa.
+    // Términos como "actual" o "actualmente" no deben desviar
+    // consultas institucionales al Núcleo 3.
     const webTerms = [
-        "sitio", "web", "pagina", "noticia", "actualidad", "actual", "internet",
+        "sitio", "web", "pagina", "noticia", "internet",
         "otras instituciones", "otros lugares", "otros circulos", "otros paises",
         "argentina", "fuentes externas", "informacion externa", "consultar fuentes",
         "fuentes adicionales", "donde podria consultar", "fuentes adicionales sobre",
