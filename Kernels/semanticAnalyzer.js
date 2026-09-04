@@ -88,6 +88,14 @@ const INTENT_CONCEPTS = [
     "de que fecha"
 ];
 
+// Expresiones naturales que deben resolverse al mismo concepto canónico.
+const CONCEPT_ALIASES = {
+    "como se creo el circulo de legisladores": "creación del círculo",
+    "como se creo el circulo": "creación del círculo",
+    "como fue creado el circulo": "creación del círculo",
+    "como se fundo el circulo": "fundación"
+};
+
 function normalize(text) {
     return String(text)
         .toLowerCase()
@@ -109,25 +117,27 @@ function analyze(question) {
         normalized.includes(normalize(concept))
     );
 
-    const matches = [...new Set([...coreMatches, ...intentMatches])];
+    const aliasMatches = Object.entries(CONCEPT_ALIASES)
+        .filter(([alias]) => normalized.includes(alias))
+        .map(([, canonical]) => canonical);
+
+    const matches = [...new Set([...coreMatches, ...intentMatches, ...aliasMatches])];
+    const effectiveCoreMatches = [...new Set([...coreMatches, ...aliasMatches])];
 
     let score = 0;
 
-    if (coreMatches.includes("círculo ia")) {
+    if (effectiveCoreMatches.includes("círculo ia")) {
         score = 0.80;
     } else if (
-        coreMatches.includes("círculo de legisladores") ||
-        coreMatches.includes("círculo de ex legisladores") ||
-        coreMatches.includes("círculos de legisladores")
+        effectiveCoreMatches.includes("círculo de legisladores") ||
+        effectiveCoreMatches.includes("círculo de ex legisladores") ||
+        effectiveCoreMatches.includes("círculos de legisladores")
     ) {
         score = 0.65;
-    } else if (coreMatches.length > 0) {
-        // Un término institucional concreto ya establece un contexto suficiente.
+    } else if (effectiveCoreMatches.length > 0) {
         score = 0.55;
-        score += Math.min(0.20, (coreMatches.length - 1) * 0.08);
+        score += Math.min(0.20, (effectiveCoreMatches.length - 1) * 0.08);
     } else if (intentMatches.length > 0) {
-        // Las intenciones reconocibles se aceptan como consultas del agente;
-        // luego el RAG decide qué núcleo documental corresponde.
         score = Math.min(0.65, 0.52 + (intentMatches.length - 1) * 0.06);
     }
 
