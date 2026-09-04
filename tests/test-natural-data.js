@@ -6,7 +6,7 @@ module.exports = [
   { q: '¿Para qué existe el Círculo?', intent: 'institutional' },
   { q: '¿Qué hace el Círculo de Legisladores?', intent: 'institutional' },
   { q: '¿Quiénes son las autoridades?', intent: 'institutional' },
-  { q: '¿Cómo se creó?', intent: 'institutional' },
+  { q: '¿Cómo se creó el Círculo de Legisladores?', intent: 'institutional' },
   { q: '¿Cuándo fue creado?', intent: 'institutional' },
   { q: '¿Qué decreto lo reconoce?', intent: 'institutional' }
 ];
