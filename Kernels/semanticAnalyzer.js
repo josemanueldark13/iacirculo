@@ -48,6 +48,10 @@ const INTENT_CONCEPTS = [
     "donde funciona",
     "dónde queda",
     "donde queda",
+    "dónde está ubicado",
+    "donde esta ubicado",
+    "dónde está ubicada",
+    "donde esta ubicada",
     "dirección institucional",
     "direccion institucional",
     "dirección",
@@ -103,12 +107,24 @@ const CONCEPT_ALIASES = {
     "como se creo el circulo": "creación del círculo",
     "como fue creado el circulo": "creación del círculo",
     "como se fundo el circulo": "fundación",
+    "cual es la historia del circulo": "historia institucional",
+    "cual es la historia del circulo de legisladores": "historia institucional",
     "donde esta el circulo": "dónde queda",
+    "donde esta ubicado": "ubicación",
+    "donde esta ubicada": "ubicación",
+    "donde esta ubicado el circulo": "ubicación",
+    "donde esta ubicada la institucion": "ubicación",
     "en que direccion funciona el circulo": "dirección",
     "cual es la direccion del circulo": "dirección",
     "cual es la finalidad del circulo": "finalidad",
     "cual es el proposito del circulo": "propósito",
-    "que funciones cumple el circulo": "función",
+    "cual es la mision": "misión",
+    "cual es la mision del circulo": "misión",
+    "que actividades realiza": "actividades",
+    "que actividades realiza el circulo": "actividades",
+    "que hace el circulo": "función",
+    "que establece la ley 6333": "ley",
+    "que dice la ley 6333": "ley",
     "quienes integran las autoridades": "quiénes son las autoridades",
     "que decreto reconoce al circulo": "qué decreto"
 };
@@ -156,6 +172,21 @@ function analyze(question) {
         score += Math.min(0.20, (effectiveCoreMatches.length - 1) * 0.08);
     } else if (intentMatches.length > 0) {
         score = Math.min(0.65, 0.52 + (intentMatches.length - 1) * 0.06);
+    }
+
+    // Consultas institucionales de la interfaz: cuando la intención
+    // es inequívoca, no deben caer en "fuera de dominio" aunque
+    // el usuario omita el nombre completo de la institución.
+    const uiInstitutionalIntents = [
+        "historia institucional",
+        "ubicación",
+        "misión",
+        "actividades",
+        "ley"
+    ];
+
+    if (uiInstitutionalIntents.some(intent => effectiveCoreMatches.includes(intent))) {
+        score = Math.max(score, 0.60);
     }
 
     if (
