@@ -32,23 +32,27 @@ function assert(condition, mensaje) {
     if (!condition) errores.push(mensaje);
 }
 
+// Las 30 preguntas pertenecen al ámbito del agente.
 resultados.forEach((r) => {
     assert(r.estado === "aceptada", `P${r.n}: estado inesperado: ${r.estado}`);
 });
 
+// Núcleo 1: documentación oficial.
 [1, 2, 3].forEach((n) => {
     const r = resultados[n - 1];
     assert(!r.requiere_fuente_externa, `P${n}: creación/decreto no debería requerir fuente externa`);
-    assert(r.modulo_prioritario === "nucleo1", `P${n}: debería priorizar nucleo1`);
+    assert(r.modulo_prioritario === "oficial", `P${n}: debería priorizar módulo oficial`);
     assert(typeof r.respuesta === "string" && r.respuesta.length > 0, `P${n}: respuesta institucional vacía`);
 });
 
+// Identidad, sede y autoridades: respuesta local sin consulta web.
 [5, 6, 7, 8, 9, 10].forEach((n) => {
     const r = resultados[n - 1];
     assert(!r.requiere_fuente_externa, `P${n}: identidad/sede/autoridades no debería requerir fuente externa`);
     assert(typeof r.respuesta === "string" && r.respuesta.length > 0, `P${n}: respuesta institucional vacía`);
 });
 
+// Núcleo 3: las consultas explícitamente externas deben bloquear el RAG local.
 [26, 27, 28, 29, 30].forEach((n) => {
     const r = resultados[n - 1];
     assert(r.requiere_fuente_externa, `P${n}: debería requerir fuente externa (Núcleo 3)`);
