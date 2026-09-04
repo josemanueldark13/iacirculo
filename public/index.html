@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CÍRCULO IA — Círculo de Legisladores de Tucumán</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:linear-gradient(135deg,#eef2f5,#e8ecf1);min-height:100vh;padding:15px;color:#18212b}.wrap{max-width:950px;margin:auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.12);overflow:hidden;min-height:90vh;display:flex;flex-direction:column}header{background:linear-gradient(135deg,#123d6b,#0f2a4d);color:#fff;text-align:center;padding:30px 20px}h1{font-size:28px;margin-bottom:8px;letter-spacing:2px}.subtitulo{font-size:15px;opacity:.95;line-height:1.4}.contenido{padding:25px;flex:1}.busqueda{display:flex;gap:10px;margin-bottom:20px}#pregunta{flex:1;padding:14px 18px;border-radius:30px;border:2px solid #ddd;font-size:15px}#pregunta:focus{outline:none;border-color:#123d6b}.btn-consultar,.btn-menu{background:#123d6b;color:#fff;border:0;cursor:pointer;font-weight:600}.btn-consultar{padding:14px 24px;border-radius:30px;font-size:15px}.menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px}.btn-menu{padding:14px;border-radius:10px;font-size:15px}.sugerencias{background:#f4f4f4;padding:15px;border-radius:12px;margin-bottom:20px}.sugerencias b{display:block;margin-bottom:10px;color:#123d6b;font-size:14px}.sugerencias button{background:#fff;color:#123d6b;border:1px solid #ddd;padding:8px 14px;border-radius:20px;margin:5px 5px 5px 0;cursor:pointer;font-size:13px}#chat{height:400px;overflow-y:auto;background:#fafafa;padding:15px;border:1px solid #e0e0e0;border-radius:12px;display:flex;flex-direction:column}.chat-message{padding:12px 14px;border-radius:10px;margin:8px 0;max-width:85%;line-height:1.5;font-size:14px;white-space:normal}.msg-bot{background:#dcecff;color:#0a3d6b;align-self:flex-start;border-left:3px solid #123d6b}.msg-user{background:#d7ffd8;color:#0a4620;align-self:flex-end;border-right:3px solid #16823b}.msg-error{background:#ffe0e0;color:#8b0000;align-self:flex-start;border-left:3px solid #cc0000}.msg-info{background:#fff9e6;color:#8b6914;align-self:flex-start;border-left:3px solid #ffc107}.controles-chat{margin-top:10px}.btn-limpiar{background:#777;color:#fff;border:0;padding:10px 16px;border-radius:20px;cursor:pointer}footer{background:#f5f5f5;text-align:center;padding:18px;color:#666;font-size:13px;border-top:1px solid #e0e0e0}@media(max-width:768px){.wrap{border-radius:8px}.contenido{padding:15px}.busqueda{flex-direction:column}.btn-consultar{width:100%}#chat{height:300px}.chat-message{max-width:95%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1>CÍRCULO IA</h1><p class="subtitulo">Asistente Institucional del Círculo de Legisladores de Tucumán</p></header>
+<main class="contenido">
+<form class="busqueda" id="chat-form"><input id="pregunta" maxlength="500" autocomplete="off" placeholder="¿Qué desea consultar?"><button class="btn-consultar" type="submit">🔍 Consultar</button></form>
+<div class="menu">
+<button class="btn-menu" data-question="¿Quiénes somos?">🏛️ Quiénes somos</button>
+<button class="btn-menu" data-question="¿Quiénes son las autoridades?">👥 Autoridades</button>
+<button class="btn-menu" data-question="¿Cuál es la ubicación del Círculo?">📍 Contacto</button>
+<button class="btn-menu" data-question="¿Cómo funciona CÍRCULO IA?">💻 Desarrollo</button>
+</div>
+<div class="sugerencias"><b>📌 Preguntas sugeridas</b>
+<button data-question="¿Cuál es la historia del Círculo?">Historia</button>
+<button data-question="¿Qué establece la Ley 6333?">Ley 6333</button>
+<button data-question="¿Cuál es la misión?">Misión</button>
+<button data-question="¿Qué actividades realiza?">Actividades</button>
+<button data-question="¿Dónde está ubicado?">Ubicación</button>
+</div>
+<div id="chat"><div class="chat-message msg-bot">✓ Bienvenido. Soy CÍRCULO IA.<br>Puedo orientar sobre historia, legislación, autoridades y actividades institucionales del Círculo de Legisladores de Tucumán.</div></div>
+<div class="controles-chat"><button class="btn-limpiar" id="limpiar">🗑️ Limpiar chat</button></div>
+</main>
+<footer><strong>Círculo de Legisladores de Tucumán</strong><br>Asistente institucional CÍRCULO IA</footer>
+</div>
+<script>
+const form=document.getElementById('chat-form'),input=document.getElementById('pregunta'),chat=document.getElementById('chat');
+function mostrar(tipo,texto){const div=document.createElement('div');div.className='chat-message '+tipo;div.textContent=texto;chat.appendChild(div);chat.scrollTop=chat.scrollHeight}
+async function consultar(texto){texto=(texto||input.value).trim();if(!texto)return mostrar('msg-info','Por favor, ingrese una consulta.');if(texto.length>500)return mostrar('msg-error','La consulta es demasiado larga (máximo 500 caracteres).');mostrar('msg-user',texto);input.value='';input.focus();const cargando=document.createElement('div');cargando.className='chat-message msg-info';cargando.textContent='Consultando CÍRCULO IA…';chat.appendChild(cargando);chat.scrollTop=chat.scrollHeight;try{const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:texto})});const data=await res.json().catch(()=>({}));cargando.remove();if(!res.ok){mostrar('msg-error',data.error||'No fue posible procesar la consulta.');return}mostrar(data.estado==='requiere_reformulacion'?'msg-info':'msg-bot',data.respuesta||'No se recibió una respuesta.')}catch(e){cargando.remove();mostrar('msg-error','No se pudo conectar con el servicio de CÍRCULO IA. Intente nuevamente.')}}
+form.addEventListener('submit',e=>{e.preventDefault();consultar()});document.querySelectorAll('[data-question]').forEach(b=>b.addEventListener('click',()=>consultar(b.dataset.question)));document.getElementById('limpiar').addEventListener('click',()=>{chat.innerHTML='<div class="chat-message msg-bot">✓ Chat limpiado. ¿Cómo puedo ayudarle?</div>';input.focus()});input.focus();
+</script>
+</body>
+</html>
