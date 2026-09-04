@@ -75,7 +75,7 @@ function normalize(text) {
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9ñ\s]/gi, " ")
+        .replace(/[^a-z0-9\s]/gi, " ")
         .replace(/\s+/g, " ")
         .trim();
 }
@@ -95,21 +95,18 @@ function analyze(question) {
 
     let score = 0;
 
-    if (coreMatches.includes("circulo ia")) {
+    if (coreMatches.includes("círculo ia")) {
         score = 0.80;
     } else if (
-        coreMatches.includes("circulo de legisladores") ||
-        coreMatches.includes("circulo de ex legisladores") ||
-        coreMatches.includes("circulos de legisladores")
+        coreMatches.includes("círculo de legisladores") ||
+        coreMatches.includes("círculo de ex legisladores") ||
+        coreMatches.includes("círculos de legisladores")
     ) {
         score = 0.65;
     } else {
         score += Math.min(0.60, coreMatches.length * 0.16);
         score += Math.min(0.30, intentMatches.length * 0.10);
 
-        // Una consulta sobre historia legislativa de Tucumán,
-        // investigación o memoria institucional es suficiente
-        // cuando aparece además un contexto institucional.
         if (
             normalized.includes("historia legislativa") &&
             normalized.includes("tucuman")
