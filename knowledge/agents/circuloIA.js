@@ -29,7 +29,7 @@ const circuloIA = {
         ]);
 
         const palabrasPregunta = preguntaNormalizada
-            .replace(/[¿?¡!.,;:()"]/g, "")
+            .replace(/[¿?¡!.,;:()\"]/g, "")
             .split(/\s+/)
             .filter(palabra =>
                 palabra.length > 2 &&
@@ -39,46 +39,15 @@ const circuloIA = {
         const palabrasClave = {
 
             autoridades: [
-                "autoridad",
-                "autoridades",
-                "presidente",
-                "vicepresidente",
-                "secretario",
-                "prosecretario",
-                "tesorero",
-                "protesorero",
-                "vocal",
-                "fiscalizacion"
+                "autoridad", "autoridades", "presidente", "vicepresidente",
+                "secretario", "prosecretario", "tesorero", "protesorero",
+                "vocal", "fiscalizacion"
             ],
 
-            biblioteca: [
-                "biblioteca",
-                "libros",
-                "fondos",
-                "documentales"
-            ],
-
-            historia: [
-                "historia",
-                "historico",
-                "legislativo",
-                "legislatura"
-            ],
-
-            publicaciones: [
-                "publicacion",
-                "publicaciones",
-                "trabajo",
-                "trabajos",
-                "materiales"
-            ],
-
-            patrimonio: [
-                "patrimonio",
-                "documento",
-                "documentos",
-                "archivo"
-            ]
+            biblioteca: ["biblioteca", "libros", "fondos", "documentales"],
+            historia: ["historia", "historico", "legislativo", "legislatura"],
+            publicaciones: ["publicacion", "publicaciones", "trabajo", "trabajos", "materiales"],
+            patrimonio: ["patrimonio", "documento", "documentos", "archivo"]
 
         };
 
@@ -93,26 +62,17 @@ const circuloIA = {
 
                 palabrasPregunta.forEach(palabra => {
 
-                    if (titulo.includes(palabra)) {
-                        puntuacion += 10;
-                    }
-
-                    if (categoria.includes(palabra)) {
-                        puntuacion += 5;
-                    }
-
-                    if (contenido.includes(palabra)) {
-                        puntuacion += 1;
-                    }
+                    if (titulo.includes(palabra)) puntuacion += 10;
+                    if (categoria.includes(palabra)) puntuacion += 5;
+                    if (contenido.includes(palabra)) puntuacion += 1;
 
                 });
 
                 for (const grupo in palabrasClave) {
 
-                    const coincidePregunta =
-                        palabrasClave[grupo].some(palabra =>
-                            preguntaNormalizada.includes(palabra)
-                        );
+                    const coincidePregunta = palabrasClave[grupo].some(palabra =>
+                        preguntaNormalizada.includes(palabra)
+                    );
 
                     if (coincidePregunta) {
 
@@ -121,27 +81,17 @@ const circuloIA = {
                             categoria.includes(grupo) ||
                             contenido.includes(grupo);
 
-                        if (coincideDocumento) {
-                            puntuacion += 20;
-                        }
+                        if (coincideDocumento) puntuacion += 20;
                     }
                 }
 
-                return {
-                    documento: doc,
-                    puntuacion: puntuacion
-                };
+                return { documento: doc, puntuacion };
 
             })
-            .filter(resultado =>
-                resultado.puntuacion > 0
-            )
-            .sort((a, b) =>
-                b.puntuacion - a.puntuacion
-            );
+            .filter(resultado => resultado.puntuacion > 0)
+            .sort((a, b) => b.puntuacion - a.puntuacion);
 
         if (resultados.length === 0) {
-
             return `
 ${this.nombre}
 
@@ -151,13 +101,47 @@ en la base documental disponible.
 Temas disponibles:
 Historia legislativa, Publicaciones, Biblioteca, Patrimonio documental.
             `;
-
         }
 
         const principal = resultados[0].documento;
 
         // -----------------------------------------
-        // RESPUESTAS ESPECÍFICAS
+        // ORIGEN / CREACIÓN INSTITUCIONAL
+        // -----------------------------------------
+
+        const consultaOrigen =
+            preguntaNormalizada.includes("creo el circulo") ||
+            preguntaNormalizada.includes("creo el circulo de legisladores") ||
+            preguntaNormalizada.includes("fue creado") ||
+            preguntaNormalizada.includes("cuando fue creado") ||
+            preguntaNormalizada.includes("como fue creado") ||
+            preguntaNormalizada.includes("como se fundo") ||
+            preguntaNormalizada.includes("fundacion") ||
+            preguntaNormalizada.includes("fecha de creacion") ||
+            preguntaNormalizada.includes("origen institucional") ||
+            preguntaNormalizada.includes("que decreto reconoce") ||
+            preguntaNormalizada.includes("decreto que reconoce") ||
+            preguntaNormalizada.includes("cuando se creo");
+
+        if (consultaOrigen) {
+            const origen = documentos.documentos.find(doc =>
+                doc.titulo === "Creación y reconocimiento institucional"
+            );
+
+            if (origen) {
+                return `
+${this.nombre}
+
+Según la documentación institucional disponible, el origen institucional está documentado mediante el Decreto Nº 2.149, de fecha 2 de noviembre de 1982, referido a la Asociación Civil Círculo de Ex Legisladores Provinciales de Tucumán.
+
+Fuente documental:
+${origen.titulo}
+                `.trim();
+            }
+        }
+
+        // -----------------------------------------
+        // RESPUESTAS ESPECÍFICAS DE AUTORIDADES
         // -----------------------------------------
 
         if (
@@ -165,21 +149,9 @@ Historia legislativa, Publicaciones, Biblioteca, Patrimonio documental.
             !preguntaNormalizada.includes("vicepresidente") &&
             principal.titulo === "Autoridades"
         ) {
-
-            const contenido = principal.contenido;
-
-            const coincidencia = contenido.match(
-                /Presidente:\s*([^\.]+)/i
-            );
-
+            const coincidencia = principal.contenido.match(/Presidente:\s*([^\.]+)/i);
             if (coincidencia) {
-
-                return `
-${this.nombre}
-
-El presidente del Círculo de Legisladores de Tucumán es ${coincidencia[1].trim()}.
-                `.trim();
-
+                return `${this.nombre}\n\nEl presidente del Círculo de Legisladores de Tucumán es ${coincidencia[1].trim()}.`;
             }
         }
 
@@ -187,21 +159,9 @@ El presidente del Círculo de Legisladores de Tucumán es ${coincidencia[1].trim
             preguntaNormalizada.includes("vicepresidente") &&
             principal.titulo === "Autoridades"
         ) {
-
-            const contenido = principal.contenido;
-
-            const coincidencia = contenido.match(
-                /Vicepresidente:\s*([^\.]+)/i
-            );
-
+            const coincidencia = principal.contenido.match(/Vicepresidente:\s*([^\.]+)/i);
             if (coincidencia) {
-
-                return `
-${this.nombre}
-
-El vicepresidente del Círculo de Legisladores de Tucumán es ${coincidencia[1].trim()}.
-                `.trim();
-
+                return `${this.nombre}\n\nEl vicepresidente del Círculo de Legisladores de Tucumán es ${coincidencia[1].trim()}.`;
             }
         }
 
@@ -210,21 +170,9 @@ El vicepresidente del Círculo de Legisladores de Tucumán es ${coincidencia[1].
             !preguntaNormalizada.includes("prosecretario") &&
             principal.titulo === "Autoridades"
         ) {
-
-            const contenido = principal.contenido;
-
-            const coincidencia = contenido.match(
-                /Secretario:\s*([^\.]+)/i
-            );
-
+            const coincidencia = principal.contenido.match(/Secretario:\s*([^\.]+)/i);
             if (coincidencia) {
-
-                return `
-${this.nombre}
-
-El secretario del Círculo de Legisladores de Tucumán es ${coincidencia[1].trim()}.
-                `.trim();
-
+                return `${this.nombre}\n\nEl secretario del Círculo de Legisladores de Tucumán es ${coincidencia[1].trim()}.`;
             }
         }
 
