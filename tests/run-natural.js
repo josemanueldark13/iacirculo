@@ -4,7 +4,7 @@ const cases = require('./test-natural-data');
 let failures = 0;
 for (const item of cases) {
   const result = kernel.process(item.q);
-  const ok = result.estado === 'aceptado' && result.dominio === item.intent;
+  const ok = result.estado === 'aceptada' && result.dominio === item.intent;
   console.log(`${ok ? 'PASS' : 'FAIL'} | ${item.q} | ${result.estado} | ${result.dominio} | ${result.confianza}`);
   if (!ok) failures++;
 }
