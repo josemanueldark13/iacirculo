@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AXIAL KERNEL
  * Semantic Analyzer
  *
@@ -10,9 +10,13 @@ const DOMAIN_CONCEPTS = [
     "círculo ia",
     "círculo de legisladores",
     "círculo de ex legisladores",
+    "círculos de legisladores",
+    "círculos de ex legisladores",
+    "círculo",
     "legisladores",
     "ex legisladores",
     "legislatura",
+    "historia legislativa",
     "tucumán",
     "institución",
     "historia institucional",
@@ -21,21 +25,31 @@ const DOMAIN_CONCEPTS = [
     "publicaciones",
     "actividades",
     "patrimonio",
+    "documentación histórica",
+    "memoria legislativa",
+    "memoria institucional",
     "decreto",
     "ley",
     "resolución",
     "acta",
     "estatuto",
     "creación del círculo",
+    "creación",
     "creado",
     "fundación",
-    "fecha de creación"
+    "fecha de creación",
+    "nombre completo",
+    "sede",
+    "dirección institucional",
+    "domicilio"
 ];
 
 const STRONG_CONCEPTS = [
     "círculo ia",
     "círculo de legisladores",
-    "círculo de ex legisladores"
+    "círculo de ex legisladores",
+    "círculos de legisladores",
+    "círculos de ex legisladores"
 ];
 
 function normalize(text) {
@@ -56,19 +70,16 @@ function analyze(question) {
 
     let score = 0;
 
-    // Conceptos institucionales centrales
-    if (matches.includes("círculo ia")) {
+    // Identidad institucional explícita: máxima confianza.
+    if (matches.some(match => STRONG_CONCEPTS.includes(match))) {
         score = 0.70;
-    } else if (
-        matches.includes("círculo de legisladores") ||
-        matches.includes("círculo de ex legisladores")
-    ) {
-        score = 0.60;
     } else if (matches.length > 0) {
-        score = Math.min(1, matches.length * 0.18);
+        // Cualquier concepto institucional específico es suficiente
+        // para mantener la consulta dentro del dominio del agente.
+        score = 0.50;
     }
 
-    // Conceptos adicionales aumentan la confianza
+    // Conceptos adicionales aumentan la confianza.
     if (score > 0 && matches.length > 1) {
         score += Math.min(0.20, (matches.length - 1) * 0.08);
     }
