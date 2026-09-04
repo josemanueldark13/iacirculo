@@ -67,7 +67,11 @@ const INTENT_CONCEPTS = [
     "investigadores",
     "fuentes adicionales",
     "fuentes oficiales",
-    "continuidad institucional"
+    "continuidad institucional",
+    "qué decreto",
+    "que decreto",
+    "de qué fecha",
+    "de que fecha"
 ];
 
 function normalize(text) {
@@ -103,23 +107,28 @@ function analyze(question) {
         coreMatches.includes("círculos de legisladores")
     ) {
         score = 0.65;
-    } else {
-        score += Math.min(0.60, coreMatches.length * 0.16);
-        score += Math.min(0.30, intentMatches.length * 0.10);
+    } else if (coreMatches.length > 0) {
+        // Un término institucional concreto ya establece un contexto suficiente.
+        score = 0.55;
+        score += Math.min(0.20, (coreMatches.length - 1) * 0.08);
+    } else if (intentMatches.length > 0) {
+        // Las intenciones reconocibles se aceptan como consultas del agente;
+        // luego el RAG decide qué núcleo documental corresponde.
+        score = Math.min(0.65, 0.52 + (intentMatches.length - 1) * 0.06);
+    }
 
-        if (
-            normalized.includes("historia legislativa") &&
-            normalized.includes("tucuman")
-        ) {
-            score = Math.max(score, 0.62);
-        }
+    if (
+        normalized.includes("historia legislativa") &&
+        normalized.includes("tucuman")
+    ) {
+        score = Math.max(score, 0.62);
+    }
 
-        if (
-            normalized.includes("investigador") &&
-            (normalized.includes("historia") || normalized.includes("fuentes"))
-        ) {
-            score = Math.max(score, 0.52);
-        }
+    if (
+        normalized.includes("investigador") &&
+        (normalized.includes("historia") || normalized.includes("fuentes"))
+    ) {
+        score = Math.max(score, 0.52);
     }
 
     score = Math.min(1, Number(score.toFixed(2)));
