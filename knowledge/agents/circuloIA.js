@@ -36,7 +36,7 @@ const circuloIA = {
             patrimonio: ["patrimonio", "documento", "documentos", "archivo"],
             creacion: ["creacion", "creado", "fundacion", "fundado", "origen", "decreto", "reconocimiento"],
             sede: ["sede", "direccion", "domicilio", "ubicacion", "funciona", "donde funciona"],
-            identidad: ["nombre", "nombre completo", "identidad", "institucion"]
+            identidad: ["nombre", "nombre completo", "identidad"]
         };
 
         const resultados = documentos.documentos
@@ -81,7 +81,6 @@ Temas documentados:
 Historia legislativa, Publicaciones, Biblioteca, Patrimonio documental, Creación y reconocimiento institucional, Sede y autoridades.
         `.trim();
 
-        // Umbral de evidencia: evita devolver un documento irrelevante por coincidencias débiles.
         if (resultados.length === 0 || resultados[0].puntuacion < 3) {
             return respuestaSinEvidencia();
         }
@@ -89,7 +88,6 @@ Historia legislativa, Publicaciones, Biblioteca, Patrimonio documental, Creació
         const principal = resultados[0].documento;
         const contenido = principal.contenido;
 
-        // Respuestas específicas de alta precisión.
         if (preguntaNormalizada.includes("presidente") && !preguntaNormalizada.includes("vicepresidente") && principal.titulo === "Autoridades") {
             const coincidencia = contenido.match(/Presidente:\s*([^\.]+)/i);
             if (coincidencia) return `${this.nombre}\n\nEl presidente del Círculo de Legisladores de Tucumán es ${coincidencia[1].trim()}.`;
