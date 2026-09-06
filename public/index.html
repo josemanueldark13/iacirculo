@@ -10,7 +10,7 @@
 </head>
 <body>
 <div class="wrap">
-<header><div class="marca"><img src="https://raw.githubusercontent.com/josemanueldark13/iacirculo/main/public/circulo-ia-logo.png?v=4" alt="Logo del Círculo de Legisladores de Tucumán" onerror="this.style.display='none'"><div class="marca-texto"><h1>CÍRCULO IA</h1><p class="subtitulo">Asistente Institucional del Círculo de Legisladores de Tucumán</p></div></div></header>
+<header><div class="marca"><img id="logo-circulo" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="Logo del Círculo de Legisladores de Tucumán"><div class="marca-texto"><h1>CÍRCULO IA</h1><p class="subtitulo">Asistente Institucional del Círculo de Legisladores de Tucumán</p></div></div></header>
 <main class="contenido">
 <form class="busqueda" id="chat-form"><input id="pregunta" maxlength="500" autocomplete="off" placeholder="¿Qué desea consultar?"><button class="btn-consultar" type="submit">🔍 Consultar</button></form>
 <div class="menu">
@@ -32,6 +32,8 @@
 <footer><strong>Círculo de Legisladores de Tucumán</strong><br>Asistente institucional CÍRCULO IA</footer>
 </div>
 <script>
+const logo=document.getElementById('logo-circulo');
+fetch('/circulo-ia-logo.b64?v=1',{cache:'no-store'}).then(r=>r.text()).then(b64=>{logo.src='data:image/png;base64,'+b64.trim()}).catch(()=>{});
 const form=document.getElementById('chat-form'),input=document.getElementById('pregunta'),chat=document.getElementById('chat');
 function mostrar(tipo,texto){const div=document.createElement('div');div.className='chat-message '+tipo;div.textContent=texto;chat.appendChild(div);chat.scrollTop=chat.scrollHeight}
 async function consultar(texto){texto=(texto||input.value).trim();if(!texto)return mostrar('msg-info','Por favor, ingrese una consulta.');if(texto.length>500)return mostrar('msg-error','La consulta es demasiado larga (máximo 500 caracteres).');mostrar('msg-user',texto);input.value='';input.focus();const cargando=document.createElement('div');cargando.className='chat-message msg-info';cargando.textContent='Consultando CÍRCULO IA…';chat.appendChild(cargando);chat.scrollTop=chat.scrollHeight;try{const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:texto})});const data=await res.json().catch(()=>({}));cargando.remove();if(!res.ok){mostrar('msg-error',data.error||'No fue posible procesar la consulta.');return}mostrar(data.estado==='requiere_reformulacion'?'msg-info':'msg-bot',data.respuesta||'No se recibió una respuesta.')}catch(e){cargando.remove();mostrar('msg-error','No se pudo conectar con el servicio de CÍRCULO IA. Intente nuevamente.')}}
