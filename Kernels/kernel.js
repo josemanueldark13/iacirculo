@@ -2,12 +2,8 @@
  * AXIAL KERNEL
  * Kernel principal de CÍRCULO IA
  *
- * Coordina:
- * 1. análisis semántico
- * 2. dominio
- * 3. reformulación
- * 4. selección de módulos RAG
- * 5. política de respuesta
+ * Misión: interpretar el pedido del cliente y determinar qué agente
+ * debe elaborar la respuesta.
  */
 
 const semanticAnalyzer = require("./semanticAnalyzer");
@@ -15,10 +11,12 @@ const domainRouter = require("./domainRouter");
 const reformulator = require("./reformulator");
 const ragRouter = require("./ragRouter");
 const responsePolicy = require("./responsePolicy");
+const intentRouter = require("./intentRouter");
 
 function process(question) {
     const analysis = semanticAnalyzer.analyze(question);
     const domainDecision = domainRouter.route(analysis);
+    const intent = intentRouter.classify(question);
 
     if (domainDecision.estado === "requiere_reformulacion") {
         const suggestions = reformulator.suggest(question);
@@ -26,6 +24,8 @@ function process(question) {
         return {
             estado: "requiere_reformulacion",
             pregunta: question,
+            intencion: intent.tipo,
+            agente: intent.agente,
             confianza: analysis.confidence,
             conceptos_detectados: analysis.concepts,
             sugerencias: suggestions
@@ -36,6 +36,8 @@ function process(question) {
         return {
             estado: "fuera_de_dominio",
             pregunta: question,
+            intencion: intent.tipo,
+            agente: intent.agente,
             confianza: analysis.confidence,
             accion: "flujo_externo"
         };
@@ -47,6 +49,8 @@ function process(question) {
     return {
         estado: "aceptada",
         dominio: "institucional",
+        intencion: intent.tipo,
+        agente: intent.agente,
         confianza: analysis.confidence,
         conceptos_detectados: analysis.concepts,
         modulos_rag: ragDecision.modules,
