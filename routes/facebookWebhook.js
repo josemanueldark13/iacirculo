@@ -4,9 +4,9 @@ const router = express.Router();
 const kernel = require("../Kernels/kernel");
 const circuloIA = require("../knowledge/agents/circuloIA");
 
-const VERIFY_TOKEN = process.env.FACEBOOK_VERIFY_TOKEN;
-const PAGE_ACCESS_TOKEN = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
-const SITE_URL = process.env.CIRCULO_SITE_URL || "https://circulolegisladoresia.netlify.app/";
+const VERIFY_TOKEN = process.env.FACEBOOK_VERIFY_TOKEN?.trim();
+const PAGE_ACCESS_TOKEN = process.env.FACEBOOK_PAGE_ACCESS_TOKEN?.trim();
+const SITE_URL = process.env.CIRCULO_SITE_URL || "https://iacirculo.vercel.app/";
 
 // Meta verifica que el endpoint pertenece a nuestra aplicación.
 router.get("/", (req, res) => {
@@ -14,17 +14,35 @@ router.get("/", (req, res) => {
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
 
-    if (mode === "subscribe" && token && token === VERIFY_TOKEN) {
+    if (!VERIFY_TOKEN) {
+        console.error("FACEBOOK_VERIFY_TOKEN no está configurado en Vercel.");
+        return res.status(500).json({
+            ok: false,
+            error: "FACEBOOK_VERIFY_TOKEN no configurado"
+        });
+    }
+
+    if (mode === "subscribe" && token === VERIFY_TOKEN && challenge) {
         return res.status(200).send(challenge);
     }
 
-    return res.sendStatus(403);
+    return res.status(403).send("Forbidden");
+});
+
+// Diagnóstico seguro: informa si las variables existen sin exponer sus valores.
+router.get("/status", (req, res) => {
+    res.json({
+        ok: true,
+        servicio: "CÍRCULO IA — Facebook Webhook",
+        verify_token_configurado: Boolean(VERIFY_TOKEN),
+        page_access_token_configurado: Boolean(PAGE_ACCESS_TOKEN),
+        site_url: SITE_URL
+    });
 });
 
 async function enviarMensaje(recipientId, text) {
     if (!PAGE_ACCESS_TOKEN) {
-        console.warn("FACEBOOK_PAGE_ACCESS_TOKEN no está configurado; no se enviará respuesta a Facebook.");
-        return;
+        throw new Error("FACEBOOK_PAGE_ACCESS_TOKEN no está configurado en Vercel.");
     }
 
     const response = await fetch(
@@ -69,9 +87,6 @@ router.post("/", async (req, res) => {
         return res.sendStatus(404);
     }
 
-    // Respondemos rápido a Meta y procesamos los mensajes recibidos.
-    res.sendStatus(200);
-
     try {
         for (const entry of req.body.entry || []) {
             for (const event of entry.messaging || []) {
@@ -86,8 +101,15 @@ router.post("/", async (req, res) => {
                 await enviarMensaje(senderId, respuesta);
             }
         }
+
+        // Confirmamos a Meta solo después de procesar el evento.
+        return res.sendStatus(200);
     } catch (error) {
         console.error("Error procesando webhook de Facebook:", error);
+        return res.status(500).json({
+            ok: false,
+            error: "Error procesando webhook de Facebook"
+        });
     }
 });
 
