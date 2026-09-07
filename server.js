@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const chatRoutes = require("./routes/chat");
+const facebookWebhook = require("./routes/facebookWebhook");
 const kernel = require("./Kernels/kernel");
 const circuloIA = require("./knowledge/agents/circuloIA");
 
@@ -15,6 +16,9 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // API del Kernel AXIAL / CÍRCULO IA.
 app.use("/api/chat", chatRoutes);
+
+// Ventanilla / portal de entrada desde Facebook Messenger.
+app.use("/api/webhook/facebook", facebookWebhook);
 
 // Healthcheck funcional: verifica que Kernel + agente + corpus cargan en runtime.
 app.get("/api/health", (req, res) => {
