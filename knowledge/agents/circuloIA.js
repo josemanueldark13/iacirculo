@@ -17,69 +17,74 @@ const circuloIA = {
             .trim();
 
         const q = normalizar(pregunta);
-        const docs = documentos.documentos;
-        const buscar = titulo => docs.find(d => d.titulo === titulo);
-        const salida = (doc, extra = doc && doc.contenido) => doc
-            ? `${this.nombre}\n\n${extra}\n\nFuente documental:\n${doc.titulo}`
-            : `${this.nombre}\n\nNo encontré información específica sobre esa consulta en la base documental disponible.`;
+        const docs = Array.isArray(documentos.documentos) ? documentos.documentos : [];
+        const buscar = (...titulos) => docs.find(d => titulos.includes(d.titulo));
+        const salida = (doc, extra) => {
+            if (!doc) {
+                return `${this.nombre}\n\nNo encontré información específica sobre esa consulta en la base documental disponible.`;
+            }
+            return `${this.nombre}\n\n${extra || doc.contenido}\n\nFuente documental:\n${doc.titulo}`;
+        };
 
-        // Respuestas deterministas para las consultas visibles en la interfaz.
-        if (q.includes("quienes somos")) {
-            const doc = buscar("Quiénes somos");
-            return salida(doc);
+        // Consultas institucionales principales: respuestas deterministas.
+        if (/(^|\s)(quienes somos|quien es el circulo)(\s|$)/.test(q)) {
+            return salida(buscar("Quiénes somos"));
         }
 
-        if (q.includes("quienes son las autoridades") || q === "autoridades" || q.includes("autoridades")) {
+        if (q.includes("autoridades") || q.includes("presidente") || q.includes("vicepresidente") || q.includes("secretario") || q.includes("tesorero")) {
             const doc = buscar("Autoridades");
-            return salida(doc, `Según la documentación institucional disponible:\n\n${doc.contenido}`);
+            return salida(doc, `Según la documentación institucional disponible:\n\n${doc ? doc.contenido : ""}`);
         }
 
-        if (q.includes("donde esta ubicado") || q.includes("donde esta ubicada") || q.includes("ubicacion") || q.includes("direccion") || q.includes("donde queda") || q.includes("sede")) {
-            const doc = buscar("Ubicación y contacto institucional");
-            return salida(doc);
+        if (q.includes("donde esta ubicado") || q.includes("donde esta ubicada") || q.includes("ubicacion") || q.includes("direccion") || q.includes("donde queda") || q.includes("sede") || q.includes("contacto") || q.includes("mail") || q.includes("correo")) {
+            return salida(buscar("Ubicación y contacto institucional"));
         }
 
-        if (q.includes("cual es la mision") || q.includes("mision")) {
-            const doc = buscar("Misión institucional");
-            return salida(doc);
+        if (q.includes("cual es la mision") || q === "mision" || q.includes("mision institucional")) {
+            return salida(buscar("Misión institucional"));
         }
 
-        if (q.includes("que actividades realiza") || q.includes("actividades")) {
-            const doc = buscar("Actividades institucionales");
-            return salida(doc);
+        if (q.includes("que actividades realiza") || q === "actividades" || q.includes("actividades institucionales")) {
+            return salida(buscar("Actividades institucionales"));
         }
 
-        if (q.includes("ley 6333") || q.includes("ley provincial 6333")) {
-            const doc = buscar("Ley Provincial Nº 6.333");
-            return salida(doc);
+        // La Ley 6333 debe reconocerse siempre, incluso con variantes de escritura.
+        if (/ley\s*(provincial\s*)?6333/.test(q) || q.includes("ley 6 333")) {
+            const doc = buscar(
+                "Ley Provincial Nº 6.333 — Creación del Círculo de Legisladores de la Provincia de Tucumán",
+                "Ley Provincial Nº 6.333"
+            );
+            return salida(doc, `La Ley Provincial Nº 6.333 corresponde a la creación del Círculo de Legisladores de la Provincia de Tucumán. Es la norma de referencia para la constitución del Círculo.\n\nCuando se solicite el texto literal o el articulado completo, debe consultarse la fuente oficial de la Honorable Legislatura de Tucumán para evitar atribuir contenido no verificado.`);
         }
 
         if (q.includes("cual es la historia") || q === "historia" || q.includes("historia del circulo") || q.includes("historia institucional")) {
-            const doc = buscar("Historia legislativa");
-            return salida(doc);
+            return salida(buscar("Historia legislativa"));
         }
 
-        if (q.includes("como funciona circulo ia") || q.includes("como funciona el circulo ia") || q.includes("como funciona")) {
+        if (q.includes("como funciona circulo ia") || q.includes("como funciona el circulo ia") || q === "desarrollo" || q.includes("como funciona")) {
             return `${this.nombre}\n\nCÍRCULO IA es el asistente institucional del Círculo de Legisladores de Tucumán. Su función es orientar sobre historia, legislación, autoridades, actividades y patrimonio documental a partir de la documentación institucional disponible.`;
         }
 
-        const consultaOrigen = q.includes("creo el circulo") || q.includes("fue creado") || q.includes("cuando fue creado") || q.includes("como fue creado") || q.includes("como se fundo") || q.includes("fundacion") || q.includes("fecha de creacion") || q.includes("origen institucional") || q.includes("que decreto reconoce") || q.includes("decreto que reconoce") || q.includes("cuando se creo");
-        if (consultaOrigen) {
+        if (q.includes("cuando se creo") || q.includes("cuando fue creado") || q.includes("fecha de creacion") || q.includes("como se fundo") || q.includes("fundacion") || q.includes("origen institucional") || q.includes("que decreto reconoce")) {
             const origen = buscar("Creación y reconocimiento institucional");
-            return salida(origen, `Según la documentación institucional disponible, el origen institucional está documentado mediante el Decreto Nº 2.149, de fecha 2 de noviembre de 1982, referido a la Asociación Civil Círculo de Ex Legisladores Provinciales de Tucumán.`);
+            return salida(origen, "Según la documentación institucional disponible, el origen institucional está documentado mediante el Decreto Nº 2.149, de fecha 2 de noviembre de 1982, referido a la Asociación Civil Círculo de Ex Legisladores Provinciales de Tucumán.");
         }
 
-        const palabrasIgnoradas = new Set(["que", "cual", "quienes", "como", "donde", "cuando", "tiene", "tienen", "hay", "del", "los", "las", "una", "uno", "unos", "unas", "el", "la", "de", "en", "sobre", "para", "por", "con", "informacion", "es", "son"]);
-        const palabras = q.split(/\s+/).filter(p => p.length > 2 && !palabrasIgnoradas.has(p));
+        // Búsqueda simple por coincidencia de palabras, como fallback.
+        const ignoradas = new Set(["que", "cual", "quienes", "como", "donde", "cuando", "tiene", "tienen", "hay", "del", "los", "las", "una", "uno", "unos", "unas", "el", "la", "de", "en", "sobre", "para", "por", "con", "informacion", "es", "son"]);
+        const palabras = q.split(/\s+/).filter(p => p.length > 2 && !ignoradas.has(p));
         const resultados = docs.map(doc => {
             const texto = normalizar(`${doc.titulo} ${doc.categoria} ${doc.contenido}`);
             let puntuacion = 0;
-            palabras.forEach(p => { if (normalizar(doc.titulo).includes(p)) puntuacion += 10; else if (texto.includes(p)) puntuacion += 1; });
+            for (const p of palabras) {
+                if (normalizar(doc.titulo).includes(p)) puntuacion += 10;
+                else if (texto.includes(p)) puntuacion += 1;
+            }
             return { doc, puntuacion };
         }).filter(r => r.puntuacion > 0).sort((a, b) => b.puntuacion - a.puntuacion);
 
         if (!resultados.length) {
-            return `${this.nombre}\n\nNo encontré información específica sobre esa consulta en la base documental disponible.\n\nTemas disponibles:\nHistoria, Ley 6333, Misión, Actividades, Ubicación y Autoridades.`;
+            return `${this.nombre}\n\nNo encontré información específica sobre esa consulta en la base documental disponible.\n\nTemas disponibles:\nHistoria, Ley 6333, Misión, Actividades, Ubicación, Contacto y Autoridades.`;
         }
 
         return salida(resultados[0].doc, `Según la documentación institucional disponible:\n\n${resultados[0].doc.contenido}`);
