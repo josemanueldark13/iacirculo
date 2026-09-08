@@ -57,12 +57,12 @@
     {
       "titulo": "Ubicación y contacto institucional",
       "categoria": "Contacto",
-      "contenido": "La sede del Círculo de Legisladores de Tucumán se encuentra en San Lorenzo 226, San Miguel de Tucumán."
+      "contenido": "La sede del Círculo de Legisladores de Tucumán se encuentra en San Lorenzo 226, San Miguel de Tucumán. Correo electrónico institucional: circulodelegis@outlook.com."
     },
     {
-      "titulo": "Ley Provincial Nº 6.333",
+      "titulo": "Ley Provincial Nº 6.333 — Creación del Círculo de Legisladores de la Provincia de Tucumán",
       "categoria": "Legislación",
-      "contenido": "La Ley Provincial Nº 6.333 forma parte del marco legislativo de referencia del Círculo de Legisladores de Tucumán. Para responder con precisión sobre su articulado debe consultarse el texto oficial de la ley; el corpus local no reproduce actualmente su articulado completo."
+      "contenido": "La Ley Provincial Nº 6.333 es la norma identificada por la Honorable Legislatura de Tucumán como 'Creación del Círculo de Legisladores de la Provincia de Tucumán'. La propia Legislatura registra proyectos posteriores destinados a modificar esta ley. Para evitar inventar o atribuir artículos no verificados, CÍRCULO IA debe identificar correctamente la norma, explicar que se trata de la ley de creación del Círculo y, cuando se requiera el articulado literal, remitir a la fuente oficial de la Legislatura. Fuente oficial de referencia: Diario de Sesiones de la Honorable Legislatura de Tucumán, donde se registra el Proyecto N° 247-PL-18 como modificación de la Ley N° 6333 — Creación del Círculo de Legisladores de la Provincia de Tucumán."
     }
   ]
 }
