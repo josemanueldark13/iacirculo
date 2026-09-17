@@ -2,14 +2,20 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const chatRoutes = require("./routes/chat");
-const facebookWebhook = require("./routes/facebookWebhook");
+const messengerRoutes = require("./routes/messenger");
 const kernel = require("./Kernels/kernel");
 const circuloIA = require("./knowledge/agents/circuloIA");
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+
+// Conservamos el cuerpo original para verificar X-Hub-Signature-256 de Meta.
+app.use(express.json({
+    verify: (req, res, buf) => {
+        req.rawBody = Buffer.from(buf);
+    }
+}));
 
 // Frontend institucional servido por el mismo deployment.
 app.use(express.static(path.join(__dirname, "public")));
@@ -17,8 +23,9 @@ app.use(express.static(path.join(__dirname, "public")));
 // API del Kernel AXIAL / CÍRCULO IA.
 app.use("/api/chat", chatRoutes);
 
-// Ventanilla / portal de entrada desde Facebook Messenger.
-app.use("/api/webhook/facebook", facebookWebhook);
+// Webhook unificado de Facebook Messenger.
+app.use("/webhook/messenger", messengerRoutes);
+app.use("/api/webhook/facebook", messengerRoutes);
 
 // Healthcheck funcional: verifica que Kernel + agente + corpus cargan en runtime.
 app.get("/api/health", (req, res) => {
@@ -32,7 +39,8 @@ app.get("/api/health", (req, res) => {
             servicio: "CÍRCULO IA",
             kernel: decision.estado,
             dominio: decision.dominio || null,
-            agente: circuloIA.nombre,
+            intencion: decision.intencion || null,
+            agente: decision.agente || circuloIA.nombre,
             prueba: pregunta,
             respuesta: respuesta
         });
