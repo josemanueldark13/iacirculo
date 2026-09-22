@@ -94,8 +94,7 @@ router.get("/status", (req, res) => {
 // No expone tokens ni app secret.
 router.get("/diagnose", async (req, res) => {
     try {
-        const page = await graphRequest("/me?fields=id,name");
-        const subscriptions = await graphRequest(`/${encodeURIComponent(page.id)}/subscribed_apps`);
+        const subscriptions = await graphRequest("/me/subscribed_apps");
 
         const apps = Array.isArray(subscriptions?.data) ? subscriptions.data : [];
         const messagesSubscribed = apps.some(app =>
@@ -116,8 +115,6 @@ router.get("/diagnose", async (req, res) => {
         return res.json({
             ok: true,
             graph_api: "ok",
-            page_id: page.id || null,
-            page_name: page.name || null,
             page_subscription_query: "ok",
             messages_subscribed: messagesSubscribed,
             subscribed_apps_count: apps.length,
@@ -179,11 +176,8 @@ async function sendMessage(recipientId, text) {
     if (!token) throw new Error("Falta FACEBOOK_PAGE_ACCESS_TOKEN / META_PAGE_ACCESS_TOKEN");
 
     const version = envFirst("META_GRAPH_VERSION") || "v23.0";
-    const page = await graphRequest("/me?fields=id");
-    const pageId = page.id;
-
     const response = await fetch(
-        `https://graph.facebook.com/${version}/${encodeURIComponent(pageId)}/messages`,
+        `https://graph.facebook.com/${version}/me/messages`,
         {
             method: "POST",
             headers: {
