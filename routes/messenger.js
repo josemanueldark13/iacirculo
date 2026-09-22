@@ -13,6 +13,16 @@ function envFirst(...names) {
     return null;
 }
 
+function appSecretProof(token) {
+    const appSecret = envFirst("FACEBOOK_APP_SECRET", "META_APP_SECRET");
+    if (!appSecret) return null;
+
+    return crypto
+        .createHmac("sha256", appSecret)
+        .update(token)
+        .digest("hex");
+}
+
 function verifySignature(req) {
     const appSecret = envFirst("FACEBOOK_APP_SECRET", "META_APP_SECRET");
     if (!appSecret) return true;
@@ -32,6 +42,41 @@ function verifySignature(req) {
         crypto.timingSafeEqual(received, calculated);
 }
 
+async function graphRequest(path, options = {}) {
+    const token = envFirst("FACEBOOK_PAGE_ACCESS_TOKEN", "META_PAGE_ACCESS_TOKEN");
+    if (!token) throw new Error("Falta FACEBOOK_PAGE_ACCESS_TOKEN / META_PAGE_ACCESS_TOKEN");
+
+    const version = envFirst("META_GRAPH_VERSION") || "v23.0";
+    const proof = appSecretProof(token);
+    const separator = path.includes("?") ? "&" : "?";
+    const url = `https://graph.facebook.com/${version}${path}${separator}appsecret_proof=${encodeURIComponent(proof || "")}`;
+
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            ...(options.headers || {})
+        }
+    });
+
+    const bodyText = await response.text();
+
+    let body;
+    try {
+        body = JSON.parse(bodyText);
+    } catch {
+        body = { raw: bodyText };
+    }
+
+    if (!response.ok) {
+        const message = body?.error?.message || bodyText || "Respuesta desconocida de Graph API";
+        throw new Error(`Graph API ${response.status}: ${message}`);
+    }
+
+    return body;
+}
+
 router.get("/status", (req, res) => {
     res.json({
         ok: true,
@@ -41,6 +86,39 @@ router.get("/status", (req, res) => {
         app_secret_configurado: Boolean(envFirst("FACEBOOK_APP_SECRET", "META_APP_SECRET")),
         site_url: envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/"
     });
+});
+
+// Diagnóstico real de Graph API + suscripción de la Página.
+// No expone tokens ni app secret.
+router.get("/diagnose", async (req, res) => {
+    try {
+        const page = await graphRequest("/me?fields=id");
+        const subscriptions = await graphRequest(`/${encodeURIComponent(page.id)}/subscribed_apps`);
+
+        const apps = Array.isArray(subscriptions?.data) ? subscriptions.data : [];
+        const messagesSubscribed = apps.some(app =>
+            Array.isArray(app.subscribed_fields) &&
+            app.subscribed_fields.includes("messages")
+        );
+
+        return res.json({
+            ok: true,
+            graph_api: "ok",
+            page_id: page.id || null,
+            page_subscription_query: "ok",
+            messages_subscribed: messagesSubscribed,
+            subscribed_apps_count: apps.length,
+            graph_version: envFirst("META_GRAPH_VERSION") || "v23.0"
+        });
+    } catch (error) {
+        console.error("[Messenger] Diagnóstico Graph API fallido:", error.message);
+
+        return res.status(502).json({
+            ok: false,
+            graph_api: "error",
+            error: error.message
+        });
+    }
 });
 
 router.get("/", (req, res) => {
@@ -86,11 +164,21 @@ async function sendMessage(recipientId, text) {
     if (!token) throw new Error("Falta FACEBOOK_PAGE_ACCESS_TOKEN / META_PAGE_ACCESS_TOKEN");
 
     const version = envFirst("META_GRAPH_VERSION") || "v23.0";
+    const proof = appSecretProof(token);
+
+    const page = await graphRequest("/me?fields=id");
+    const pageId = page.id;
+
+    const query = proof ? `?appsecret_proof=${encodeURIComponent(proof)}` : "";
+
     const response = await fetch(
-        `https://graph.facebook.com/${version}/me/messages?access_token=${encodeURIComponent(token)}`,
+        `https://graph.facebook.com/${version}/${encodeURIComponent(pageId)}/messages${query}`,
         {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
             body: JSON.stringify({
                 recipient: { id: recipientId },
                 messaging_type: "RESPONSE",
@@ -99,35 +187,69 @@ async function sendMessage(recipientId, text) {
         }
     );
 
+    const body = await response.text();
+
     if (!response.ok) {
-        const body = await response.text();
-        throw new Error(`Messenger Send API: ${response.status} ${body}`);
+        let detail = body;
+        try {
+            const parsed = JSON.parse(body);
+            detail = parsed?.error?.message || body;
+        } catch {
+            // Conservamos la respuesta textual de Graph API.
+        }
+
+        throw new Error(`Messenger Send API ${response.status}: ${detail}`);
     }
+
+    console.log("[Messenger] Respuesta enviada correctamente.");
 }
 
 router.post("/", async (req, res) => {
-    if (!verifySignature(req)) return res.sendStatus(403);
+    if (!verifySignature(req)) {
+        console.warn("[Messenger] Firma X-Hub-Signature-256 inválida o ausente.");
+        return res.sendStatus(403);
+    }
 
-    // Meta espera una confirmación rápida del webhook.
-    res.sendStatus(200);
+    const entries = Array.isArray(req.body?.entry) ? req.body.entry : [];
+    const events = entries.flatMap(entry =>
+        Array.isArray(entry.messaging) ? entry.messaging : []
+    );
+
+    console.log("[Messenger] Webhook recibido:", {
+        object: req.body?.object || null,
+        entries: entries.length,
+        events: events.length,
+        text_events: events.filter(event => Boolean(event.message?.text) && !event.message?.is_echo).length
+    });
 
     try {
-        if (req.body?.object !== "page") return;
-
-        for (const entry of req.body.entry || []) {
-            for (const event of entry.messaging || []) {
-                const senderId = event.sender?.id;
-                const pregunta = event.message?.text;
-
-                if (!senderId || !pregunta || event.message?.is_echo) continue;
-
-                const decision = kernel.process(pregunta);
-                const respuesta = buildResponse(pregunta, decision);
-                await sendMessage(senderId, respuesta);
-            }
+        if (req.body?.object !== "page") {
+            return res.sendStatus(200);
         }
+
+        const jobs = [];
+
+        for (const event of events) {
+            const senderId = event.sender?.id;
+            const pregunta = event.message?.text;
+
+            if (!senderId || !pregunta || event.message?.is_echo) continue;
+
+            const decision = kernel.process(pregunta);
+            const respuesta = buildResponse(pregunta, decision);
+
+            jobs.push(
+                sendMessage(senderId, respuesta).catch(error => {
+                    console.error("[Messenger] Error al enviar respuesta:", error.message);
+                })
+            );
+        }
+
+        await Promise.all(jobs);
+        return res.sendStatus(200);
     } catch (error) {
-        console.error("Error en Webhook Messenger:", error);
+        console.error("[Messenger] Error procesando webhook:", error);
+        return res.sendStatus(200);
     }
 });
 
