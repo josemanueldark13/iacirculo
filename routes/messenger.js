@@ -42,15 +42,17 @@ function verifySignature(req) {
         crypto.timingSafeEqual(received, calculated);
 }
 
-async function graphRequest(path, options = {}) {
+async function graphRequest(path, options = {}, useProof = false) {
     const token = envFirst("FACEBOOK_PAGE_ACCESS_TOKEN", "META_PAGE_ACCESS_TOKEN");
     if (!token) throw new Error("Falta FACEBOOK_PAGE_ACCESS_TOKEN / META_PAGE_ACCESS_TOKEN");
 
     const version = envFirst("META_GRAPH_VERSION") || "v23.0";
-    const proof = appSecretProof(token);
+    const proof = useProof ? appSecretProof(token) : null;
     const separator = path.includes("?") ? "&" : "?";
-    const url = `https://graph.facebook.com/${version}${path}${separator}appsecret_proof=${encodeURIComponent(proof || "")}`;
-
+    const url = proof
+        ? `https://graph.facebook.com/${version}${path}${separator}appsecret_proof=${encodeURIComponent(proof)}`
+        : `https://graph.facebook.com/${version}${path}`;
+    
     const response = await fetch(url, {
         ...options,
         headers: {
@@ -92,7 +94,7 @@ router.get("/status", (req, res) => {
 // No expone tokens ni app secret.
 router.get("/diagnose", async (req, res) => {
     try {
-        const page = await graphRequest("/me?fields=id");
+        const page = await graphRequest("/me?fields=id,name");
         const subscriptions = await graphRequest(`/${encodeURIComponent(page.id)}/subscribed_apps`);
 
         const apps = Array.isArray(subscriptions?.data) ? subscriptions.data : [];
@@ -101,13 +103,26 @@ router.get("/diagnose", async (req, res) => {
             app.subscribed_fields.includes("messages")
         );
 
+        let appsecretProofValid = true;
+        let appsecretProofError = null;
+
+        try {
+            await graphRequest("/me?fields=id", {}, true);
+        } catch (proofError) {
+            appsecretProofValid = false;
+            appsecretProofError = proofError.message;
+        }
+
         return res.json({
             ok: true,
             graph_api: "ok",
             page_id: page.id || null,
+            page_name: page.name || null,
             page_subscription_query: "ok",
             messages_subscribed: messagesSubscribed,
             subscribed_apps_count: apps.length,
+            appsecret_proof_valid: appsecretProofValid,
+            appsecret_proof_error: appsecretProofError,
             graph_version: envFirst("META_GRAPH_VERSION") || "v23.0"
         });
     } catch (error) {
@@ -164,15 +179,11 @@ async function sendMessage(recipientId, text) {
     if (!token) throw new Error("Falta FACEBOOK_PAGE_ACCESS_TOKEN / META_PAGE_ACCESS_TOKEN");
 
     const version = envFirst("META_GRAPH_VERSION") || "v23.0";
-    const proof = appSecretProof(token);
-
     const page = await graphRequest("/me?fields=id");
     const pageId = page.id;
 
-    const query = proof ? `?appsecret_proof=${encodeURIComponent(proof)}` : "";
-
     const response = await fetch(
-        `https://graph.facebook.com/${version}/${encodeURIComponent(pageId)}/messages${query}`,
+        `https://graph.facebook.com/${version}/${encodeURIComponent(pageId)}/messages`,
         {
             method: "POST",
             headers: {
