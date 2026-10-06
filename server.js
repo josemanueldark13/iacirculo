@@ -3,6 +3,7 @@ const cors = require("cors");
 const path = require("path");
 const chatRoutes = require("./routes/chat");
 const messengerRoutes = require("./routes/messenger");
+const encuestaRoutes = require("./routes/encuesta");
 const kernel = require("./Kernels/kernel");
 const circuloIA = require("./knowledge/agents/circuloIA");
 
@@ -22,6 +23,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // API del Kernel AXIAL / CÍRCULO IA.
 app.use("/api/chat", chatRoutes);
+app.use("/api/encuesta", encuestaRoutes);
 
 // Webhook unificado de Facebook Messenger.
 app.use("/webhook/messenger", messengerRoutes);
