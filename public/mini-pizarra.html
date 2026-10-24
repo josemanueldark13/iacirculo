@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Mini pizarra · CÍRCULO IA</title>
+<style>
+:root{color-scheme:dark;--ink:#e2e8f0;--muted:#a8b5c4;--gold:#ffd700;--silver:#e2e2e2;--red:#ff4d4d;--cyan:#22d3ee;--void:#0a0a0a}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--void);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+body{padding:12px}
+main{width:100%;max-width:600px;margin:0 auto;display:grid;gap:11px}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+h1{font-size:16px;line-height:1.25;margin:0;font-weight:700;letter-spacing:.02em}
+.hint{font-size:11px;color:var(--muted);margin-top:4px}
+.pill{font-size:10px;color:#d3e9f6;border:1px solid #29465a;border-radius:999px;padding:5px 8px;white-space:nowrap}
+.canvas-shell{width:100%;aspect-ratio:4/3;border:1px solid #34414d;border-radius:12px;overflow:hidden;background:var(--void);box-shadow:0 10px 24px rgba(0,0,0,.24)}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;outline:none}
+canvas:focus-visible{box-shadow:inset 0 0 0 3px var(--cyan)}
+.colors{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+button{font:inherit;color:var(--ink);border:1px solid #394653;border-radius:9px;background:#151a20;min-height:38px;padding:8px 7px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:12px;font-weight:600;transition:background .15s ease,border-color .15s ease,transform .15s ease}
+button:hover{background:#202833;border-color:#687887}
+button:active{transform:translateY(1px)}
+button:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+button[aria-pressed="true"]{background:#202833;border-color:#aebdca;box-shadow:inset 0 0 0 1px #647687}
+.swatch{width:13px;height:13px;display:inline-block;border-radius:50%;flex:none;border:1px solid rgba(255,255,255,.25)}
+.actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.actions button{min-height:40px}
+#download{border-color:#75672a;color:#ffe58a;background:#29240f}
+#download:hover{background:#373014;border-color:var(--gold)}
+button:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.status{margin:0;min-height:15px;font-size:11px;color:var(--muted);text-align:center}
+@media(max-width:360px){body{padding:9px}.colors{gap:5px}.colors button{padding:7px 3px;font-size:11px}.actions{gap:5px}.actions button{font-size:11px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <div class="heading">
+    <div><h1>Mini pizarra</h1><p class="hint">Un espacio pequeño para trazar una idea.</p></div>
+    <span class="pill">MAGIC SLATE</span>
+  </div>
+  <div class="canvas-shell"><canvas id="slate" tabindex="0" aria-label="Pizarra negra para dibujar con el puntero o con el dedo."></canvas></div>
+  <div class="colors" role="group" aria-label="Elegir color del trazo">
+    <button type="button" data-color="#ffd700" aria-label="Dibujar en dorado" aria-pressed="true"><span class="swatch" style="background:#ffd700"></span>Dorado</button>
+    <button type="button" data-color="#e2e2e2" aria-label="Dibujar en plata" aria-pressed="false"><span class="swatch" style="background:#e2e2e2"></span>Plata</button>
+    <button type="button" data-color="#ff4d4d" aria-label="Dibujar en rojo" aria-pressed="false"><span class="swatch" style="background:#ff4d4d"></span>Rojo</button>
+    <button type="button" data-color="#22d3ee" aria-label="Dibujar en cian" aria-pressed="false"><span class="swatch" style="background:#22d3ee"></span>Cian</button>
+  </div>
+  <div class="actions" role="group" aria-label="Acciones de la pizarra">
+    <button id="undo" type="button" disabled>↶ Deshacer</button>
+    <button id="clear" type="button">Limpiar</button>
+    <button id="download" type="button">Descargar PNG</button>
+  </div>
+  <p id="status" class="status" role="status" aria-live="polite">Elegí un color y dibujá.</p>
+</main>
+<script>
+(function(){
+  "use strict";
+  const canvas=document.getElementById("slate");
+  const ctx=canvas.getContext("2d",{alpha:false});
+  const status=document.getElementById("status");
+  const undoButton=document.getElementById("undo");
+  const clearButton=document.getElementById("clear");
+  const downloadButton=document.getElementById("download");
+  const colorButtons=Array.from(document.querySelectorAll("[data-color]"));
+  const background="#0a0a0a";
+  let color="#ffd700";
+  let drawing=false;
+  let activePointer=null;
+  let pixelRatio=1;
+  let history=[];
+  const historyLimit=30;
+
+  function announce(message){status.textContent=message}
+  function paintBackground(){
+    ctx.save();
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.fillStyle=background;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
+  }
+  function saveState(){
+    try{
+      const snapshot=canvas.toDataURL("image/png");
+      if(history.length&&history[history.length-1]===snapshot)return;
+      history.push(snapshot);
+      if(history.length>historyLimit)history.shift();
+      undoButton.disabled=history.length<2;
+    }catch(error){announce("No se pudo guardar el estado de la pizarra.")}
+  }
+  function restoreState(dataUrl){
+    const image=new Image();
+    image.onload=function(){
+      ctx.save();
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(image,0,0,canvas.width,canvas.height);
+      ctx.restore();
+    };
+    image.src=dataUrl;
+  }
+  function resizeCanvas(){
+    const rect=canvas.getBoundingClientRect();
+    if(!rect.width||!rect.height)return;
+    const nextRatio=Math.max(1,Math.min(window.devicePixelRatio||1,2));
+    const nextWidth=Math.max(1,Math.round(rect.width*nextRatio));
+    const nextHeight=Math.max(1,Math.round(rect.height*nextRatio));
+    if(canvas.width===nextWidth&&canvas.height===nextHeight&&pixelRatio===nextRatio)return;
+    const wasInitialized=canvas.dataset.ready==="true";
+    let previous=null;
+    if(wasInitialized&&canvas.width&&canvas.height){
+      previous=document.createElement("canvas");
+      previous.width=canvas.width;
+      previous.height=canvas.height;
+      previous.getContext("2d").drawImage(canvas,0,0);
+    }
+    canvas.width=nextWidth;
+    canvas.height=nextHeight;
+    pixelRatio=nextRatio;
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.fillStyle=background;
+    ctx.fillRect(0,0,nextWidth,nextHeight);
+    if(previous)ctx.drawImage(previous,0,0,previous.width,previous.height,0,0,nextWidth,nextHeight);
+    ctx.setTransform(pixelRatio,0,0,pixelRatio,0,0);
+    canvas.dataset.ready="true";
+    if(!wasInitialized)saveState();
+  }
+  function pointFromEvent(event){
+    const rect=canvas.getBoundingClientRect();
+    return {x:event.clientX-rect.left,y:event.clientY-rect.top};
+  }
+  function startDrawing(event){
+    if(event.button!==undefined&&event.button!==0)return;
+    event.preventDefault();
+    drawing=true;
+    activePointer=event.pointerId;
+    canvas.setPointerCapture(activePointer);
+    const point=pointFromEvent(event);
+    ctx.beginPath();
+    ctx.fillStyle=color;
+    ctx.arc(point.x,point.y,2.5,0,Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(point.x,point.y);
+  }
+  function draw(event){
+    if(!drawing||event.pointerId!==activePointer)return;
+    event.preventDefault();
+    const point=pointFromEvent(event);
+    ctx.strokeStyle=color;
+    ctx.lineWidth=5;
+    ctx.lineCap="round";
+    ctx.lineJoin="round";
+    ctx.lineTo(point.x,point.y);
+    ctx.stroke();
+  }
+  function stopDrawing(event){
+    if(!drawing)return;
+    if(event&&event.pointerId!==undefined&&event.pointerId!==activePointer)return;
+    drawing=false;
+    activePointer=null;
+    ctx.closePath();
+    saveState();
+    undoButton.disabled=history.length<2;
+  }
+  function undo(){
+    if(history.length<2)return;
+    history.pop();
+    restoreState(history[history.length-1]);
+    undoButton.disabled=history.length<2;
+    announce("Último trazo deshecho.");
+  }
+  function clearCanvas(){
+    drawing=false;
+    activePointer=null;
+    paintBackground();
+    saveState();
+    undoButton.disabled=history.length<2;
+    announce("Pizarra limpia. Podés volver a dibujar.");
+  }
+  function downloadPNG(){
+    canvas.toBlob(function(blob){
+      if(!blob){announce("No se pudo preparar el PNG.");return;}
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement("a");
+      link.href=url;
+      link.download="mini-pizarra-circulo-ia.png";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(function(){URL.revokeObjectURL(url)},1000);
+      announce("Descargando la pizarra en PNG.");
+    },"image/png");
+  }
+  colorButtons.forEach(function(button){
+    button.addEventListener("click",function(){
+      color=button.dataset.color;
+      colorButtons.forEach(function(other){other.setAttribute("aria-pressed",String(other===button))});
+      announce("Color seleccionado: "+button.getAttribute("aria-label").replace("Dibujar en ","")+".");
+      canvas.focus({preventScroll:true});
+    });
+  });
+  canvas.addEventListener("pointerdown",startDrawing);
+  canvas.addEventListener("pointermove",draw);
+  canvas.addEventListener("pointerup",stopDrawing);
+  canvas.addEventListener("pointercancel",stopDrawing);
+  canvas.addEventListener("lostpointercapture",stopDrawing);
+  undoButton.addEventListener("click",undo);
+  clearButton.addEventListener("click",clearCanvas);
+  downloadButton.addEventListener("click",downloadPNG);
+  document.addEventListener("keydown",function(event){
+    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="z"){
+      event.preventDefault();
+      undo();
+      return;
+    }
+    if(event.key==="Escape"&&window.parent!==window){
+      window.parent.postMessage({type:"circulo-author-panel-escape"},window.location.origin);
+    }
+    if(event.key==="Tab"&&window.parent!==window){
+      const focusables=Array.from(document.querySelectorAll("button:not([disabled])"));
+      if(!focusables.length)return;
+      if(event.shiftKey&&document.activeElement===focusables[0]){
+        event.preventDefault();
+        window.parent.postMessage({type:"circulo-author-panel-focus",direction:"backward"},window.location.origin);
+      }else if(!event.shiftKey&&document.activeElement===focusables[focusables.length-1]){
+        event.preventDefault();
+        window.parent.postMessage({type:"circulo-author-panel-focus",direction:"forward"},window.location.origin);
+      }
+    }
+  });
+  if("ResizeObserver" in window){
+    new ResizeObserver(resizeCanvas).observe(canvas.parentElement);
+  }else{
+    window.addEventListener("resize",resizeCanvas);
+  }
+  resizeCanvas();
+})();
+</script>
+</body>
+</html>
