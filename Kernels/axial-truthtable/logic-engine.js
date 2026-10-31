@@ -1,20 +1,11 @@
 'use strict';
 
 /**
- * KERNEL AXIAL Â· TRUTHTABLE
- * Motor de lÃ³gica proposicional clÃ¡sica.
- *
- * Sintaxis admitida:
- *   Variables: P, Q, R, P1, ESTADO_A
- *   NegaciÃ³n:  !P
- *   ConjunciÃ³n: P & Q
- *   DisyunciÃ³n: P | Q
- *   ImplicaciÃ³n material: P -> Q
- *   ParÃ©ntesis: (P | Q) & R
- *
- * Precedencia (de mayor a menor): !, &, |, ->.
- * La implicaciÃ³n es asociativa por la derecha.
- * No se ejecuta JavaScript ni se evalÃºa cÃ³digo dinÃ¡mico.
+ * KERNEL AXIAL · TRUTHTABLE
+ * Motor de lógica proposicional clásica.
+ * Sintaxis: variables P/Q/R, negación !, conjunción &, disyunción |,
+ * implicación -> y paréntesis. Precedencia: ! > & > | > ->.
+ * La implicación es asociativa a la derecha. No ejecuta JavaScript dinámico.
  */
 
 const LIMITS = Object.freeze({
@@ -23,9 +14,9 @@ const LIMITS = Object.freeze({
     maxVariables: 12
 });
 
-class LogicSyntaxError extends Error {
+class LogicSyntaxError extends SyntaxError {
     constructor(message, expression, position) {
-        super(`${message} (posiciÃ³n ${position + 1}) en: "${expression}"`);
+        super(message + ' (posición ' + (position + 1) + ') en: "' + expression + '"');
         this.name = 'LogicSyntaxError';
         this.code = 'AXIAL_LOGIC_SYNTAX_ERROR';
         this.expression = expression;
@@ -36,10 +27,10 @@ class LogicSyntaxError extends Error {
 class LogicEngine {
     tokenize(expression) {
         if (typeof expression !== 'string' || expression.trim() === '') {
-            throw new TypeError('Cada expresiÃ³n lÃ³gica debe ser un texto no vacÃ­o.');
+            throw new TypeError('Cada expresión lógica debe ser un texto no vacío.');
         }
         if (expression.length > LIMITS.maxExpressionLength) {
-            throw new RangeError(`La expresiÃ³n supera el mÃ¡ximo de ${LIMITS.maxExpressionLength} caracteres.`);
+            throw new RangeError('La expresión supera el máximo de ' + LIMITS.maxExpressionLength + ' caracteres.');
         }
 
         const tokens = [];
@@ -59,7 +50,7 @@ class LogicEngine {
                 continue;
             }
 
-            const symbolTypes = {
+            const symbols = {
                 '!': 'NOT',
                 '&': 'AND',
                 '|': 'OR',
@@ -67,20 +58,20 @@ class LogicEngine {
                 ')': 'RPAREN'
             };
 
-            if (symbolTypes[current]) {
-                tokens.push({ type: symbolTypes[current], value: current, position });
+            if (symbols[current]) {
+                tokens.push({ type: symbols[current], value: current, position });
                 position += 1;
                 continue;
             }
 
-            const identifier = expression.slice(position).match(/^[A-Z][A-Za-z0-9_]*/);
+            const identifier = expression.slice(position).match(/^[A-Za-z][A-Za-z0-9_]*/);
             if (identifier) {
                 tokens.push({ type: 'VARIABLE', value: identifier[0], position });
                 position += identifier[0].length;
                 continue;
             }
 
-            throw new LogicSyntaxError(`SÃ­mbolo no permitido "${current}"`, expression, position);
+            throw new LogicSyntaxError('Símbolo no permitido "' + current + '"', expression, position);
         }
 
         return tokens;
@@ -89,10 +80,11 @@ class LogicEngine {
     parseExpression(expression) {
         const tokens = this.tokenize(expression);
         let cursor = 0;
+
         const peek = () => tokens[cursor] || null;
         const consume = (type) => {
-            const token = peek();
-            if (!token || token.type !== type) return null;
+            if (!peek() || peek().type !== type) return null;
+            const token = tokens[cursor];
             cursor += 1;
             return token;
         };
@@ -102,26 +94,23 @@ class LogicEngine {
             throw new LogicSyntaxError(message, expression, position);
         };
 
-        // implication := disjunction [ '->' implication ]
-        // La recursiÃ³n a la derecha hace que P -> Q -> R se interprete como P -> (Q -> R).
-        const parseImplication = () => {
-            const left = parseDisjunction();
-            if (consume('IMPLIES')) {
-                return { type: 'IMPLIES', left, right: parseImplication() };
+        const parseUnary = () => {
+            if (consume('NOT')) {
+                return { type: 'NOT', value: parseUnary() };
             }
-            return left;
+
+            if (consume('LPAREN')) {
+                const node = parseImplication();
+                if (!consume('RPAREN')) fail('Falta el paréntesis de cierre ")"');
+                return node;
+            }
+
+            const variable = consume('VARIABLE');
+            if (variable) return { type: 'VARIABLE', name: variable.value };
+
+            fail('Se esperaba una variable, una negación o un paréntesis de apertura');
         };
 
-        // disjunction := conjunction ( '|' conjunction )*
-        const parseDisjunction = () => {
-            let node = parseConjunction();
-            while (consume('OR')) {
-                node = { type: 'OR', left: node, right: parseConjunction() };
-            }
-            return node;
-        };
-
-        // conjuncion := unary ( &  unary )*
         const parseConjunction = () => {
             let node = parseUnary();
             while (consume('AND')) {
@@ -130,28 +119,30 @@ class LogicEngine {
             return node;
         };
 
-        // unary := ! unary | ( implication ) | VARIABLE
-        const parseUnary = () => {
-            if (consume('NOT')) return { type: 'NOT', value: parseUnary() };
-
-            if (consume('LPAREN')) {
-                const node = parseImplication();
-                if (!consume('RPAREN')) fail('Falta un parÃ¡ntesis de cierre ")"');
-                return node;
+        const parseDisjunction = () => {
+            let node = parseConjunction();
+            while (consume('OR')) {
+                node = { type: 'OR', left: node, right: parseConjunction() };
             }
+            return node;
+        };
 
-            const variable = consume('VARIABLE');
-            if (variable) return { type: 'VARIABLE', name: variable.value };
-
-            fail('Se esperaba una variable, una negaciÃ³n o un parÃ¡ntesis de apertura');
+        const parseImplication = () => {
+            const left = parseDisjunction();
+            if (consume('IMPLIES')) {
+                return { type: 'IMPLIES', left, right: parseImplication() };
+            }
+            return left;
         };
 
         if (tokens.length === 0) {
-            throw new LogicSyntaxError('La expresiÃ³n estÃ¡ vacÃ­a', expression, 0);
+            throw new LogicSyntaxError('La expresión está vacía', expression, 0);
         }
 
         const ast = parseImplication();
-        if (cursor !== tokens.length) fail(`Token inesperado "${tokens[cursor].value}"`);
+        if (cursor !== tokens.length) {
+            fail('Token inesperado "' + peek().value + '"');
+        }
         return ast;
     }
 
@@ -169,26 +160,19 @@ class LogicEngine {
 
     extractVariables(expressions) {
         if (!Array.isArray(expressions)) {
-            throw new TypeError('recorrido de formulas debe ser un arreglo.');
+            throw new TypeError('El conjunto de fórmulas debe ser un arreglo.');
         }
         const variables = new Set();
-        for (const expression of expressions) {
+        expressions.forEach((expression) => {
             this.collectVariables(this.parseExpression(expression), variables);
-        }
+        });
         return [...variables].sort();
     }
 
     evaluateAst(ast, context) {
         switch (ast.type) {
-            case 'VARIABLE': {
-                if (!Object.prototype.hasOwnProperty.call(context, ast.name)) {
-                    throw new Error(`Falta asignar un valor de verdad a la variable ${ast.name}.`);
-                }
-                if (typeof context[ast.name] !== 'boolean') {
-                    throw new TypeError(`El valor de ${ast.name} debe ser booleano.`);
-                }
+            case 'VARIABLE':
                 return context[ast.name];
-            }
             case 'NOT':
                 return !this.evaluateAst(ast.value, context);
             case 'AND':
@@ -198,25 +182,27 @@ class LogicEngine {
             case 'IMPLIES':
                 return !this.evaluateAst(ast.left, context) || this.evaluateAst(ast.right, context);
             default:
-                throw new Error(`Nodo lÃ³gico desconocido: ${ast.type}`);
+                throw new Error('Nodo lógico desconocido: ' + ast.type);
         }
     }
 
     evaluate(expression, context) {
         if (!context || typeof context !== 'object' || Array.isArray(context)) {
-            throw new TypeError('context debe ser un objeto con asignaciones booleanas.');
+            throw new TypeError('El contexto debe ser un objeto con asignaciones booleanas.');
         }
+
         const ast = this.parseExpression(expression);
-        // Validar todas las variables antes de aplicar cortocircuitos AND/OR.
-        // AsÃ­ una asignaciÃ³n incompleta nunca pasa inadvertida.
-        for (const variable of this.collectVariables(ast)) {
+        const variables = this.collectVariables(ast);
+
+        for (const variable of variables) {
             if (!Object.prototype.hasOwnProperty.call(context, variable)) {
-                throw new Error(`Falta asignar un valor de verdad a la variable ${variable}.`);
+                throw new Error('Falta asignar un valor de verdad a la variable ' + variable + '.');
             }
             if (typeof context[variable] !== 'boolean') {
-                throw new TypeError(`El valor de ${variable} debe ser booleano.`);
+                throw new TypeError('El valor de ' + variable + ' debe ser booleano.');
             }
         }
+
         return this.evaluateAst(ast, context);
     }
 
@@ -225,26 +211,29 @@ class LogicEngine {
             throw new TypeError('El argumento requiere al menos una premisa.');
         }
         if (premisas.length > LIMITS.maxPremises) {
-            throw new RangeError(`El argumento supera el mÃ¡ximo de ${LIMITS.maxPremises} premisas.`);
+            throw new RangeError('El argumento supera el máximo de ' + LIMITS.maxPremises + ' premisas.');
         }
         if (typeof conclusion !== 'string' || conclusion.trim() === '') {
-            throw new TypeError('El argumento requiere una conclusiÃ³n no vacÃ­a.');
+            throw new TypeError('El argumento requiere una conclusión no vacía.');
         }
 
-        const formulas = premisas.map((premise, index) => {
+        const formulaAsts = premisas.map((premise, index) => {
             if (typeof premise !== 'string' || premise.trim() === '') {
-                throw new TypeError(`La premisa ${index + 1} debe ser un texto no vacÃ­o.`);
+                throw new TypeError('La premisa ' + (index + 1) + ' debe ser un texto no vacío.');
             }
             return this.parseExpression(premise);
         });
         const conclusionAst = this.parseExpression(conclusion);
-        const variablesSet = new Set();
-        formulas.forEach(ast => this.collectVariables(ast, variablesSet));
-        this.collectVariables(conclusionAst, variablesSet);
-        const variables = [...variablesSet].sort();
+        const variableSet = new Set();
+
+        formulaAsts.forEach(ast => this.collectVariables(ast, variableSet));
+        this.collectVariables(conclusionAst, variableSet);
+        const variables = [...variableSet].sort();
 
         if (variables.length > LIMITS.maxVariables) {
-            throw new RangeError(`El argumento contiene ${variables.length} variables; el mÃ¡ximo permitido es ${LIMITS.maxVariables}.`);
+            throw new RangeError(
+                'El argumento contiene ' + variables.length + ' variables; el máximo permitido es ' + LIMITS.maxVariables + '.'
+            );
         }
 
         const totalRows = 2 ** variables.length;
@@ -255,11 +244,13 @@ class LogicEngine {
         for (let rowIndex = 0; rowIndex < totalRows; rowIndex += 1) {
             const assignment = {};
             variables.forEach((variable, variableIndex) => {
-                const bit = Math.floor(rowIndex / (2 ** (variables.length - variableIndex - 1))) % 2;
+                const bit = Math.floor(
+                    rowIndex / (2 ** (variables.length - variableIndex - 1))
+                ) % 2;
                 assignment[variable] = bit === 1;
             });
 
-            const premiseValues = formulas.map(ast => this.evaluateAst(ast, assignment));
+            const premiseValues = formulaAsts.map(ast => this.evaluateAst(ast, assignment));
             const conclusionValue = this.evaluateAst(conclusionAst, assignment);
             const premisesTrue = premiseValues.every(Boolean);
 
@@ -275,16 +266,44 @@ class LogicEngine {
             }
 
             truthTable.push({
-                asignacion: assignment,
+                asignacion: { ...assignment },
                 premisas: premiseValues,
                 conclusion: conclusionValue,
                 premisasVerdaderas: premisesTrue
             });
         }
 
-        // En lÃ³gica clÃ¡sica, de un conjunto inconsistente se sigue cualquier conclusiÃ³n
-        // (verdad vacua). Se informa aparte para que no parezca una validaciÃ³n sustantiva.
         const isValid = counterexample === null;
         const validityLabel = !isConsistent
-            ? 'V°è[YHÜXÝZYY[Z\Ø\È[ÛÛÚ\Ý[\ÉÂ\Õ[YÈ	Õ°è[YIÈ	Ò[°è[YIÎÂ]\ÂÜX[^XÚ[ÛÂ\XX\ËÝ[[\ÎÝ[ÝÜËÙÚXØN	ÜÜÜÚXÚ[Û[Û0è\ÚXØIËXÙY[ÚXNÉÈIË	ÉË	ß	Ë	ËO×BKXU\Y]XKXYÛÜÝXÛÎÂ[Y^ÜX[\Õ[Y]\]Y]U[Y^[Y]SX[ÛÛÚ\Ý[ÚXN\ÐÛÛÚ\Ý[È	ÐÛÛÚ\Ý[IÈ	Ò[ÛÛÚ\Ý[IË\ÐÛÛÚ\Ý[N\ÐÛÛÚ\Ý[ÛÛYZ[\ÎÛÝ[\^[\BKÛÛY^X]\X[Â\ÝYÎ	ÓÈ][XYIËY\[ÚXN	ÓH[Y^ÜX[È[]Y\ÝHH\YXÝX[H\È[Z\Ø\ËÝH\YXØXÚpìÛ\]ZY\H]Y[ÚXH[\[Y[KÂBNÂBBÛÛÝÙÚXÑ[Ú[HH]ÈÙÚXÑ[Ú[J
-NÂÙÚXÑ[Ú[KÙÚXÑ[Ú[HHÙÚXÑ[Ú[NÂÙÚXÑ[Ú[KÙÚXÔÞ[^\ÜHÙÚXÔÞ[^\ÜÂÙÚXÑ[Ú[KSRUÈHSRUÎÂ[Ù[K^ÜÈHÙÚXÑ[Ú[NÂ
+            ? 'Válida por vacuidad: premisas inconsistentes'
+            : isValid ? 'Válida' : 'Inválida';
+
+        return {
+            formalizacion: {
+                variables,
+                totalFilas: totalRows,
+                logica: 'proposicional clásica',
+                precedencia: ['!', '&', '|', '->']
+            },
+            tablaVerdad: truthTable,
+            diagnostico: {
+                validezFormal: isValid,
+                etiquetaValidez: validityLabel,
+                consistencia: isConsistent ? 'Consistente' : 'Inconsistente',
+                esConsistente: isConsistent,
+                contraejemplo: counterexample
+            },
+            solidezMaterial: {
+                estado: 'No evaluada',
+                advertencia: 'La validez formal no demuestra la verdad factual de las premisas. Su verificación requiere evidencia independiente.'
+            }
+        };
+    }
+}
+
+const logicEngine = new LogicEngine();
+logicEngine.LogicEngine = LogicEngine;
+logicEngine.LogicSyntaxError = LogicSyntaxError;
+logicEngine.LIMITS = LIMITS;
+
+module.exports = logicEngine;
