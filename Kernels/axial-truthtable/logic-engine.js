@@ -1,20 +1,20 @@
 'use strict';
 
 /**
- * KERNEL AXIAL Â· TRUTHTABLE
- * Motor de lÃ³gica proposicional clÃ¡sica.
+ * KERNEL AXIAL Ã‚Â· TRUTHTABLE
+ * Motor de lÃƒÂ³gica proposicional clÃƒÂ¡sica.
  *
  * Sintaxis admitida:
  *   Variables: P, Q, R, P1, ESTADO_A
- *   NegaciÃ³n:  !P
- *   ConjunciÃ³n: P & Q
- *   DisyunciÃ³n: P | Q
- *   ImplicaciÃ³n material: P -> Q
- *   ParÃ©ntesis: (P | Q) & R
+ *   NegaciÃƒÂ³n:  !P
+ *   ConjunciÃƒÂ³n: P & Q
+ *   DisyunciÃƒÂ³n: P | Q
+ *   ImplicaciÃƒÂ³n material: P -> Q
+ *   ParÃƒÂ©ntesis: (P | Q) & R
  *
  * Precedencia (de mayor a menor): !, &, |, ->.
- * La implicaciÃ³n es asociativa por la derecha.
- * No se ejecuta JavaScript ni se evalÃºa cÃ³digo dinÃ¡mico.
+ * La implicaciÃƒÂ³n es asociativa por la derecha.
+ * No se ejecuta JavaScript ni se evalÃƒÂºa cÃƒÂ³digo dinÃƒÂ¡mico.
  */
 
 const LIMITS = Object.freeze({
@@ -25,7 +25,7 @@ const LIMITS = Object.freeze({
 
 class LogicSyntaxError extends Error {
     constructor(message, expression, position) {
-        super(`${message} (posiciÃ³n ${position + 1}) en: "${expression}"`);
+        super(`${message} (posiciÃƒÂ³n ${position + 1}) en: "${expression}"`);
         this.name = 'LogicSyntaxError';
         this.code = 'AXIAL_LOGIC_SYNTAX_ERROR';
         this.expression = expression;
@@ -36,10 +36,10 @@ class LogicSyntaxError extends Error {
 class LogicEngine {
     tokenize(expression) {
         if (typeof expression !== 'string' || expression.trim() === '') {
-            throw new TypeError('Cada expresiÃ³n lÃ³gica debe ser un texto no vacÃ­o.');
+            throw new TypeError('Cada expresiÃƒÂ³n lÃƒÂ³gica debe ser un texto no vacÃƒÂ­o.');
         }
         if (expression.length > LIMITS.maxExpressionLength) {
-            throw new RangeError(`La expresiÃ³n supera el mÃ¡ximo de ${LIMITS.maxExpressionLength} caracteres.`);
+            throw new RangeError(`La expresiÃƒÂ³n supera el mÃƒÂ¡ximo de ${LIMITS.maxExpressionLength} caracteres.`);
         }
 
         const tokens = [];
@@ -80,7 +80,7 @@ class LogicEngine {
                 continue;
             }
 
-            throw new LogicSyntaxError(`SÃ­mbolo no permitido "${current}"`, expression, position);
+            throw new LogicSyntaxError(`SÃƒÂ­mbolo no permitido "${current}"`, expression, position);
         }
 
         return tokens;
@@ -103,7 +103,7 @@ class LogicEngine {
         };
 
         // implication := disjunction [ '->' implication ]
-        // La recursiÃ³n a la derecha hace que P -> Q -> R se interprete como P -> (Q -> R).
+        // La recursiÃƒÂ³n a la derecha hace que P -> Q -> R se interprete como P -> (Q -> R).
         const parseImplication = () => {
             const left = parseDisjunction();
             if (consume('IMPLIES')) {
@@ -136,18 +136,18 @@ class LogicEngine {
 
             if (consume('LPAREN')) {
                 const node = parseImplication();
-                if (!consume('RPAREN')) fail('Falta un parÃ¡ntesis de cierre ")"');
+                if (!consume('RPAREN')) fail('Falta un parÃƒÂ¡ntesis de cierre ")"');
                 return node;
             }
 
             const variable = consume('VARIABLE');
             if (variable) return { type: 'VARIABLE', name: variable.value };
 
-            fail('Se esperaba una variable, una negaciÃ³n o un parÃ¡ntesis de apertura');
+            fail('Se esperaba una variable, una negaciÃƒÂ³n o un parÃƒÂ¡ntesis de apertura');
         };
 
         if (tokens.length === 0) {
-            throw new LogicSyntaxError('La expresiÃ³n estÃ¡ vacÃ­a', expression, 0);
+            throw new LogicSyntaxError('La expresiÃƒÂ³n estÃƒÂ¡ vacÃƒÂ­a', expression, 0);
         }
 
         const ast = parseImplication();
@@ -198,7 +198,7 @@ class LogicEngine {
             case 'IMPLIES':
                 return !this.evaluateAst(ast.left, context) || this.evaluateAst(ast.right, context);
             default:
-                throw new Error(`Nodo lÃ³gico desconocido: ${ast.type}`);
+                throw new Error(`Nodo lÃƒÂ³gico desconocido: ${ast.type}`);
         }
     }
 
@@ -208,7 +208,7 @@ class LogicEngine {
         }
         const ast = this.parseExpression(expression);
         // Validar todas las variables antes de aplicar cortocircuitos AND/OR.
-        // AsÃ­ una asignaciÃ³n incompleta nunca pasa inadvertida.
+        // AsÃƒÂ­ una asignaciÃƒÂ³n incompleta nunca pasa inadvertida.
         for (const variable of this.collectVariables(ast)) {
             if (!Object.prototype.hasOwnProperty.call(context, variable)) {
                 throw new Error(`Falta asignar un valor de verdad a la variable ${variable}.`);
@@ -225,15 +225,15 @@ class LogicEngine {
             throw new TypeError('El argumento requiere al menos una premisa.');
         }
         if (premisas.length > LIMITS.maxPremises) {
-            throw new RangeError(`El argumento supera el mÃ¡ximo de ${LIMITS.maxPremises} premisas.`);
+            throw new RangeError(`El argumento supera el mÃƒÂ¡ximo de ${LIMITS.maxPremises} premisas.`);
         }
         if (typeof conclusion !== 'string' || conclusion.trim() === '') {
-            throw new TypeError('El argumento requiere una conclusiÃ³n no vacÃ­a.');
+            throw new TypeError('El argumento requiere una conclusiÃƒÂ³n no vacÃƒÂ­a.');
         }
 
         const formulas = premisas.map((premise, index) => {
             if (typeof premise !== 'string' || premise.trim() === '') {
-                throw new TypeError(`La premisa ${index + 1} debe ser un texto no vacÃ­o.`);
+                throw new TypeError(`La premisa ${index + 1} debe ser un texto no vacÃƒÂ­o.`);
             }
             return this.parseExpression(premise);
         });
@@ -244,10 +244,10 @@ class LogicEngine {
         const variables = [...variablesSet].sort();
 
         if (variables.length > LIMITS.maxVariables) {
-            throw new RangeError(`El argumento contiene ${variables.length} variables; el mÃ¡ximo permitido es ${LIMITS.maxVariables}.`);
+            throw new RangeError(`El argumento contiene ${variables.length} variables; el mÃƒÂ¡ximo permitido es ${LIMITS.maxVariables}.`);
         }
 
-        const totalRows = 2 *** variables.length;
+        const totalRows = 2 ** variables.length;
         const truthTable = [];
         let isConsistent = false;
         let counterexample = null;
@@ -282,9 +282,9 @@ class LogicEngine {
             });
         }
 
-        // En lÃ³gica clÃ¡sica, de un conjunto inconsistente se sigue cualquier conclusiÃ³n
-        // (verdad vacua). Se informa aparte para que no parezca una validaciÃ³n sustantiva.
+        // En lÃƒÂ³gica clÃƒÂ¡sica, de un conjunto inconsistente se sigue cualquier conclusiÃƒÂ³n
+        // (verdad vacua). Se informa aparte para que no parezca una validaciÃƒÂ³n sustantiva.
         const isValid = counterexample === null;
         const validityLabel = !isConsistent
-            ? 'V°è[YHÜˆ˜XİZYYˆ™[Z\Ø\È[˜ÛÛœÚ\İ[\ÉÂˆˆ\Õ˜[YÈ	Õ°è[YIÈˆ	Ò[°è[YIÎÂ‚ˆ™]\›ˆÂˆ›Ü›X[^˜XÚ[ÛˆÂˆ˜\šXX›\Ëˆİ[š[\Îˆİ[›İÜËˆÙÚXØNˆ	Ü›ÜÜÚXÚ[Û˜[Û0è\ÚXØIËˆ™XÙY[˜ÚXNˆÉÈIË	É‰Ë	ß	Ë	ËO‰×BˆKˆX›U™\™Yˆ]X›KˆXYÛ›ÜİXÛÎˆÂˆ˜[Y^‘›Ü›X[ˆ\Õ˜[Yˆ]\]Y]U˜[Y^ˆ˜[Y]SX™[ˆÛÛœÚ\İ[˜ÚXNˆ\ĞÛÛœÚ\İ[È	ĞÛÛœÚ\İ[IÈˆ	Ò[˜ÛÛœÚ\İ[IËˆ\ĞÛÛœÚ\İ[Nˆ\ĞÛÛœÚ\İ[ˆÛÛ˜YZ™[\ÎˆÛİ[\™^[\BˆKˆÛÛY^“X]\šX[ˆÂˆ\İYÎˆ	Ó›È]˜[XYIËˆY™\[˜ÚXNˆ	ÓH˜[Y^ˆ›Ü›X[›È[]Y\İ˜HH™\™Y˜XİX[H\È™[Z\Ø\ËˆİH™\šYšXØXÚpìÛˆ™\]ZY\™H]šY[˜ÚXH[™\[™Y[K‰ÂˆBˆNÂˆBŸB‚˜ÛÛœİÙÚXÑ[™Ú[™HH™]ÈÙÚXÑ[™Ú[™J
-NÂ›ÙÚXÑ[™Ú[™K“ÙÚXÑ[™Ú[™HHÙÚXÑ[™Ú[™NÂ›ÙÚXÑ[™Ú[™K“ÙÚXÔŞ[^\œ›ÜˆHÙÚXÔŞ[^\œ›ÜÂ›ÙÚXÑ[™Ú[™K“SRUÈHSRUÎÂ‚›[Ù[K™^ÜÈHÙÚXÑ[™Ú[™NÂ
+            ? 'VÂ°Ã¨[YHÃœÂˆÂ˜XÃZYYÂˆÂ™[Z\Ã˜\Ãˆ[Â˜Ã›Ã›ÂœÃš\Ã[Â\Ã‰Ã‚ÂˆÂˆ\Ã•Â˜[YÃˆ	Ã•Â°Ã¨[YIÃˆÂˆ	Ã’[ÂÂ°Ã¨[YIÃÃ‚Â‚ÂˆÂ™]\Â›ÂˆÃ‚ÂˆÂ›ÃœÂ›X[^Â˜XÃš[Ã›ÂÂˆÃ‚ÂˆÂ˜\ÂšXXÂ›\Ã‹ÂˆÃ[Âš[\ÃÂˆÃ[Â›ÃÃœÃ‹ÂˆÃ™ÃšXÃ˜NÂˆ	ÃœÂ›ÃœÃœÃšXÃš[Ã›Â˜[Ã›0Ã¨\ÃšXÃ˜IÃ‹ÂˆÂ™XÃ™Y[Â˜ÃšXNÂˆÃ‰ÃˆIÃ‹	Ã‰Â‰Ã‹	ÃŸ	Ã‹	Ã‹OÂ‰Ã—BÂˆKÂˆXÂ›UÂ™\Â™YÂˆÂ]XÂ›KÂˆXYÃ›Â›ÃœÃXÃ›ÃÂˆÃ‚ÂˆÂ˜[Y^Â‘Â›ÃœÂ›X[Âˆ\Ã•Â˜[YÂˆ]\]Y]UÂ˜[Y^ÂÂˆÂ˜[Y]SXÂ™[ÂˆÃ›Ã›ÂœÃš\Ã[Â˜ÃšXNÂˆ\ÃÃ›Ã›ÂœÃš\Ã[ÂÃˆ	ÃÃ›Ã›ÂœÃš\Ã[ÂIÃˆÂˆ	Ã’[Â˜Ã›Ã›ÂœÃš\Ã[ÂIÃ‹Âˆ\ÃÃ›Ã›ÂœÃš\Ã[ÂNÂˆ\ÃÃ›Ã›ÂœÃš\Ã[ÂÂˆÃ›Ã›ÂÂ˜YZÂ™[\ÃÂˆÃ›Ã[Â\Â™^[\BÂˆKÂˆÃ›Ã›Y^Â“X]\ÂšX[ÂˆÃ‚Âˆ\ÃYÃÂˆ	Ã“Â›Ãˆ]Â˜[XYIÃ‹ÂˆYÂ™\Â[Â˜ÃšXNÂˆ	Ã“HÂ˜[Y^ÂˆÂ›ÃœÂ›X[Â›Ãˆ[]Y\ÃÂ˜HHÂ™\Â™YÂ˜XÃX[H\ÃˆÂ™[Z\Ã˜\Ã‹ÂˆÃHÂ™\ÂšYÂšXÃ˜XÃšpÃ¬Ã›ÂˆÂ™\]ZY\Â™H]ÂšY[Â˜ÃšXH[Â™\[Â™Y[ÂKÂ‰Ã‚ÂˆBÂˆNÃ‚ÂˆBÂŸBÂ‚Â˜Ã›Ã›ÂœÃÃ™ÃšXÃ‘[Â™Ãš[Â™HHÂ™]ÃˆÃ™ÃšXÃ‘[Â™Ãš[Â™J
+NÃ‚Â›Ã™ÃšXÃ‘[Â™Ãš[Â™KÂ“Ã™ÃšXÃ‘[Â™Ãš[Â™HHÃ™ÃšXÃ‘[Â™Ãš[Â™NÃ‚Â›Ã™ÃšXÃ‘[Â™Ãš[Â™KÂ“Ã™ÃšXÃ”Ã[Â^\ÂœÂ›ÃœÂˆHÃ™ÃšXÃ”Ã[Â^\ÂœÂ›ÃœÂÃ‚Â›Ã™ÃšXÃ‘[Â™Ãš[Â™KÂ“SRUÃˆHSRUÃÃ‚Â‚Â›[Ã™[KÂ™^ÃœÂÃˆHÃ™ÃšXÃ‘[Â™Ãš[Â™NÃ‚
