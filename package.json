@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/run30.js && node tests/run-natural.js"
+    "test": "node tests/run30.js && node tests/run-natural.js && node tests/axial-truthtable.test.js",
+    "test:truthtable": "node tests/axial-truthtable.test.js"
   },
   "keywords": [],
   "author": "",
