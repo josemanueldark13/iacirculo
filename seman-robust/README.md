@@ -1,25 +1,33 @@
 # SemAn Robust
 
-Módulo independiente de análisis semántico y validación de regresiones, alojado dentro del repositorio CÍRCULO IA para mantener una única base de trabajo sin mezclarlo con el runtime institucional.
+Suite de regresión e implementación inicial del analizador semántico contextual de CÍRCULO IA.
 
-## Estado
+## Estado de implementación
 
-- Especificación de regresión: SEM-001 a SEM-006.
-- Validador estructural con errores acumulados y protección ante campos ausentes.
-- Runner desacoplado del motor: requiere un módulo analizador externo.
-- No modifica el contrato Semantic Frame 0.3.1. `literalMeaning` e `intendedMeaning` quedan documentados como propuesta de evolución, no como campos obligatorios actuales.
+- Motor real: `Kernels/semanticAnalyzer.js`.
+- API heredada `analyze(question)` conservada para compatibilidad con AXIAL Kernel.
+- Nueva API `analyzeFrame(input)` que produce Semantic Frame 0.3.1.
+- Runner conectado por defecto al motor real; no utiliza simuladores.
+- Validador estructural con acumulación de errores.
+- Casos de regresión SEM-001 a SEM-006.
+- GitHub Actions ejecuta pruebas unitarias y la suite contra el motor real.
 
 ## Ejecutar
 
 Desde esta carpeta:
 
 ```bash
-node run-regression.mjs ./ruta/al/analizador.mjs
+node --test tests/*.test.mjs
+node run-regression.mjs
 ```
 
-El módulo indicado debe exportar `analyze` o `analyzeText`. La función puede ser síncrona o asíncrona y debe aceptar un objeto de entrada con `text` y, cuando corresponda, `conversationContext`.
+También se puede indicar otro módulo compatible:
 
-El runner no incluye un simulador que se certifique a sí mismo. Sin un motor real, termina con error explícito.
+```bash
+node run-regression.mjs ./ruta/al/analizador.js
+```
+
+El módulo debe exportar `analyzeFrame(input)`, `analyze(input)` o `analyzeText(input)`.
 
 ## Casos
 
@@ -34,4 +42,4 @@ El runner no incluye un simulador que se certifique a sí mismo. Sin un motor re
 
 Campos raíz requeridos: `originalText`, `normalizedText`, `language`, `languageConfidence`, `intent`, `intentConfidence`, `domain`, `domainConfidence`, `paraphrase`, `paraphraseNote`, `paraphraseConfidence`, `entities`, `topics`, `sentiment`, `tone`, `register`, `ambiguity`, `context`, `responseMode`, `modeReason`, `risk`, `routing`, `signals` y `analyzerVersion`.
 
-La estructura interna de objetos como `ambiguity`, `context`, `routing` y `signals` debe alinearse con el motor real antes de endurecer sus subesquemas.
+La implementación actual es una primera capa determinista basada en reglas y contexto explícito. No debe confundirse con comprensión lingüística general ni con un modelo entrenado. Los subesquemas internos se mantienen deliberadamente acotados hasta contrastarlos con los consumidores del Semantic Frame.
