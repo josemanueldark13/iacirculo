@@ -50,7 +50,7 @@ const CONCEPT_ALIASES = {
 };
 
 function normalize(text) {
-    return String(text).toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9\\s]/gi, " ").replace(/\\s+/g, " ").trim();
+    return String(text).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/gi, " ").replace(/\s+/g, " ").trim();
 }
 
 function analyze(question) {
@@ -87,20 +87,20 @@ function analyzeFrame(input = {}) {
     const combined = [contextText, normalized].filter(Boolean).join(" ");
     const legacy = analyze(text);
 
-    const affection = /\\b(te amo|te quiero|chango|culiado|culia|querido|genio)\\b/.test(normalized);
-    const selfDeprecation = /\\b(que boludo soy|que estupido soy|soy un idiota|que tonto soy)\\b/.test(normalized);
-    const ambiguousCommand = /\\b(arregla eso|arregla esto|arregla|soluciona eso|hace eso|hace lo)\\b/.test(normalized);
-    const ironicCue = /\\b(justo lo que necesitaba|en la gloria|que maravilla|que suerte|espectacular)\\b/.test(normalized);
-    const negativeContext = /\\b(rompio|rompio|problema|mala noticia|perjudica|perjuicio|aumento|suba|subieron|precios|perdida|fallo|demora)\\b/.test(combined);
+    const affection = /\b(te amo|te quiero|chango|culiado|culia|querido|genio)\b/.test(normalized);
+    const selfDeprecation = /\b(que boludo soy|que estupido soy|soy un idiota|que tonto soy)\b/.test(normalized);
+    const ambiguousCommand = /\b(arregla eso|arregla esto|arregla|soluciona eso|hace eso|hace lo)\b/.test(normalized);
+    const ironicCue = /\b(justo lo que necesitaba|en la gloria|que maravilla|que suerte|espectacular)\b/.test(normalized);
+    const negativeContext = /\b(rompio|rompio|problema|mala noticia|perjudica|perjuicio|aumento|suba|subieron|precios|perdida|fallo|demora)\b/.test(combined);
     const pragmaticMismatch = ironicCue && negativeContext;
-    const economic = /\\b(aumento|precios|presupuesto|gobierno|inflacion|salario|sueldo|economia)\\b/.test(combined);
-    const technology = /\\b(ia|codigo|programa|software|computadora|sistema|analizador|servidor)\\b/.test(normalized);
+    const economic = /\b(aumento|precios|presupuesto|gobierno|inflacion|salario|sueldo|economia)\b/.test(combined);
+    const technology = /\b(ia|codigo|programa|software|computadora|sistema|analizador|servidor)\b/.test(normalized);
 
     let intent = "general_statement";
     if (affection) intent = "affectionate_statement";
     else if (selfDeprecation) intent = "self_deprecating_statement";
     else if (ambiguousCommand) intent = "underspecified_instruction";
-    else if (/\\?$/.test(text.trim()) || /\\b(que|quien|cuando|donde|como|cual)\\b/.test(normalized)) intent = "information_request";
+    else if (/\?$/.test(text.trim()) || /\b(que|quien|cuando|donde|como|cual)\b/.test(normalized)) intent = "information_request";
     else if (pragmaticMismatch) intent = "ironic_critical_statement";
 
     let domain = legacy.domain;
@@ -139,7 +139,7 @@ function analyzeFrame(input = {}) {
         topics: economic ? ["economía", "precios", "presupuesto"] : technology ? ["tecnología", "software"] : affection ? ["interacción social", "afecto"] : [],
         sentiment: pragmaticMismatch || economic ? "negative" : affection ? "positive" : "neutral",
         tone,
-        register: /\\b(chango|culiado|boludo|boludo|culia)\\b/.test(normalized) ? "colloquial informal argentino" : "neutral",
+        register: /\b(chango|culiado|boludo|boludo|culia)\b/.test(normalized) ? "colloquial informal argentino" : "neutral",
         ambiguity: { detected: ambiguityDetected, reason: ambiguousCommand ? "La referencia 'eso' no identifica el objeto de la acción." : ambiguityDetected ? "No hay texto suficiente para interpretar la entrada." : "No se detecta ambigüedad relevante." },
         context: { supplied: context.length > 0, turns: context.length, relevantContextDetected: negativeContext },
         responseMode: ambiguityDetected ? "GUIDED" : "DIRECT",
