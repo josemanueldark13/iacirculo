@@ -2,7 +2,7 @@
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 import { runSemanticRegression } from "./semantic-regression-suite.mjs";
-import { validateSemanticFrame } from "./seman-validator.mjs";
+import { resolveSemanticFrame, validateSemanticFrame } from "./seman-validator.mjs";
 
 const modulePath = process.argv[2];
 if (!modulePath) {
@@ -34,7 +34,7 @@ const wrappedAnalyzer = async input => {
       errors: validation.errors
     });
   }
-  return validation.valid ? (validation.framePath === "$" ? output : output.result ?? output.data) : output;
+  return validation.valid ? resolveSemanticFrame(output).frame : output;
 };
 
 const report = await runSemanticRegression(wrappedAnalyzer);
