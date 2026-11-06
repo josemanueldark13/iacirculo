@@ -1,0 +1,28 @@
+name: SemAn Robust checks
+
+on:
+  push:
+    branches:
+      - feature/seman-robust
+    paths:
+      - "seman-robust/**"
+      - ".github/workflows/seman-robust.yml"
+  pull_request:
+    paths:
+      - "seman-robust/**"
+      - ".github/workflows/seman-robust.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Run SemAn validator and regression-suite tests
+        working-directory: seman-robust
+        run: node --test tests/*.test.mjs
