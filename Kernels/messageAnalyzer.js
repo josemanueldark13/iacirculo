@@ -82,7 +82,7 @@ const RULES = [
     domain: "conversacional",
     priority: "baja",
     patterns: [
-      /^(hola|buen dia|buenas tardes|buenas noches|buenas|saludos|que tal|como estas)(\\s|$)/
+      /^(hola|buen dia|buenas tardes|buenas noches|buenas|saludos|que tal|como estas)(\s|$)/
     ]
   },
   {
