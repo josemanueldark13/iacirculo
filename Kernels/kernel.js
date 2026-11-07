@@ -21,7 +21,18 @@ const intentRouter = require("./intentRouter");
 function process(question) {
     const analysis = semanticAnalyzer.analyze(question);
     const domainDecision = domainRouter.route(analysis);
-    const intent = intentRouter.classify(question);
+    const intent = intentRouter.classify(question, analysis);
+
+    const semanticMetadata = {
+        clasificacion_mensaje: analysis.classification,
+        prioridad_atencion: analysis.priority,
+        puntaje_prioridad: analysis.priorityScore,
+        contiene_reclamo: analysis.containsComplaint,
+        contiene_insulto: analysis.containsInsult,
+        requiere_revision_humana: analysis.requiresHumanReview,
+        senales_reclamo: analysis.complaintSignals,
+        senales_insulto: analysis.insultSignals
+    };
 
     if (domainDecision.estado === "requiere_reformulacion") {
         const suggestions = reformulator.suggest(question);
@@ -33,6 +44,7 @@ function process(question) {
             agente: intent.agente,
             confianza: analysis.confidence,
             conceptos_detectados: analysis.concepts,
+            ...semanticMetadata,
             sugerencias: suggestions
         };
     }
@@ -44,6 +56,8 @@ function process(question) {
             intencion: intent.tipo,
             agente: intent.agente,
             confianza: analysis.confidence,
+            conceptos_detectados: analysis.concepts,
+            ...semanticMetadata,
             accion: "flujo_externo"
         };
     }
@@ -58,6 +72,7 @@ function process(question) {
         agente: intent.agente,
         confianza: analysis.confidence,
         conceptos_detectados: analysis.concepts,
+        ...semanticMetadata,
         modulos_rag: ragDecision.modules,
         modulo_prioritario: ragDecision.priority,
         tipo_respuesta: responseType,
