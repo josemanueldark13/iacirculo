@@ -169,8 +169,8 @@ function analyze(input) {
         intent: 'unclear_intent',
         confidence: 0.30,
         signals,
-        needsHumanReview: true,
-        reason: 'No hay señales suficientes para asignar una categoría con confianza.'
+        needsHumanReview: false,
+        reason: 'No hay señales suficientes; corresponde pedir una aclaración.'
     };
 }
 
