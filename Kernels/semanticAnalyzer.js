@@ -94,11 +94,11 @@ function detectComplaintPatterns(normalizedText) {
         matches.push("demora sin respuesta");
     }
 
-    if (/\b(llevo|llevamos)\\s+(dias?|semanas?|meses?)\\s+(esperando|aguardando)\\b/.test(normalizedText)) {
+    if (/\b(llevo|llevamos)\s+(dias?|semanas?|meses?)\s+(esperando|aguardando)\b/.test(normalizedText)) {
         matches.push("espera prolongada");
     }
 
-    if (/\b(nunca|todavia|aun)\\s+(me\\s+)?(respondieron|responden|atendieron|solucionaron)\\b/.test(normalizedText)) {
+    if (/\b(nunca|todavia|aun)\s+(me\s+)?(respondieron|responden|atendieron|solucionaron)\b/.test(normalizedText)) {
         matches.push("atención o respuesta pendiente");
     }
 
