@@ -5,11 +5,20 @@
  * El canal de entrada NO decide el agente: el Kernel lo decide aquí.
  */
 
-function classify(question = "") {
+function classify(question = "", semanticAnalysis = {}) {
     const text = question
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
+
+    // La intención de reclamo prevalece aunque el mensaje contenga insultos.
+    if (semanticAnalysis.containsComplaint) {
+        return { tipo: "reclamo", agente: "contacto", confianza: 0.99 };
+    }
+
+    if (semanticAnalysis.containsInsult) {
+        return { tipo: "insulto", agente: "institucional", confianza: 0.90 };
+    }
 
     if (/\b(telefono|telefonos|numero|numeros|llamar|contactar|whatsapp)\b/.test(text)) {
         return { tipo: "orientacion", agente: "orientacion", confianza: 0.95 };
