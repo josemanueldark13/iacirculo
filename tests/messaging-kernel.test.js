@@ -19,7 +19,7 @@ run('Quiero presentar un reclamo por falta de respuesta', 'complaint', ACTIONS.A
 run('Necesito un puesto de trabajo', 'request', ACTIONS.HUMAN_REVIEW);
 run('Sos un idiota', 'abuse', ACTIONS.ARCHIVE_NO_REPLY);
 run('Compra ahora, oferta exclusiva, ingresá al link', 'propaganda', ACTIONS.ARCHIVE_NO_REPLY);
-run('Hola', 'ambiguous', ACTIONS.HUMAN_REVIEW);
+run('Hola', 'ambiguous', ACTIONS.REQUEST_CLARIFICATION);
 run('Me amenazaron y estoy en peligro inmediato', 'complex', ACTIONS.HUMAN_REVIEW);
 run('Son unos inútiles, ¿cuál es la dirección del Círculo?', 'institutional_inquiry', ACTIONS.RESPOND_WITH_KNOWLEDGE);
 
