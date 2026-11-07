@@ -90,15 +90,15 @@ function detectComplaintPatterns(normalizedText) {
 
     const quantity = "(?:\\d+|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|varios|varias|muchos|muchas)";
     if (new RegExp("\\b(llevo|llevamos|hace)\\s+(ya\\s+)?" + quantity + "\\s+(dias?|semanas?|meses?)\\b").test(normalizedText) &&
-        /\\b(espero|esperando|aguardo|sin respuesta|respuesta|solucion)\\b/.test(normalizedText)) {
+        /\b(espero|esperando|aguardo|sin respuesta|respuesta|solucion)\\b/.test(normalizedText)) {
         matches.push("demora sin respuesta");
     }
 
-    if (/\\b(llevo|llevamos)\\s+(dias?|semanas?|meses?)\\s+(esperando|aguardando)\\b/.test(normalizedText)) {
+    if (/\b(llevo|llevamos)\\s+(dias?|semanas?|meses?)\\s+(esperando|aguardando)\\b/.test(normalizedText)) {
         matches.push("espera prolongada");
     }
 
-    if (/\\b(nunca|todavia|aun)\\s+(me\\s+)?(respondieron|responden|atendieron|solucionaron)\\b/.test(normalizedText)) {
+    if (/\b(nunca|todavia|aun)\\s+(me\\s+)?(respondieron|responden|atendieron|solucionaron)\\b/.test(normalizedText)) {
         matches.push("atención o respuesta pendiente");
     }
 
