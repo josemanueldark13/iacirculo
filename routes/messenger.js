@@ -4,6 +4,8 @@ const router = express.Router();
 
 const kernel = require("../Kernels/kernel");
 const circuloIA = require("../knowledge/agents/circuloIA");
+const messageAnalyzer = require("../Kernels/messageAnalyzer");
+const messagingRouter = require("../Kernels/messagingRouter");
 
 function envFirst(...names) {
     for (const name of names) {
@@ -52,7 +54,7 @@ async function graphRequest(path, options = {}, useProof = false) {
     const url = proof
         ? `https://graph.facebook.com/${version}${path}${separator}appsecret_proof=${encodeURIComponent(proof)}`
         : `https://graph.facebook.com/${version}${path}`;
-    
+
     const response = await fetch(url, {
         ...options,
         headers: {
@@ -63,7 +65,6 @@ async function graphRequest(path, options = {}, useProof = false) {
     });
 
     const bodyText = await response.text();
-
     let body;
     try {
         body = JSON.parse(bodyText);
@@ -83,6 +84,9 @@ router.get("/status", (req, res) => {
     res.json({
         ok: true,
         servicio: "CÍRCULO IA — Facebook Messenger",
+        modo: String(process.env.MESSENGER_MODE || "SUPERVISION").toUpperCase(),
+        modos_disponibles: messagingRouter.MODES,
+        analizador_semantico: "activo",
         verify_token_configurado: Boolean(envFirst("FACEBOOK_VERIFY_TOKEN", "META_VERIFY_TOKEN")),
         page_access_token_configurado: Boolean(envFirst("FACEBOOK_PAGE_ACCESS_TOKEN", "META_PAGE_ACCESS_TOKEN")),
         app_secret_configurado: Boolean(envFirst("FACEBOOK_APP_SECRET", "META_APP_SECRET")),
@@ -90,8 +94,7 @@ router.get("/status", (req, res) => {
     });
 });
 
-// Diagnóstico real de Graph API + suscripción de la Página.
-// No expone tokens ni app secret.
+// Diagnóstico real de Graph API + suscripción de la Página. No expone credenciales.
 router.get("/diagnose", async (req, res) => {
     const result = {
         ok: false,
@@ -122,12 +125,10 @@ router.get("/diagnose", async (req, res) => {
     try {
         const subscriptions = await graphRequest("/me/subscribed_apps");
         const apps = Array.isArray(subscriptions?.data) ? subscriptions.data : [];
-
         result.subscription_query = "ok";
         result.subscribed_apps_count = apps.length;
         result.messages_subscribed = apps.some(app =>
-            Array.isArray(app.subscribed_fields) &&
-            app.subscribed_fields.includes("messages")
+            Array.isArray(app.subscribed_fields) && app.subscribed_fields.includes("messages")
         );
     } catch (error) {
         result.subscription_query = "error";
@@ -155,11 +156,26 @@ router.get("/", (req, res) => {
     if (mode === "subscribe" && expectedToken && token === expectedToken && challenge) {
         return res.status(200).send(challenge);
     }
-
     return res.sendStatus(403);
 });
 
-function buildResponse(pregunta, decision) {
+function buildResponse(pregunta, decision, semantic, routing) {
+    if (routing.action === "ESCALATE") {
+        return "Recibimos tu mensaje. Por el tipo de consulta, requiere atención prioritaria del equipo del Círculo. Si podés, agregá los datos necesarios para comprender el caso.";
+    }
+
+    if (routing.action === "CLARIFY") {
+        return "Quiero orientarte correctamente. ¿Podés contarme un poco más qué necesitás del Círculo de Legisladores?";
+    }
+
+    if (semantic.intent === "saludo") {
+        return "¡Hola! Soy CÍRCULO IA. Puedo ayudarte con información institucional, actividades, historia y vías de contacto del Círculo de Legisladores.";
+    }
+
+    if (semantic.intent === "agradecimiento") {
+        return "¡De nada! Estamos para ayudarte.";
+    }
+
     if (decision.agente === "orientacion") {
         return "Voy a ayudarte con orientación y datos de contacto del Círculo de Legisladores. ¿Qué dato necesitás?";
     }
@@ -206,7 +222,6 @@ async function sendMessage(recipientId, text) {
     );
 
     const body = await response.text();
-
     if (!response.ok) {
         let detail = body;
         try {
@@ -215,10 +230,8 @@ async function sendMessage(recipientId, text) {
         } catch {
             // Conservamos la respuesta textual de Graph API.
         }
-
         throw new Error(`Messenger Send API ${response.status}: ${detail}`);
     }
-
     console.log("[Messenger] Respuesta enviada correctamente.");
 }
 
@@ -241,26 +254,41 @@ router.post("/", async (req, res) => {
     });
 
     try {
-        if (req.body?.object !== "page") {
-            return res.sendStatus(200);
-        }
+        if (req.body?.object !== "page") return res.sendStatus(200);
 
         const jobs = [];
-
         for (const event of events) {
             const senderId = event.sender?.id;
             const pregunta = event.message?.text;
-
             if (!senderId || !pregunta || event.message?.is_echo) continue;
 
-            const decision = kernel.process(pregunta);
-            const respuesta = buildResponse(pregunta, decision);
+            const semantic = messageAnalyzer.analyze(pregunta);
+            const routing = messagingRouter.route(semantic);
+            console.log("[Messenger][SEMANTIC]", JSON.stringify({
+                intent: semantic.intent,
+                domain: semantic.domain,
+                confidence: semantic.confidence,
+                priority: routing.priority,
+                action: routing.action,
+                mode: routing.mode,
+                requires_human: routing.requires_human
+            }));
 
-            jobs.push(
-                sendMessage(senderId, respuesta).catch(error => {
-                    console.error("[Messenger] Error al enviar respuesta:", error.message);
-                })
-            );
+            if (routing.action === "IGNORE") continue;
+            if (!routing.auto_reply) {
+                console.log("[Messenger][HUMAN_REVIEW_REQUIRED]", JSON.stringify({
+                    intent: semantic.intent,
+                    priority: routing.priority,
+                    reason: routing.reason
+                }));
+                continue;
+            }
+
+            const decision = kernel.process(pregunta);
+            const respuesta = buildResponse(pregunta, decision, semantic, routing);
+            jobs.push(sendMessage(senderId, respuesta).catch(error => {
+                console.error("[Messenger] Error al enviar respuesta:", error.message);
+            }));
         }
 
         await Promise.all(jobs);
