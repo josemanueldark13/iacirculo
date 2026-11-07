@@ -42,6 +42,30 @@ const cases = [
         expectedPriority: "normal",
         expectedComplaint: false,
         expectedInsult: false
+    },
+    {
+        name: "nadie me responde",
+        text: "Nadie me responde desde hace varias semanas.",
+        expectedClassification: "reclamo",
+        expectedPriority: "alta",
+        expectedComplaint: true,
+        expectedInsult: false
+    },
+    {
+        name: "espera prolongada sin usar la palabra reclamo",
+        text: "Llevo tres semanas esperando una respuesta.",
+        expectedClassification: "reclamo",
+        expectedPriority: "alta",
+        expectedComplaint: true,
+        expectedInsult: false
+    },
+    {
+        name: "acción de reclamar expresamente negada",
+        text: "No quiero presentar un reclamo, solo estoy consultando.",
+        expectedClassification: "consulta",
+        expectedPriority: "normal",
+        expectedComplaint: false,
+        expectedInsult: false
     }
 ];
 
