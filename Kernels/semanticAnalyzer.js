@@ -81,17 +81,24 @@ function findPhraseMatches(normalizedText, terms) {
 
 function detectComplaintPatterns(normalizedText) {
     const matches = [];
+    const responseVerbs = "(?:respondio|respondieron|responde|responden|contesto|contestaron|contestan|atiende|atienden|atendio|atendieron|soluciona|solucionan|soluciono|solucionaron|resuelve|resuelven|resolvio|resolvieron)";
 
-    if (/\b(no me|no nos|nadie)\s+(respondio|respondieron|responde|responden|atiende|atienden|atendio|atendieron|soluciona|solucionan|soluciono|solucionaron|resuelve|resuelven|resolvio|resolvieron)\b/.test(normalizedText)) {
+    if (new RegExp("\\b(?:no me|no nos)\\s+" + responseVerbs + "\\b").test(normalizedText) ||
+        new RegExp("\\bnadie\\s+(?:me\\s+|nos\\s+)?" + responseVerbs + "\\b").test(normalizedText)) {
         matches.push("falta de respuesta o solución");
     }
 
-    if (/\b(llevo|llevamos|hace)\s+(ya\s+)?\d+\s+(dias?|semanas?|meses?)\b/.test(normalizedText) &&
-        /\b(espero|esperando|aguardo|sin respuesta|respuesta|solucion)\b/.test(normalizedText)) {
+    const quantity = "(?:\\d+|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|varios|varias|muchos|muchas)";
+    if (new RegExp("\\b(llevo|llevamos|hace)\\s+(ya\\s+)?" + quantity + "\\s+(dias?|semanas?|meses?)\\b").test(normalizedText) &&
+        /\\b(espero|esperando|aguardo|sin respuesta|respuesta|solucion)\\b/.test(normalizedText)) {
         matches.push("demora sin respuesta");
     }
 
-    if (/\b(nunca|todavia|aun)\s+(me\s+)?(respondieron|responden|atendieron|solucionaron)\b/.test(normalizedText)) {
+    if (/\\b(llevo|llevamos)\\s+(dias?|semanas?|meses?)\\s+(esperando|aguardando)\\b/.test(normalizedText)) {
+        matches.push("espera prolongada");
+    }
+
+    if (/\\b(nunca|todavia|aun)\\s+(me\\s+)?(respondieron|responden|atendieron|solucionaron)\\b/.test(normalizedText)) {
         matches.push("atención o respuesta pendiente");
     }
 
@@ -100,6 +107,11 @@ function detectComplaintPatterns(normalizedText) {
 
 function isInformationalComplaintQuestion(normalizedText) {
     return /^(que es|que significa|definicion de)\s+(un|una|el|la)?\s*(reclamo|queja|denuncia)\b/.test(normalizedText);
+}
+
+function isNegatedComplaintAction(normalizedText) {
+    return /\b(no quiero|no voy a|no deseo|no necesito)\s+(?:a\s+)?(?:hacer|presentar|iniciar|formular)?\s*(?:un|una|el|la)?\s*(reclamo|reclamar|queja|denuncia|denunciar)\b/.test(normalizedText) ||
+        /\bno es (?:un|una)?\s*(reclamo|queja|denuncia)\b/.test(normalizedText);
 }
 
 function analyze(question) {
@@ -111,9 +123,10 @@ function analyze(question) {
     const complaintPatternMatches = detectComplaintPatterns(normalized);
     const insultMatches = findPhraseMatches(normalized, INSULT_TERMS);
     const informationalComplaintQuestion = isInformationalComplaintQuestion(normalized);
+    const negatedComplaintAction = isNegatedComplaintAction(normalized);
 
     const containsComplaint = !informationalComplaintQuestion &&
-        (complaintTermMatches.length > 0 || complaintPatternMatches.length > 0);
+        (complaintPatternMatches.length > 0 || (!negatedComplaintAction && complaintTermMatches.length > 0));
     const containsInsult = insultMatches.length > 0;
 
     // La intención de reclamar prevalece sobre el tono ofensivo.
