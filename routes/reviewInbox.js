@@ -75,10 +75,23 @@ router.post("/:id/approve", async (req, res) => {
 
     let item;
     try {
+        const current = await store.getItem(req.params.id);
+        if (!current) return res.status(404).json({ ok: false, error: "Caso inexistente o vencido." });
+        const proposedResponse = typeof req.body?.proposedResponse === "string"
+            ? req.body.proposedResponse.trim()
+            : current.proposedResponse;
+        if (!proposedResponse || proposedResponse.length > 2000) {
+            return res.status(400).json({ ok: false, error: "El borrador debe contener entre 1 y 2000 caracteres." });
+        }
         item = await store.transition(
             req.params.id,
             ["pending", "send_failed"],
-            { status: "sending", approvedAt: new Date().toISOString(), approvedBy: "operator" }
+            {
+                status: "sending",
+                proposedResponse,
+                approvedAt: new Date().toISOString(),
+                approvedBy: "operator"
+            }
         );
     } catch (error) {
         const status = error.code === "REVIEW_CONFLICT" || error.code === "REVIEW_INVALID_STATE" ? 409 : 503;
