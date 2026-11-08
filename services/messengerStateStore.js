@@ -25,8 +25,14 @@ function digest(value) {
 }
 
 function createMessengerStateStore(options = {}) {
-    const url = String(options.url || process.env.UPSTASH_REDIS_REST_URL || "").trim().replace(/\/+$/, "");
-    const token = String(options.token || process.env.UPSTASH_REDIS_REST_TOKEN || "").trim();
+    const urlValue = Object.prototype.hasOwnProperty.call(options, "url")
+        ? options.url
+        : process.env.UPSTASH_REDIS_REST_URL;
+    const tokenValue = Object.prototype.hasOwnProperty.call(options, "token")
+        ? options.token
+        : process.env.UPSTASH_REDIS_REST_TOKEN;
+    const url = String(urlValue || "").trim().replace(/\/+$/, "");
+    const token = String(tokenValue || "").trim();
     const fetchImpl = options.fetchImpl || globalThis.fetch;
 
     if (!url || !token) {
