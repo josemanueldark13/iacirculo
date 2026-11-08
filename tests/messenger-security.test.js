@@ -109,7 +109,7 @@ async function run() {
         previousQuestion: "¿Quién preside?"
     });
     assert.equal(calls.at(-1).command[0], "SET");
-    assert.equal(calls.at(-1).command[4], "EX");
+    assert.equal(calls.at(-1).command[3], "EX");
     console.log("PASS persiste la última pregunta con vencimiento");
 
     const duplicateStore = createMessengerStateStore({
