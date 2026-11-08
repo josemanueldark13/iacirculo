@@ -161,6 +161,10 @@ router.get("/", (req, res) => {
 });
 
 function buildResponse(pregunta, decision) {
+    if (decision.intencion_suprimida) {
+        return "Entendido. No voy a continuar con esa consulta. Podés indicarme otro tema cuando lo necesites.";
+    }
+
     if (decision.estado === "fuera_de_dominio") {
         return "Ese tema queda fuera del ámbito institucional del Círculo. Puedo ayudarte con información sobre la institución, su historia y sus actividades.";
     }
