@@ -1,31 +1,55 @@
-# CÍRCULO IA — Webhook de Facebook Messenger
+# CÍRCULO IA — Webhook y bandeja de revisión humana
 
-## Endpoint público
-
-Usar como callback de Meta:
-
+## Endpoint Meta
 `https://iacirculo.vercel.app/api/webhook/facebook`
 
-El endpoint también responde a:
+Diagnóstico de configuración: `/api/webhook/facebook/status`.
 
-`GET https://iacirculo.vercel.app/api/webhook/facebook/status`
+El webhook exige una firma válida `X-Hub-Signature-256`. Si `FACEBOOK_APP_SECRET` falta, responde 503. Si la firma falta o es inválida, responde 403.
 
-Este diagnóstico informa únicamente si las variables requeridas están configuradas; nunca expone sus valores.
+## Variables de entorno
+Configurar en Vercel:
+- `FACEBOOK_VERIFY_TOKEN`
+- `FACEBOOK_PAGE_ACCESS_TOKEN`
+- `FACEBOOK_APP_SECRET`
+- `META_GRAPH_VERSION` (por defecto `v23.0`)
+- `CIRCULO_SITE_URL`
+- `KV_REST_API_URL` y `KV_REST_API_TOKEN` (Redis REST compatible con Upstash / Vercel KV)
+- `REVIEW_API_TOKEN`
 
-## Variables de entorno en Vercel
+Se aceptan también `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`. Generar `REVIEW_API_TOKEN` con un generador seguro, por ejemplo `openssl rand -hex 32`. No reutilizar contraseñas de Outlook ni guardar secretos en GitHub.
 
-Configurar en **Production**:
+## Flujo
+1. Meta entrega el evento firmado.
+2. El webhook valida firma, descarta ecos y eventos sin texto.
+3. El Kernel AXIAL produce análisis semántico, intención, prioridad y borrador.
+4. El evento se guarda en KV con deduplicación por `message.mid`.
+5. El webhook confirma 200 solo después de persistir los casos.
+6. No se envían respuestas automáticamente. Cada borrador requiere aprobación humana.
 
-- `FACEBOOK_VERIFY_TOKEN`: token que se utilizará en la verificación de Meta.
-- `FACEBOOK_PAGE_ACCESS_TOKEN`: Page Access Token de la página de Facebook.
-- `FACEBOOK_APP_SECRET`: App Secret de la aplicación de Meta.
-- `META_GRAPH_VERSION`: versión de Graph API; valor actual por defecto `v23.0`.
-- `CIRCULO_SITE_URL`: `https://iacirculo.vercel.app/`
+Los reclamos van con prioridad alta y las urgencias explícitas con prioridad crítica. Un insulto aislado no eleva prioridad. La bandeja retiene registros 30 días y conserva hasta 500 casos recientes.
 
-El código admite también la nomenclatura anterior `META_VERIFY_TOKEN`, `META_PAGE_ACCESS_TOKEN` y `META_APP_SECRET` como compatibilidad.
+## API de revisión
+Todas las rutas exigen `Authorization: Bearer REVIEW_API_TOKEN`.
+- `GET /api/review`: últimos casos.
+- `GET /api/review/:id`: detalle.
+- `POST /api/review/:id/approve`: envía a Messenger el borrador aprobado.
+- `POST /api/review/:id/reject`: rechaza sin enviar.
+- `POST /api/review/:id/archive`: archiva.
 
-## Verificación
+Estados: `pending → sending → sent`; los fallos quedan como `send_failed` para inspección. Las transiciones evitan aprobaciones concurrentes duplicadas. La interfaz está en `/revision.html`; el token se introduce manualmente y permanece solo en memoria durante esa sesión del navegador.
 
-Después de configurar las variables, consultar `/api/webhook/facebook/status` y comprobar que `verify_token_configurado`, `page_access_token_configurado` y `app_secret_configurado` aparezcan en `true`.
+## Diagnóstico
+En `/api/webhook/facebook/status) comprobar:
+- `verify_token_configurado`
+- `page_access_token_configurado`
+- `app_secret_configurado`
+- `bandeja_kv_configurada`
+- `token_operador_configurado`
 
-Luego, en Meta Developers, utilizar la misma URL y el mismo `FACEBOOK_VERIFY_TOKEN` para la verificación del webhook.
+Después consultar `/api/webhook/facebook/diagnose` y comprobar validez del token de Página y suscripción al campo `messages`.
+
+## Alcance pendiente
+Esta etapa implementa persistencia y aprobación mediante API protegida. Todavía no envía correos: requiere proveedor transaccional, remitente verificado y destinatario institucional. No se necesitan contraseñas de Outlook.
+
+KV debe estar configurado antes de conectar el webhook a Meta. Sin KV, el endpoint devuelve 503 para no descartar mensajes. Probar en Preview y revisar los resultados antes de cualquier despliegue a Production.
