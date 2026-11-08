@@ -127,7 +127,8 @@ function renderCase(item) {
  const actions = el("div","actions");
  if (item.status === "pending" || item.status === "send_failed") {
   const approve = actionButton("Aprobar y enviar","primary",() => act(item.id,"approve",draft.value));
-  approve.disabled = !item.proposedResponse;
+  approve.disabled = !draft.value.trim();
+  draft.addEventListener("input",() => { approve.disabled = !draft.value.trim(); });
   actions.append(approve);
  }
  if (item.status === "pending") actions.append(actionButton("Rechazar","reject",() => act(item.id,"reject")));
@@ -154,11 +155,12 @@ async function act(id,action,draft) {
  if (action === "approve" && !window.confirm("¿Enviar este borrador al usuario de Facebook?")) return;
  try {
   await api("/api/review/" + encodeURIComponent(id) + "/" + action,{method:"POST",body:JSON.stringify(action === "approve" ? {proposedResponse:draft} : {})});
-  message.textContent = action === "approve" ? "Envío aprobado y registrado." : action === "reject" ? "Caso rechazado." : "Caso archivado.";
+  const confirmation = action === "approve" ? "Envío aprobado y registrado." : action === "reject" ? "Caso rechazado." : "Caso archivado.";
   await refresh();
+  message.textContent = confirmation;
  } catch(error) {
-  message.textContent = error.message;
   await refresh();
+  message.textContent = error.message;
  }
 }
 document.getElementById("loginForm").addEventListener("submit",async event => {
