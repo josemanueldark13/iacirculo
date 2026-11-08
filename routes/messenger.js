@@ -54,6 +54,7 @@ router.get("/status",(req,res) => {
   bandeja_kv_configurada:reviewInboxStore.isConfigured(),
   token_operador_configurado:Boolean(envFirst("REVIEW_API_TOKEN")),
   dispatch_enabled:envFirst("DISPATCH_ENABLED") === "true",
+  dispatch_enabled:envFirst("DISPATCH_ENABLED") === "true",
   site_url:envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/"
  });
 });
