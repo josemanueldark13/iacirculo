@@ -53,7 +53,7 @@ test("salvo que se registra como excepción y delimita el alcance de la negació
     assert.equal(result.intentSuppressed, true);
     assert.equal(result.negations.length, 1);
     assert.equal(result.negations[0].exception, "salvo que");
-    assert.ok(result.negations[0].scopeEnd < result.negations[0].exceptionStart);
+    assert.equal(result.negations[0].scopeEnd, result.negations[0].exceptionStart);
 });
 
 test("una excepción no niega por sí sola una pregunta positiva", () => {
