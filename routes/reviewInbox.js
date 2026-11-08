@@ -66,6 +66,12 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/:id/approve", async (req, res) => {
+    if (!messengerSender.dispatchEnabled()) {
+        return res.status(403).json({
+            ok: false,
+            error: "El despacho de Messenger está deshabilitado en este entorno."
+        });
+    }
     if (!messengerSender.isConfigured()) {
         return res.status(503).json({
             ok: false,
