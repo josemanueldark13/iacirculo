@@ -5,7 +5,7 @@
 
 Diagnóstico de configuración: `/api/webhook/facebook/status`.
 
-El webhook exige una firma válida `X-Hub-Signature-256`. Si `FACEBOOK_APP_SECRET` falta, responde 503. Si la firma falta o es inválida, responde 403.
+El webhook valida `X-Hub-Signature-256` sobre el cuerpo crudo antes de decodificar JSON. Si `FACEBOOK_APP_SECRET` falta, responde 503. Si la firma falta o es inválida, responde 401.
 
 ## Variables de entorno
 Configurar en Vercel:
@@ -16,6 +16,7 @@ Configurar en Vercel:
 - `CIRCULO_SITE_URL`
 - `KV_REST_API_URL` y `KV_REST_API_TOKEN` (Redis REST compatible con Upstash / Vercel KV)
 - `REVIEW_API_TOKEN`
+- `DISPATCH_ENABLED=false` en Preview (es el valor predeterminado; solo habilitar `true` tras verificar almacenamiento, credenciales y aprobación humana).
 
 Se aceptan también `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`. Generar `REVIEW_API_TOKEN` con un generador seguro, por ejemplo `openssl rand -hex 32`. No reutilizar contraseñas de Outlook ni guardar secretos en GitHub.
 
@@ -30,7 +31,7 @@ Se aceptan también `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`. Gener
 Los reclamos van con prioridad alta y las urgencias explícitas con prioridad crítica. Un insulto aislado no eleva prioridad. La bandeja retiene registros 30 días y conserva hasta 500 casos recientes.
 
 ## API de revisión
-Todas las rutas exigen `Authorization: Bearer REVIEW_API_TOKEN`.
+Todas las rutas exigen `Authorization: Bearer REVIEW_API_TOKEN`. El despacho de salida exige además `DISPATCH_ENABLED=true`; si no está definido como `true`, la aprobación de envío queda bloqueada con HTTP 403.
 - `GET /api/review`: últimos casos.
 - `GET /api/review/:id`: detalle.
 - `POST /api/review/:id/approve`: envía a Messenger el borrador aprobado.
