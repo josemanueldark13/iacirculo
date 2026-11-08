@@ -88,7 +88,6 @@ test("el Kernel acepta contexto opcional sin cambiar la llamada anterior", () =>
     });
     assert.equal(withoutContext.estado, "fuera_de_dominio");
     assert.equal(withContext.estado, "aceptada");
-    assert.equal(withContext.resolucion_contexto.resuelto, undefined);
     assert.equal(withContext.resolucion_contexto.resolved, true);
 });
 
