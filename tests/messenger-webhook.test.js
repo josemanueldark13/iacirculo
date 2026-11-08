@@ -43,6 +43,10 @@ async function post(baseUrl, payload, secret) {
 }
 
 async function run() {
+    if (!server.listening) {
+        await new Promise(resolve => server.once("listening", resolve));
+    }
+
     for (const key of ENV_KEYS) {
         originalEnv[key] = process.env[key];
         delete process.env[key];
