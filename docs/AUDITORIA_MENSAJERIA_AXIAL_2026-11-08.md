@@ -5,7 +5,7 @@ Rama: audit/mensajeria-semantic-notifications
 ## Alcance revisado
 Lectura estática de `routes/messenger.js`, `routes/facebookWebhook.js`, `Kernels/kernel.js`, `semanticAnalyzer.js`, `domainRouter.js`, `intentRouter.js`, `ragRouter.js`, `responsePolicy.js`, `server.js`, `.env.example` y scripts de pruebas.
 
-No se modificó producción ni se publicaron deployments. Esta auditoría no afirma que las pruebas hayan sido ejecutadas.
+No se modificó `main` ni se publicó a Production. Git Integration generó deployments Preview para la rama de auditoría. La regresión automatizada se ejecutó después de los cambios y terminó correctamente.
 
 ## Hallazgos prioritarios
 
@@ -48,8 +48,38 @@ El `catch` de cada `sendMessage()` solo escribe el error en consola. El POST ter
 
 No se deben pedir ni guardar contraseñas de Outlook. La dirección de destino puede ser una cuenta Outlook; el envío debe realizarse mediante un proveedor transaccional autenticado.
 
-## Próximo cambio de código
-Implementar primero el cierre de seguridad del webhook y el contrato estructurado del analizador en esta rama. Después incorporar almacenamiento y revisión humana. La integración de correo debe conectarse a ese flujo persistente, no añadirse como un correo aislado sin estado.
+## Implementación realizada en la rama
+
+- **Firma Meta:** nuevo helper HMAC SHA-256 con comparación de tiempo constante. El webhook falla cerrado: sin App Secret responde 503; con firma ausente o inválida responde 403.
+- **Analizador semántico:** contrato versionado `2.0.0`, coincidencia por frases completas, conceptos/señales, banda de confianza y razones de revisión.
+- **Prioridad:** urgencias explícitas = crítica; reclamos/quejas/denuncias = alta; insultos aislados no elevan prioridad automáticamente.
+- **Mensajería:** el webhook ya no envía respuestas automáticas. Persiste evento, análisis y borrador en Redis REST (KV/Upstash), con deduplicación por ID de evento, retención de 30 días y límite operativo de 500 casos.
+- **Bandeja:** nueva interfaz `/revision.html`; API protegida por `REVIEW_API_TOKEN`; permite editar el borrador, aprobar y enviar, rechazar o archivar.
+- **Envío:** se realiza únicamente desde la acción de aprobación humana. El envío tiene timeout y los fallos quedan registrados para inspección.
+- **CI:** `npm test` ejecutado en GitHub Actions con Node 24. Resultado: **success** en los cuatro grupos de pruebas: regresión de 30 preguntas, lenguaje natural, truth table y seguridad/prioridad.
+
+## Validación del Preview
+
+Deployment Preview asociado al commit `9c7067588dd55a5dde1da2400610d1389c58986c`:
+- `/api/health`: HTTP 200.
+- `/revision.html`: HTTP 200.
+- `/api/review?limit=1`: HTTP 503, esperado mientras falte `REVIEW_API_TOKEN`.
+- El status del Preview informa que las variables de Meta y KV no están configuradas en ese entorno.
+
+La comprobación de Production, en cambio, sigue mostrando configurados `FACEBOOK_VERIFY_TOKEN`, `FACEBOOK_PAGE_ACCESS_TOKEN` y `FACEBOOK_APP_SECRET`. No se publicó el código de esta rama en Production ni se fusionó con `main`.
+
+## Bloqueos antes de activar la bandeja
+
+1. Conectar un almacenamiento Redis REST a Vercel Preview y configurar `KV_REST_API_URL` + `KV_REST_API_TOKEN`.
+2. Generar y configurar `REVIEW_API_TOKEN`.
+3. Configurar las variables Meta necesarias también en Preview, usando credenciales de prueba cuando corresponda.
+4. Probar un mensaje real de prueba desde Meta, verificar persistencia, edición, aprobación, rechazo y que ningún borrador se envíe sin aprobación.
+5. Antes de cualquier fusión a `main`, configurar y validar KV y token de operador en Production; de lo contrario, el nuevo webhook responderá 503 y no aceptará mensajes sin persistencia.
+
+## Correo electrónico pendiente
+
+La bandeja y el circuito de aprobación están implementados, pero **todavía no se envían notificaciones por correo**. Falta definir proveedor transaccional, remitente/dominio verificado y destinatario institucional. No se necesitan ni deben compartirse contraseñas de Outlook.
 
 ## Estado
-Rama de auditoría creada desde `main`. Sin cambios en `main`, sin cambios en producción y sin despliegue.
+
+Rama `audit/mensajeria-semantic-notifications` actualizada y probada en Preview/CI. `main` y Production permanecen sin cambios.
