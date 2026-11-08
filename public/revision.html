@@ -114,7 +114,7 @@ function renderCase(item) {
  if (concepts) card.append(el("p","meta","Conceptos: " + concepts));
  card.append(el("h2","","Borrador de respuesta"));
  const draft = el("textarea");
- draft.readOnly = true;
+ draft.maxLength = 2000;
  draft.value = item.proposedResponse || "";
  card.append(draft);
  const details = el("details");
@@ -126,7 +126,7 @@ function renderCase(item) {
  card.append(details);
  const actions = el("div","actions");
  if (item.status === "pending" || item.status === "send_failed") {
-  const approve = actionButton("Aprobar y enviar","primary",() => act(item.id,"approve"));
+  const approve = actionButton("Aprobar y enviar","primary",() => act(item.id,"approve",draft.value));
   approve.disabled = !item.proposedResponse;
   actions.append(approve);
  }
@@ -150,10 +150,10 @@ async function refresh() {
   message.textContent = error.message;
  }
 }
-async function act(id,action) {
+async function act(id,action,draft) {
  if (action === "approve" && !window.confirm("¿Enviar este borrador al usuario de Facebook?")) return;
  try {
-  const result = await api("/api/review/" + encodeURIComponent(id) + "/" + action,{method:"POST",body:"{}"});
+  await api("/api/review/" + encodeURIComponent(id) + "/" + action,{method:"POST",body:JSON.stringify(action === "approve" ? {proposedResponse:draft} : {})});
   message.textContent = action === "approve" ? "Envío aprobado y registrado." : action === "reject" ? "Caso rechazado." : "Caso archivado.";
   await refresh();
  } catch(error) {
