@@ -29,6 +29,7 @@ async function graphRequest(path,options = {},useProof = false) {
  if (!token) throw new Error("Falta FACEBOOK_PAGE_ACCESS_TOKEN / META_PAGE_ACCESS_TOKEN");
  const version = envFirst("META_GRAPH_VERSION") || "v23.0";
  const proof = useProof ? appSecretProof(token) : null;
+ if (useProof && !proof) throw new Error("FACEBOOK_APP_SECRET no está configurado.");
  const separator = path.includes("?") ? "&" : "?";
  const url = proof
   ? `https://graph.facebook.com/${version}${path}${separator}appsecret_proof=${encodeURIComponent(proof)}`
