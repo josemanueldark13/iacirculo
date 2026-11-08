@@ -42,6 +42,7 @@ const CONCEPT_ALIASES = {
 "que actividades realiza":"actividades",
 "que actividades realiza el circulo":"actividades",
 "que hace el circulo":"función",
+"que funciones cumple el circulo":"función",
 "que establece la ley 6333":"ley",
 "que dice la ley 6333":"ley",
 "quienes integran las autoridades":"quiénes son las autoridades",
