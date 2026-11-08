@@ -130,16 +130,24 @@ function analyze(question, context = {}) {
 
     const intentSuppressed = Boolean(negativeMatch) && !hasPositiveContinuation;
     const polarity = negativeMatch
-        ? (exception && exception.index > negativeMatch.index ? "conditional" : "negative")
+        ? (hasPositiveContinuation
+            ? "mixed"
+            : (exception && exception.index > negativeMatch.index ? "conditional" : "negative"))
         : (exception ? "conditional" : "positive");
+
+    const scopeBoundaries = [
+        exception && exception.index > (negativeMatch?.index ?? -1) ? exception.index : null,
+        clauseBoundary >= 0 ? clauseBoundary : null
+    ].filter(value => value !== null);
+    const negationScopeEnd = scopeBoundaries.length > 0
+        ? Math.min(...scopeBoundaries)
+        : normalized.length;
 
     const negations = negativeMatch ? [{
         cue: "no",
         construction: normalized.slice(negativeMatch.index, negativeMatch.index + negativeMatch[0].length),
         scopeStart: negativeMatch.index + negativeMatch[0].length,
-        scopeEnd: exception && exception.index > negativeMatch.index
-            ? exception.index
-            : (clauseBoundary >= 0 ? clauseBoundary : normalized.length),
+        scopeEnd: negationScopeEnd,
         exception: exception && exception.index > negativeMatch.index ? exception.marker : null,
         exceptionStart: exception && exception.index > negativeMatch.index ? exception.index : null
     }] : [];
