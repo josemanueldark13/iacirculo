@@ -18,8 +18,13 @@ const ragRouter = require("./ragRouter");
 const responsePolicy = require("./responsePolicy");
 const intentRouter = require("./intentRouter");
 
-function process(question) {
-    const analysis = semanticAnalyzer.analyze(question);
+function process(question, context = {}) {
+    const analysis = semanticAnalyzer.analyze(question, context);
+    const semanticContext = {
+        polaridad: analysis.polarity,
+        intencion_suprimida: analysis.intentSuppressed,
+        resolucion_contexto: analysis.contextResolution
+    };
     const domainDecision = domainRouter.route(analysis);
     const intent = intentRouter.classify(question);
 
@@ -33,7 +38,8 @@ function process(question) {
             agente: intent.agente,
             confianza: analysis.confidence,
             conceptos_detectados: analysis.concepts,
-            sugerencias: suggestions
+            sugerencias: suggestions,
+            ...semanticContext
         };
     }
 
@@ -44,7 +50,8 @@ function process(question) {
             intencion: intent.tipo,
             agente: intent.agente,
             confianza: analysis.confidence,
-            accion: "flujo_externo"
+            accion: "flujo_externo",
+            ...semanticContext
         };
     }
 
@@ -62,7 +69,8 @@ function process(question) {
         modulo_prioritario: ragDecision.priority,
         tipo_respuesta: responseType,
         requiere_fuente_externa: Boolean(ragDecision.requiere_fuente_externa),
-        internet: Boolean(ragDecision.requiere_fuente_externa)
+        internet: Boolean(ragDecision.requiere_fuente_externa),
+        ...semanticContext
     };
 }
 

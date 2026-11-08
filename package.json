@@ -4,8 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/run30.js && node tests/run-natural.js && node tests/axial-truthtable.test.js",
-    "test:truthtable": "node tests/axial-truthtable.test.js"
+    "test": "node tests/test-seman.js && node tests/messenger-security.test.js && node tests/messenger-webhook.test.js && node tests/run30.js && node tests/run-natural.js && node tests/axial-truthtable.test.js",
+    "test:truthtable": "node tests/axial-truthtable.test.js",
+    "test:seman": "node tests/test-seman.js",
+    "test:natural": "node tests/run-natural.js",
+    "test:messenger": "node tests/messenger-security.test.js && node tests/messenger-webhook.test.js"
   },
   "keywords": [],
   "author": "",
