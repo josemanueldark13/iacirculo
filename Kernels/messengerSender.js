@@ -5,10 +5,18 @@ function envFirst(...names) {
  }
  return null;
 }
+function dispatchEnabled() {
+ return envFirst("DISPATCH_ENABLED") === "true";
+}
 function isConfigured() {
- return Boolean(envFirst("FACEBOOK_PAGE_ACCESS_TOKEN","META_PAGE_ACCESS_TOKEN"));
+ return dispatchEnabled() && Boolean(envFirst("FACEBOOK_PAGE_ACCESS_TOKEN","META_PAGE_ACCESS_TOKEN"));
 }
 async function sendApprovedMessage(recipientId,text) {
+ if (!dispatchEnabled()) {
+  const error = new Error("El despacho de Messenger está deshabilitado en este entorno.");
+  error.code = "DISPATCH_DISABLED";
+  throw error;
+ }
  const token = envFirst("FACEBOOK_PAGE_ACCESS_TOKEN","META_PAGE_ACCESS_TOKEN");
  if (!token) {
   const error = new Error("Falta FACEBOOK_PAGE_ACCESS_TOKEN.");
@@ -36,4 +44,4 @@ async function sendApprovedMessage(recipientId,text) {
  }
  return {recipientId:payload?.recipient_id || recipientId,messageId:payload?.message_id || null};
 }
-module.exports = {isConfigured,sendApprovedMessage};
+module.exports = {dispatchEnabled,isConfigured,sendApprovedMessage};
