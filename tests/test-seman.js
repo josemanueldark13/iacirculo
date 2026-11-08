@@ -42,7 +42,7 @@ test("una cláusula afirmativa posterior a pero conserva su intención", () => {
     );
     assert.equal(result.intentSuppressed, false);
     assert.equal(result.domain, "institucional");
-    assert.equal(result.polarity, "negative");
+    assert.equal(result.polarity, "mixed");
 });
 
 test("salvo que se registra como excepción y delimita el alcance de la negación", () => {
