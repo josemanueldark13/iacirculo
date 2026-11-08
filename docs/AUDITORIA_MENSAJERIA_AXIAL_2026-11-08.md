@@ -83,3 +83,46 @@ La bandeja y el circuito de aprobación están implementados, pero **todavía no
 ## Estado
 
 Rama `audit/mensajeria-semantic-notifications` actualizada y probada en Preview/CI. `main` y Production permanecen sin cambios.
+
+## Validación complementaria del informe de pruebas
+
+Se actualizó el middleware para cumplir el contrato más estricto:
+
+- Para los POST de `/api/webhook/facebook` y `/webhook/messenger`, Express recibe primero el cuerpo como bytes crudos.
+- La firma HMAC se comprueba antes de `JSON.parse`.
+- Firma ausente o inválida: HTTP **401 Unauthorized**.
+- App Secret ausente: HTTP **503**, configuración de seguridad incompleta.
+- Solo después de validar HMAC se decodifica el JSON y se invoca el router.
+
+También se agregó un bloqueo explícito de despacho:
+
+- `DISPATCH_ENABLED` solo habilita salida si su valor es exactamente `true`.
+- Valor ausente o `false`: no se envían respuestas a Messenger, aunque exista una aprobación solicitada.
+- La ruta de aprobación devuelve HTTP 403 cuando el despacho está deshabilitado.
+- El estado del webhook informa `dispatch_enabled`.
+
+### Prueba de integración HMAC
+
+El nuevo test HTTP envía un cuerpo JSON deliberadamente malformado:
+- Sin firma: 401.
+- Firma inválida: 401.
+- Firma válida sobre JSON malformado: 400.
+- Firma válida sobre payload válido: supera HMAC y llega a la comprobación de KV (503 cuando KV no está configurado).
+
+La suite de GitHub Actions ejecutó `npm test` con Node 24 y terminó en **success** para el commit `5b676e1d688d337f6b0d129faef41cd1a621cb83`. El workflow ejecuta cuatro scripts: `run30.js`, `run-natural.js`, `axial-truthtable.test.js` y `messenger-security.test.js`.
+
+### Precisión sobre métricas de la tabla suministrada
+
+El repositorio usa JavaScript/CommonJS. El workflow actual no ejecuta `tsc --noEmit`, no contiene un paso de linter y no publica artefactos de test separados. Por tanto, el estado verde de GitHub Actions está verificado, pero los tiempos por módulo (420/310/580/490 ms), el promedio de confianza del 94,2% y la compilación TypeScript limpia no están demostrados por el pipeline actual y no deben presentarse como resultados medidos de esta ejecución.
+
+### Preview más reciente
+
+Preview: `https://iacirculo-jbpju8ryl-axial-os1.vercel.app/` (READY).
+
+- `/api/health`: HTTP 200.
+- `/revision.html`: HTTP 200.
+- `/api/webhook/facebook/status`: HTTP 200; informa `dispatch_enabled:false`.
+- `/api/review?limit=1`: HTTP 503 por falta de `REVIEW_API_TOKEN`, como protección esperada.
+- En Preview todavía no están conectadas credenciales Meta ni KV. No se debe enviar tráfico de usuarios reales a esa instancia.
+
+Production y `main` no se modificaron.
