@@ -16,6 +16,7 @@ function process(question) {
  const base = {
   pregunta:question, intencion:intent.tipo, agente:intent.agente,
   prioridad:intent.prioridad || "normal",
+  confianza_intencion:intent.confianza,
   requiere_revision_humana:Boolean(intent.requiere_humano),
   confianza:analysis.confidence, conceptos_detectados:analysis.concepts,
   analisis_semantico:analysis
