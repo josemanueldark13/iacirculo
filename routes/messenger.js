@@ -54,7 +54,6 @@ router.get("/status",(req,res) => {
   bandeja_kv_configurada:reviewInboxStore.isConfigured(),
   token_operador_configurado:Boolean(envFirst("REVIEW_API_TOKEN")),
   dispatch_enabled:envFirst("DISPATCH_ENABLED") === "true",
-  dispatch_enabled:envFirst("DISPATCH_ENABLED") === "true",
   site_url:envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/"
  });
 });
@@ -112,6 +111,13 @@ router.get("/",(req,res) => {
 });
 
 function buildResponse(question,decision) {
+ // La prioridad de atención humana prevalece sobre el dominio temático:
+ // una urgencia ciudadana no debe descartarse por ser ajena a una consulta institucional.
+ if (decision.agente === "atencion_humana") {
+  return decision.prioridad === "critica"
+   ? "Recibimos tu mensaje prioritario. Será derivado para revisión humana."
+   : "Recibimos tu reclamo. Será revisado por el equipo del Círculo.";
+ }
  if (decision.estado === "requiere_reformulacion") {
   const suggestion = Array.isArray(decision.sugerencias) ? decision.sugerencias[0] : null;
   return suggestion
@@ -120,11 +126,6 @@ function buildResponse(question,decision) {
  }
  if (decision.estado === "fuera_de_dominio") {
   return "La consulta está fuera del ámbito institucional de CÍRCULO IA. El equipo puede orientarte sobre el canal adecuado.";
- }
- if (decision.agente === "atencion_humana") {
-  return decision.prioridad === "critica"
-   ? "Recibimos tu mensaje prioritario. Será derivado para revisión humana."
-   : "Recibimos tu reclamo. Será revisado por el equipo del Círculo.";
  }
  if (decision.agente === "orientacion") {
   return "Voy a ayudarte con orientación y datos de contacto del Círculo de Legisladores. ¿Qué dato necesitás?";
