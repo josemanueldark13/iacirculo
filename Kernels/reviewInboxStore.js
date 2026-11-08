@@ -41,7 +41,6 @@ async function createPending(input,eventKey) {
  const dedupeKey = DEDUPE_PREFIX + hashKey(eventKey);
  const reserved = await command(["SET",dedupeKey,id,"NX","EX",String(RETENTION_SECONDS)]);
  if (reserved !== "OK") return {duplicate:true,item:null};
-
  const createdAt = new Date().toISOString();
  const item = {
   id,source:"facebook_messenger",status:"pending",
@@ -80,7 +79,11 @@ async function listItems(limit = 50) {
  const items = await Promise.all(ids.map(getItem));
  const missing = ids.filter((id,index) => !items[index]);
  if (missing.length) await command(["ZREM",INDEX_KEY,...missing]);
- return items.filter(Boolean);
+ const priorityRank = {critica:3,alta:2,normal:1};
+ return items.filter(Boolean).sort((a,b) =>
+  (priorityRank[b.priority] || 0) - (priorityRank[a.priority] || 0) ||
+  Date.parse(b.createdAt) - Date.parse(a.createdAt)
+ );
 }
 async function transition(id,allowedStatuses,changes) {
  const lockKey = LOCK_PREFIX + id;
