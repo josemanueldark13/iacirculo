@@ -5,7 +5,6 @@ const router = express.Router();
 const kernel = require("../Kernels/kernel");
 const circuloIA = require("../knowledge/agents/circuloIA");
 const reviewInboxStore = require("../Kernels/reviewInboxStore");
-const { verifyMetaSignature } = require("../Kernels/metaWebhookSecurity");
 
 function envFirst(...names) {
  for (const name of names) {
@@ -19,11 +18,7 @@ function appSecretProof(token) {
  if (!secret) return null;
  return crypto.createHmac("sha256",secret).update(token).digest("hex");
 }
-function verifySignature(req) {
- const secret = envFirst("FACEBOOK_APP_SECRET","META_APP_SECRET");
- if (!secret) return {configured:false,valid:false};
- return {configured:true,valid:verifyMetaSignature(req.rawBody,req.get("x-hub-signature-256"),secret)};
-}
+
 async function graphRequest(path,options = {},useProof = false) {
  const token = envFirst("FACEBOOK_PAGE_ACCESS_TOKEN","META_PAGE_ACCESS_TOKEN");
  if (!token) throw new Error("Falta FACEBOOK_PAGE_ACCESS_TOKEN / META_PAGE_ACCESS_TOKEN");
@@ -58,6 +53,7 @@ router.get("/status",(req,res) => {
   verificacion_firma_obligatoria:true,
   bandeja_kv_configurada:reviewInboxStore.isConfigured(),
   token_operador_configurado:Boolean(envFirst("REVIEW_API_TOKEN")),
+  dispatch_enabled:envFirst("DISPATCH_ENABLED") === "true",
   site_url:envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/"
  });
 });
@@ -149,14 +145,10 @@ function buildResponse(question,decision) {
 }
 
 router.post("/",async(req,res) => {
- const signature = verifySignature(req);
- if (!signature.configured) {
-  console.error("[Messenger] FACEBOOK_APP_SECRET no está configurado; webhook bloqueado.");
-  return res.status(503).json({ok:false,error:"Webhook sin configuración de seguridad."});
- }
- if (!signature.valid) {
-  console.warn("[Messenger] Firma X-Hub-Signature-256 inválida o ausente.");
-  return res.sendStatus(403);
+ // Segunda barrera: solo aceptar requests validadas por el parser raw de server.js.
+ if (req.metaSignatureVerified !== true) {
+  console.warn("[Messenger] Request no validada por el middleware HMAC.");
+  return res.sendStatus(401);
  }
  if (!reviewInboxStore.isConfigured()) {
   console.error("[Messenger] Almacenamiento de revisión no configurado; evento no aceptado.");
