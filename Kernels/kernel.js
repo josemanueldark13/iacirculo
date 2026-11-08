@@ -1,16 +1,7 @@
 /**
- * AXIAL KERNEL
- * Kernel principal de CÍRCULO IA
- *
- * Coordina:
- * 1. análisis semántico
- * 2. dominio
- * 3. intención y agente
- * 4. reformulación
- * 5. selección de módulos RAG
- * 6. política de respuesta
+ * Kernel AXIAL principal. Devuelve el análisis semántico completo
+ * para auditoría y derivación al circuito de revisión humana.
  */
-
 const semanticAnalyzer = require("./semanticAnalyzer");
 const domainRouter = require("./domainRouter");
 const reformulator = require("./reformulator");
@@ -19,53 +10,29 @@ const responsePolicy = require("./responsePolicy");
 const intentRouter = require("./intentRouter");
 
 function process(question) {
-    const analysis = semanticAnalyzer.analyze(question);
-    const domainDecision = domainRouter.route(analysis);
-    const intent = intentRouter.classify(question);
-
-    if (domainDecision.estado === "requiere_reformulacion") {
-        const suggestions = reformulator.suggest(question);
-
-        return {
-            estado: "requiere_reformulacion",
-            pregunta: question,
-            intencion: intent.tipo,
-            agente: intent.agente,
-            confianza: analysis.confidence,
-            conceptos_detectados: analysis.concepts,
-            sugerencias: suggestions
-        };
-    }
-
-    if (domainDecision.estado === "fuera_de_dominio") {
-        return {
-            estado: "fuera_de_dominio",
-            pregunta: question,
-            intencion: intent.tipo,
-            agente: intent.agente,
-            confianza: analysis.confidence,
-            accion: "flujo_externo"
-        };
-    }
-
-    const ragDecision = ragRouter.route(question, analysis);
-    const responseType = responsePolicy.determine(question);
-
-    return {
-        estado: "aceptada",
-        dominio: "institucional",
-        intencion: intent.tipo,
-        agente: intent.agente,
-        confianza: analysis.confidence,
-        conceptos_detectados: analysis.concepts,
-        modulos_rag: ragDecision.modules,
-        modulo_prioritario: ragDecision.priority,
-        tipo_respuesta: responseType,
-        requiere_fuente_externa: Boolean(ragDecision.requiere_fuente_externa),
-        internet: Boolean(ragDecision.requiere_fuente_externa)
-    };
+ const analysis = semanticAnalyzer.analyze(question);
+ const domainDecision = domainRouter.route(analysis);
+ const intent = intentRouter.classify(question);
+ const base = {
+  pregunta:question, intencion:intent.tipo, agente:intent.agente,
+  prioridad:intent.prioridad || "normal",
+  requiere_revision_humana:Boolean(intent.requiere_humano),
+  confianza:analysis.confidence, conceptos_detectados:analysis.concepts,
+  analisis_semantico:analysis
+ };
+ if (domainDecision.estado === "requiere_reformulacion") {
+  return {...base,estado:"requiere_reformulacion",sugerencias:reformulator.suggest(question)};
+ }
+ if (domainDecision.estado === "fuera_de_dominio") {
+  return {...base,estado:"fuera_de_dominio",accion:"flujo_externo"};
+ }
+ const ragDecision = ragRouter.route(question,analysis);
+ return {
+  ...base, estado:"aceptada", dominio:"institucional",
+  modulos_rag:ragDecision.modules, modulo_prioritario:ragDecision.priority,
+  tipo_respuesta:responsePolicy.determine(question),
+  requiere_fuente_externa:Boolean(ragDecision.requiere_fuente_externa),
+  internet:Boolean(ragDecision.requiere_fuente_externa)
+ };
 }
-
-module.exports = {
-    process
-};
+module.exports = { process };
