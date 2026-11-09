@@ -118,6 +118,10 @@ function analyze(message, context = {}) {
     const urgent = selected.intent === "urgencia";
     const asksHuman = selected.intent === "solicitud_humano";
     const insultOnly = /\b(inutil|idiota|imbecil|estupido|tarado|pelotudo|boludo|forro|hdp)\b/.test(text) && !complaint;
+    if (insultOnly && !urgent && !sensitive && !asksHuman) {
+        selected = { intent: "insulto", domain: "conversacional", priority: "baja" };
+        confidence = 0.88;
+    }
     const negative = NEGATIVE_PATTERNS.some(pattern => pattern.test(text));
     const signals = matches.map(item => item.rule.intent);
     signals.push(...implicitComplaintSignals);
