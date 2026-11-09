@@ -5,52 +5,53 @@
 
 Diagnóstico de configuración: `/api/webhook/facebook/status`.
 
-El webhook valida `X-Hub-Signature-256` sobre el cuerpo crudo antes de decodificar JSON. Si `FACEBOOK_APP_SECRET` falta, responde 503. Si la firma falta o es inválida, responde 401.
+El webhook valida `X-Hub-Signature-256` sobre el cuerpo crudo antes de decodificar JSON. Si falta `FACEBOOK_APP_SECRET`, responde 503. Si la firma falta o es inválida, responde 401.
 
 ## Variables de entorno
 Configurar en Vercel:
-- `FACEBOOK_VERIFY_TOKEN`
-- `FACEBOOK_PAGE_ACCESS_TOKEN`
-- `FACEBOOK_APP_SECRET`
-- `META_GRAPH_VERSION` (por defecto `v23.0`)
-- `CIRCULO_SITE_URL`
-- `KV_REST_API_URL` y `KV_REST_API_TOKEN` (Redis REST compatible con Upstash / Vercel KV)
-- `REVIEW_API_TOKEN`
-- `DISPATCH_ENABLED=false` en Preview (es el valor predeterminado; solo habilitar `true` tras verificar almacenamiento, credenciales y aprobación humana).
 
-Se aceptan también `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`. Generar `REVIEW_API_TOKEN` con un generador seguro, por ejemplo `openssl rand -hex 32`. No reutilizar contraseñas de Outlook ni guardar secretos en GitHub.
+- `FACEBOOK_VERIFY_TOKEN`, `FACEBOOK_PAGE_ACCESS_TOKEN`, `FACEBOOK_APP_SECRET`
+- `META_GRAPH_VERSION` (por defecto `v23.0`) y `CIRCULO_SITE_URL`
+- `KV_REST_API_URL`, `KV_REST_API_TOKEN` y `REVIEW_API_TOKEN`
+- `MESSENGER_MODE`: `AUTO`, `SUPERVISION` o `MANUAL`. Por defecto `SUPERVISION`.
+- `DISPATCH_ENABLED=false` hasta completar pruebas en Preview y aprobar expresamente el despacho.
+- Para correo Outlook: `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET`, `OUTLOOK_NOTIFICATION_FROM` y opcionalmente `OUTLOOK_NOTIFICATION_TO` (por defecto `circulodelegis@outlook.com`).
+
+Outlook se conecta mediante Microsoft Graph con credenciales de aplicación. La aplicación de Microsoft Entra debe tener permiso de aplicación `Mail.Send` y consentimiento de administrador. No se utiliza ni se almacena la contraseña de la cuenta Outlook. No guardar secretos en Git ni enviarlos por chat.
+
+Se aceptan también `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`. Generar `REVIEW_API_TOKEN` con un generador seguro, por ejemplo `openssl rand -hex 32`.
+
+## Modos de mensajería
+
+- **AUTO:** responde automáticamente solo a intenciones reconocidas de bajo riesgo. Urgencias, reclamos, denuncias sensibles y solicitudes de atención humana van a la bandeja.
+- **SUPERVISION:** genera un borrador y espera aprobación humana. Es el modo predeterminado.
+- **MANUAL:** registra el mensaje sin redactar una respuesta; el operador decide el contenido.
+
+El envío requiere además `DISPATCH_ENABLED=true`. Sin esa habilitación, las respuestas automáticas quedan pendientes para revisión. Las acciones humanas siguen protegidas por `REVIEW_API_TOKEN`.
 
 ## Flujo
 1. Meta entrega el evento firmado.
-2. El webhook valida firma, descarta ecos y eventos sin texto.
-3. El Kernel AXIAL produce análisis semántico, intención, prioridad y borrador.
-4. El evento se guarda en KV con deduplicación por `message.mid`.
-5. El webhook confirma 200 solo después de persistir los casos.
-6. No se envían respuestas automáticamente. Cada borrador requiere aprobación humana.
+2. El webhook valida HMAC y descarta ecos/eventos sin texto.
+3. El Kernel ejecuta dos análisis separados: semántica institucional y semántica conversacional.
+4. El router aplica el modo configurado y determina si responde, aclara o deriva.
+5. Los casos que requieren revisión se guardan en Redis/KV con deduplicación por `message.mid`.
+6. Si Outlook está configurado, se envía un aviso de caso pendiente. Un fallo de correo no descarta el mensaje ya persistido.
+7. La aprobación humana es necesaria para los borradores del modo SUPERVISION y para los casos escalados.
 
-Los reclamos van con prioridad alta y las urgencias explícitas con prioridad crítica. Un insulto aislado no eleva prioridad. La bandeja retiene registros 30 días y conserva hasta 500 casos recientes.
+Los reclamos explícitos o implícitos reciben prioridad alta; las urgencias críticas prevalecen sobre reclamos concurrentes. Las preguntas informativas sobre el significado de «reclamo», las negaciones y los insultos aislados no se clasifican automáticamente como reclamos. Un insulto no eleva por sí solo la prioridad.
 
 ## API de revisión
-Todas las rutas exigen `Authorization: Bearer REVIEW_API_TOKEN`. El despacho de salida exige además `DISPATCH_ENABLED=true`; si no está definido como `true`, la aprobación de envío queda bloqueada con HTTP 403.
+Todas las rutas exigen `Authorization: Bearer REVIEW_API_TOKEN`.
+
 - `GET /api/review`: últimos casos.
 - `GET /api/review/:id`: detalle.
-- `POST /api/review/:id/approve`: envía a Messenger el borrador aprobado.
+- `POST /api/review/:id/approve`: envía el borrador aprobado.
 - `POST /api/review/:id/reject`: rechaza sin enviar.
 - `POST /api/review/:id/archive`: archiva.
 
-Estados: `pending → sending → sent`; los fallos quedan como `send_failed` para inspección. Las transiciones evitan aprobaciones concurrentes duplicadas. La interfaz está en `/revision.html`; el token se introduce manualmente y permanece solo en memoria durante esa sesión del navegador.
+El despacho desde la bandeja exige `DISPATCH_ENABLED=true). Estados: `pending → sending → sent`; los fallos quedan como `send_failed`. Las transiciones usan bloqueo temporal para evitar aprobaciones concurrentes.
 
-## Diagnóstico
-En `/api/webhook/facebook/status) comprobar:
-- `verify_token_configurado`
-- `page_access_token_configurado`
-- `app_secret_configurado`
-- `bandeja_kv_configurada`
-- `token_operador_configurado`
+## Validación y límites
+Las pruebas de CI simulan Redis, Meta y las llamadas externas. No equivalen a una prueba real contra Upstash, Microsoft Graph o Facebook. Antes de habilitar producción, probar en Preview con credenciales de prueba, verificar permisos de Graph, confirmar notificaciones y revisar los casos de la bandeja.
 
-Después consultar `/api/webhook/facebook/diagnose` y comprobar validez del token de Página y suscripción al campo `messages`.
-
-## Alcance pendiente
-Esta etapa implementa persistencia y aprobación mediante API protegida. Todavía no envía correos: requiere proveedor transaccional, remitente verificado y destinatario institucional. No se necesitan contraseñas de Outlook.
-
-KV debe estar configurado antes de conectar el webhook a Meta. Sin KV, el endpoint devuelve 503 para no descartar mensajes. Probar en Preview y revisar los resultados antes de cualquier despliegue a Production.
+La bandeja conserva registros durante 30 días y limita el índice a 500 casos recientes.

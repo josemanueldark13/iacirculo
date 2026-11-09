@@ -170,7 +170,7 @@ router.post("/", async (req, res) => {
                 }, eventKey);
                 if (created.duplicate) continue;
                 item = created.item;
-                await notifySafely(item);
+                if (policy.action !== "AUTO_REPLY" && policy.action !== "CLARIFY") await notifySafely(item);
             }
 
             if (policy.action === "AUTO_REPLY" || policy.action === "CLARIFY") {
@@ -181,11 +181,9 @@ router.post("/", async (req, res) => {
                             semanticAnalysis: decision.analisis_mensaje, kernelDecision: decision,
                             priority: decision.prioridad || "normal"
                         }, eventKey);
-                        if (!created.duplicate) {
-                            item = created.item;
-                            await notifySafely(item);
-                        }
+                        if (!created.duplicate) item = created.item;
                     }
+                    if (item) await notifySafely(item);
                     continue;
                 }
                 try {
@@ -205,6 +203,7 @@ router.post("/", async (req, res) => {
                             });
                         } catch { /* El caso permanece recuperable en la bandeja. */ }
                     }
+                    if (item) await notifySafely(item);
                     console.error("[Messenger] Falló respuesta automática:", error.code || "SEND_FAILED");
                 }
             }

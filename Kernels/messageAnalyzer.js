@@ -107,7 +107,7 @@ function analyze(message, context = {}) {
     let selected = urgentMatch?.rule || (complaint
         ? RULES.find(rule => rule.intent === "reclamo")
         : matches[0]?.rule);
-    let confidence = selected ? Math.min(0.99, 0.76 + Math.max(0, (matches[0]?.hits || 1) - 1) * 0.07) : 0.38;
+    let confidence = urgentMatch ? 0.98 : complaint ? 0.95 : selected?.intent === "denuncia_sensible" ? 0.92 : selected?.intent === "solicitud_humano" ? 0.92 : selected ? Math.min(0.96, 0.76 + Math.max(0, (matches[0]?.hits || 1) - 1) * 0.07) : 0.38;
 
     if (followUp && (!selected || selected.priority === "baja")) {
         selected = { intent: "continuacion", domain: context.previousDomain || "ambiguo", priority: "normal" };
