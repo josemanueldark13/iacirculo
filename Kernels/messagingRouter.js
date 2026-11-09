@@ -12,7 +12,7 @@ function resolveMode(value = process.env.MESSENGER_MODE || "SUPERVISION") {
  * SUPERVISION: crea borradores para aprobación humana; no despacha automáticamente.
  * MANUAL: registra el mensaje sin proponer respuesta; toda decisión queda en manos humanas.
  */
-function route(analysis, configuredMode) {
+function route(analysis, configuredMode, semanticFrame = {}) {
     const mode = resolveMode(configuredMode);
     const intent = analysis?.intent || "consulta_ambigua";
     const priority = analysis?.priority || "normal";
@@ -29,7 +29,7 @@ function route(analysis, configuredMode) {
         return { mode, action: "ESCALATE", priority, auto_reply: false, requires_human: true, create_case: true, draft_response: true, reason: "requiere_atencion_humana" };
     }
 
-    if (analysis?.confidence < 0.55 || intent === "consulta_ambigua" || intent === "mensaje_vacio") {
+    if (semanticFrame?.responseMode === "GUIDED" || analysis?.confidence < 0.55 || intent === "consulta_ambigua" || intent === "mensaje_vacio") {
         return {
             mode, action: mode === "AUTO" ? "CLARIFY" : "HUMAN_REVIEW",
             priority: "normal", auto_reply: mode === "AUTO", requires_human: mode !== "AUTO",

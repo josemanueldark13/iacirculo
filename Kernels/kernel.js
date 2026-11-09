@@ -4,6 +4,7 @@
  */
 const semanticAnalyzer = require("./semanticAnalyzer");
 const messageAnalyzer = require("./messageAnalyzer");
+const semanticFrameAnalyzer = require("./semanticFrame");
 const messagingRouter = require("./messagingRouter");
 const domainRouter = require("./domainRouter");
 const reformulator = require("./reformulator");
@@ -13,8 +14,15 @@ const intentRouter = require("./intentRouter");
 
 function process(question, context = {}) {
     const analysis = semanticAnalyzer.analyze(question);
-    const messageAnalysis = messageAnalyzer.analyze(question, context);
-    const messagingDecision = messagingRouter.route(messageAnalysis, context.mode);
+    const semanticFrame = semanticFrameAnalyzer.analyzeFrame({
+        text: question,
+        conversationContext: Array.isArray(context.conversationContext) ? context.conversationContext : []
+    });
+    const messageAnalysis = messageAnalyzer.analyze(question, {
+        hasPreviousMessage: semanticFrame.context.supplied,
+        previousDomain: semanticFrame.domain
+    });
+    const messagingDecision = messagingRouter.route(messageAnalysis, context.mode, semanticFrame);
     const domainDecision = domainRouter.route(analysis);
     const intent = intentRouter.classify(question);
 
@@ -33,6 +41,7 @@ function process(question, context = {}) {
         conceptos_detectados: analysis.concepts,
         analisis_semantico: analysis,
         analisis_mensaje: messageAnalysis,
+        semantic_frame: semanticFrame,
         decision_mensajeria: messagingDecision
     };
 
