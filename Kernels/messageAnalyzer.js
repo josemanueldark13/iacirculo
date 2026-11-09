@@ -103,9 +103,10 @@ function analyze(message, context = {}) {
         (/^(y|pero|entonces|ademas|tambien|eso|ese|esa|lo mismo|como asi|por que|cual|cuando|donde)\b/.test(text)
         || text.split(" ").length <= 4);
 
-    let selected = complaint
+    const urgentMatch = matches.find(item => item.rule.intent === "urgencia");
+    let selected = urgentMatch?.rule || (complaint
         ? RULES.find(rule => rule.intent === "reclamo")
-        : matches[0]?.rule;
+        : matches[0]?.rule);
     let confidence = selected ? Math.min(0.99, 0.76 + Math.max(0, (matches[0]?.hits || 1) - 1) * 0.07) : 0.38;
 
     if (followUp && (!selected || selected.priority === "baja")) {
@@ -130,7 +131,7 @@ function analyze(message, context = {}) {
     if (insultOnly) signals.push("insulto_aislado");
 
     return {
-        text: original, normalized: text, intent: complaint ? "reclamo" : selected.intent,
+        text: original, normalized: text, intent: urgent ? "urgencia" : complaint ? "reclamo" : selected.intent,
         domain: selected.domain, confidence: Number(confidence.toFixed(2)),
         priority: urgent ? "critica" : (complaint || sensitive || asksHuman) ? "alta" : selected.priority,
         sentiment: negative ? "negativo" : selected.intent === "agradecimiento" ? "positivo" : "neutral",
