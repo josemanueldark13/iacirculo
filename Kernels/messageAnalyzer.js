@@ -53,7 +53,7 @@ const NEGATIVE_PATTERNS = [
 ];
 
 function isInformationalComplaintQuestion(text) {
-    return /^(que es|que significa|definicion de)\s+(un|una|el|la)?\s*(reclamo|queja|denuncia)\b/.test(text);
+    return /^(que es|que significa|definicion de)\s+(?:la palabra\s+)?(un|una|el|la)?\s*(reclamo|queja|denuncia)\b/.test(text);
 }
 function isNegatedComplaint(text) {
     return /\b(no quiero|no voy a|no deseo|no necesito)\s+(?:hacer|presentar|iniciar|formular)?\s*(?:un|una|el|la)?\s*(reclamo|reclamar|queja|denuncia|denunciar)\b/.test(text)

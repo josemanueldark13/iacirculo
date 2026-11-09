@@ -6,7 +6,7 @@ const messageAnalyzer = require("../Kernels/messageAnalyzer");
 const messagingRouter = require("../Kernels/messagingRouter");
 
 const cases = [
-    ["Necesito asistencia urgente ahora mismo", "urgente", "critica", true],
+    ["Necesito asistencia urgente ahora mismo", "urgencia", "critica", true],
     ["Quiero hacer un reclamo por la atención", "reclamo", "alta", true],
     ["Llevo tres semanas esperando una respuesta", "consulta_ambigua", "normal", false],
     ["¿Qué significa la palabra reclamo?", "consulta_ambigua", "normal", false],
