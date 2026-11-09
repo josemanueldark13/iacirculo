@@ -152,7 +152,9 @@ router.post("/", async (req, res) => {
             if (!senderId || !question || event.message?.is_echo) continue;
 
             const mode = envFirst("MESSENGER_MODE") || "SUPERVISION";
-            const conversationContext = await reviewInboxStore.getConversationContext(senderId);
+            let conversationContext = [];
+            try { conversationContext = await reviewInboxStore.getConversationContext(senderId); }
+            catch (error) { console.error("[Messenger] Contexto no disponible; se analiza el mensaje aislado:", error.code || "CONTEXT_READ_ERROR"); }
             const decision = kernel.process(question, { mode, conversationContext });
             const policy = decision.decision_mensajeria || {};
             if (policy.action === "IGNORE") continue;
