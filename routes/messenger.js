@@ -168,10 +168,9 @@ router.post("/", async (req, res) => {
                     kernelDecision: decision,
                     priority: decision.prioridad || "normal"
                 }, eventKey);
-                if (!created.duplicate) {
-                    item = created.item;
-                    await notifySafely(item);
-                }
+                if (created.duplicate) continue;
+                item = created.item;
+                await notifySafely(item);
             }
 
             if (policy.action === "AUTO_REPLY" || policy.action === "CLARIFY") {

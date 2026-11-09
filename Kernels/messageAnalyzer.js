@@ -12,7 +12,7 @@ function normalize(value = "") {
 }
 
 const RULES = [
-    { intent: "urgente", domain: "operativo", priority: "critica", patterns: [
+    { intent: "urgencia", domain: "operativo", priority: "critica", patterns: [
         /\b(urgente|urgencia|emergencia|inmediato|inmediatamente|ahora mismo)\b/,
         /\b(riesgo inmediato|peligro|amenaza|no puedo esperar|es para hoy)\b/
     ]},
@@ -85,17 +85,17 @@ function analyze(message, context = {}) {
         requires_human: false, is_follow_up: false
     };
 
+    const informational = isInformationalComplaintQuestion(text);
+    const negatedComplaint = isNegatedComplaint(text);
     const matches = RULES.map(rule => ({
         rule, hits: rule.patterns.filter(pattern => pattern.test(text)).length
-    })).filter(item => item.hits > 0)
+    })).filter(item => item.hits > 0 && !(item.rule.intent === "reclamo" && (informational || negatedComplaint)))
       .sort((a, b) => {
           const rank = { critica: 4, alta: 3, normal: 2, baja: 1 };
           return rank[b.rule.priority] - rank[a.rule.priority] || b.hits - a.hits;
       });
 
     const implicitComplaintSignals = detectImplicitComplaint(text);
-    const informational = isInformationalComplaintQuestion(text);
-    const negatedComplaint = isNegatedComplaint(text);
     const explicitComplaint = matches.some(item => item.rule.intent === "reclamo");
     const complaint = !informational && !negatedComplaint && (explicitComplaint || implicitComplaintSignals.length > 0);
 
@@ -115,7 +115,7 @@ function analyze(message, context = {}) {
     if (!selected) selected = { intent: "consulta_ambigua", domain: "ambiguo", priority: "normal" };
 
     const sensitive = selected.intent === "denuncia_sensible";
-    const urgent = selected.intent === "urgente";
+    const urgent = selected.intent === "urgencia";
     const asksHuman = selected.intent === "solicitud_humano";
     const insultOnly = /\b(inutil|idiota|imbecil|estupido|tarado|pelotudo|boludo|forro|hdp)\b/.test(text) && !complaint;
     const negative = NEGATIVE_PATTERNS.some(pattern => pattern.test(text));
