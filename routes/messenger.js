@@ -152,7 +152,8 @@ router.post("/", async (req, res) => {
             if (!senderId || !question || event.message?.is_echo) continue;
 
             const mode = envFirst("MESSENGER_MODE") || "SUPERVISION";
-            const decision = kernel.process(question, { mode });
+            const conversationContext = await reviewInboxStore.getConversationContext(senderId);
+            const decision = kernel.process(question, { mode, conversationContext });
             const policy = decision.decision_mensajeria || {};
             if (policy.action === "IGNORE") continue;
 
@@ -170,6 +171,8 @@ router.post("/", async (req, res) => {
                 }, eventKey);
                 if (created.duplicate) continue;
                 item = created.item;
+                try { await reviewInboxStore.appendConversationTurn(senderId, { role: "user", content: question }); }
+                catch (error) { console.error("[Messenger] No se pudo actualizar contexto:", error.code || "CONTEXT_STORE_ERROR"); }
                 if (policy.action !== "AUTO_REPLY" && policy.action !== "CLARIFY") await notifySafely(item);
             }
 
@@ -181,7 +184,11 @@ router.post("/", async (req, res) => {
                             semanticAnalysis: decision.analisis_mensaje, kernelDecision: decision,
                             priority: decision.prioridad || "normal"
                         }, eventKey);
-                        if (!created.duplicate) item = created.item;
+                        if (!created.duplicate) {
+                            item = created.item;
+                            try { await reviewInboxStore.appendConversationTurn(senderId, { role: "user", content: question }); }
+                            catch (error) { console.error("[Messenger] No se pudo actualizar contexto:", error.code || "CONTEXT_STORE_ERROR"); }
+                        }
                     }
                     if (item) await notifySafely(item);
                     continue;
@@ -194,6 +201,8 @@ router.post("/", async (req, res) => {
                             sentMode: mode
                         });
                     }
+                    try { await reviewInboxStore.appendConversationTurn(senderId, { role: "assistant", content: buildResponse(question, decision) }); }
+                    catch (error) { console.error("[Messenger] No se pudo guardar respuesta en contexto:", error.code || "CONTEXT_STORE_ERROR"); }
                 } catch (error) {
                     if (item) {
                         try {

@@ -3,6 +3,9 @@ const ITEM_PREFIX = "circulo:review:item:";
 const INDEX_KEY = "circulo:review:index";
 const DEDUPE_PREFIX = "circulo:review:dedupe:";
 const LOCK_PREFIX = "circulo:review:lock:";
+const CONTEXT_PREFIX = "circulo:messenger:context:";
+const CONTEXT_RETENTION_SECONDS = 60 * 60 * 24 * 7;
+const MAX_CONTEXT_TURNS = 12;
 const RETENTION_SECONDS = 60 * 60 * 24 * 30;
 const MAX_QUEUE_SIZE = 500;
 
@@ -65,6 +68,28 @@ async function createPending(input,eventKey) {
   throw error;
  }
 }
+async function getConversationContext(senderId) {
+ if (!senderId) return [];
+ const key = CONTEXT_PREFIX + hashKey(senderId);
+ const turns = await command(["LRANGE",key,"0",String(MAX_CONTEXT_TURNS - 1)]);
+ if (!Array.isArray(turns)) return [];
+ return turns.map(value => {
+  try { return JSON.parse(value); } catch { return null; }
+ }).filter(Boolean).reverse();
+}
+async function appendConversationTurn(senderId,turn) {
+ if (!senderId || !turn || !["user","assistant"].includes(turn.role)) return null;
+ const key = CONTEXT_PREFIX + hashKey(senderId);
+ const entry = {
+  role:turn.role,
+  content:safeText(turn.content,2000),
+  createdAt:new Date().toISOString()
+ };
+ await command(["LPUSH",key,JSON.stringify(entry)]);
+ await command(["LTRIM",key,"0",String(MAX_CONTEXT_TURNS - 1)]);
+ await command(["EXPIRE",key,String(CONTEXT_RETENTION_SECONDS)]);
+ return entry;
+}
 async function getItem(id) {
  if (!/^[a-f0-9-]{36}$/i.test(String(id))) return null;
  const raw = await command(["GET",ITEM_PREFIX + id]);
@@ -115,4 +140,4 @@ async function transition(id,allowedStatuses,changes) {
   } catch { /* Lock expires after 30 seconds. */ }
  }
 }
-module.exports = {isConfigured,createPending,getItem,listItems,transition};
+module.exports = {isConfigured,createPending,getItem,listItems,transition,getConversationContext,appendConversationTurn};

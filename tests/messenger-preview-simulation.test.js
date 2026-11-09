@@ -21,6 +21,7 @@ const originalFetch = global.fetch;
 
 const redis = new Map();
 const sortedSets = new Map();
+const lists = new Map();
 const externalRequests = [];
 
 function response(result) {
@@ -57,6 +58,27 @@ async function simulatedFetch(url, options = {}) {
         }
         case "GET":
             return response(redis.has(command[1]) ? redis.get(command[1]) : null);
+        case "LPUSH": {
+            const key = command[1];
+            if (!lists.has(key)) lists.set(key, []);
+            const list = lists.get(key);
+            list.unshift(command[2]);
+            return response(list.length);
+        }
+        case "LRANGE": {
+            const list = lists.get(command[1]) || [];
+            const start = Number(command[2]);
+            const stop = Number(command[3]);
+            return response(list.slice(start, stop + 1));
+        }
+        case "LTRIM": {
+            const key = command[1];
+            const list = lists.get(key) || [];
+            lists.set(key, list.slice(Number(command[2]), Number(command[3]) + 1));
+            return response("OK");
+        }
+        case "EXPIRE":
+            return response(redis.has(command[1]) || lists.has(command[1]) ? 1 : 0);
         case "DEL":
             return response(redis.delete(command[1]) ? 1 : 0);
         case "ZADD": {
@@ -157,6 +179,7 @@ async function main() {
     global.fetch = simulatedFetch;
 
     const kernel = require("../Kernels/kernel");
+    const reviewInboxStore = require("../Kernels/reviewInboxStore");
     const urgentDecision = kernel.process(
         "Necesito asistencia urgente con un reclamo de servicio y la base de datos no responde"
     );
@@ -270,7 +293,10 @@ async function main() {
         assert.equal(item.kernelDecision.confianza_intencion, 0.98);
         assert.match(item.proposedResponse, /mensaje prioritario.*revisión humana/i);
         assert.equal(item.messageText, messageText);
-        console.log("PASS | El caso queda persistido como pendiente en la bandeja");
+        const storedContext = await reviewInboxStore.getConversationContext("simulation_user_01");
+        assert.equal(storedContext.length, 1);
+        assert.equal(storedContext[0].content, messageText);
+        console.log("PASS | El caso queda persistido y el contexto conversacional se conserva");
         console.log("PASS | La urgencia conserva prioridad humana aunque el tema sea externo");
 
         const duplicate = await send(
@@ -293,7 +319,9 @@ async function main() {
             operatorHeaders
         );
         assert.equal(afterDuplicate.body.items.length, 1);
-        console.log("PASS | El mismo message.mid no crea un caso duplicado");
+        const contextAfterDuplicate = await reviewInboxStore.getConversationContext("simulation_user_01");
+        assert.equal(contextAfterDuplicate.length, 1);
+        console.log("PASS | El mismo message.mid no crea un caso ni un turno contextual duplicado");
 
         const approval = await send(
             server,
