@@ -118,10 +118,15 @@ function buildResponse(question, decision) {
     if (decision.agente === "contacto") return "Recibimos tu solicitud de contacto para que pueda ser atendida por el equipo del Círculo.";
     if (decision.agente === "formativo") return "Puedo ayudarte sobre el Círculo, la historia parlamentaria y la participación ciudadana. ¿Sobre qué tema querés aprender?";
     if (decision.modulos_rag?.includes("bibliografico")) {
-        return bibliography.formatResults(decision.recuperacion_bibliografica, {
+        const sections = [];
+        if (decision.modulos_rag.includes("oficial")) {
+            sections.push(circuloIA.responder(question));
+        }
+        sections.push(bibliography.formatResults(decision.recuperacion_bibliografica, {
             limit: 2,
-            abstractLength: 180
-        }).slice(0, 1900);
+            abstractLength: 140
+        }));
+        return sections.join("\\n\\n").slice(0, 1900);
     }
     if (decision.plan_rag?.modules?.includes("web_seleccionada")) {
         const sources = decision.plan_rag.selected_sources || [];
