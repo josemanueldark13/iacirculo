@@ -123,7 +123,7 @@ async function buildResponse(question, decision) {
         return "La consulta está fuera del ámbito institucional de CÍRCULO IA. El equipo puede orientarte sobre el canal adecuado.";
     }
     if (decision.plan_rag?.modules?.some(level =>
-        ["bibliografico", "web_seleccionada", "web_abierta"].includes(level)
+        ["oficial", "bibliografico", "web_seleccionada", "web_abierta"].includes(level)
     )) {
         const composed = await ragComposer.compose(question, decision, {
             bibliographyLimit: 2,
