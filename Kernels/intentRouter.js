@@ -17,7 +17,7 @@ function classify(question = "") {
  };
  if (/\b(quiero|necesito|solicito)\s+(contactar|comunicarme|ponerme en contacto|hablar)\b/.test(text)
      || /\b(contactar|comunicarme)\s+(con|al|a la)\s+(el\s+)?(circulo|institucion)\b/.test(text)
-     || /\b(dejar|enviar|mandar|hacer)\b.*\b(mensaje|consulta|pedido)\b/.test(text)
+     || /\b(dejar|enviar|mandar)\b.*\b(mensaje|consulta|pedido)\b/.test(text)
      || /\bhablar con el circulo\b/.test(text))
   return {tipo:"contacto",agente:"atencion_humana",confianza:0.94,prioridad:"normal",requiere_humano:true};
  if (/\b(telefono|telefonos|numero|numeros|llamar|whatsapp)\b/.test(text))
