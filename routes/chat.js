@@ -16,6 +16,15 @@ router.post("/", (req, res) => {
 
     const decision = kernel.process(pregunta);
 
+    if (decision.respuesta_conversacional?.content) {
+        return res.json({
+            agente: "CÍRCULO IA",
+            estado: decision.estado,
+            respuesta: decision.respuesta_conversacional.content,
+            decision
+        });
+    }
+
     if (decision.estado === "requiere_reformulacion") {
         return res.json({
             agente: "CÍRCULO IA",
