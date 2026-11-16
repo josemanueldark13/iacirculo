@@ -32,6 +32,14 @@ const n2 = ragRouter.route("Bibliografía e investigaciones sobre la historia po
 assert.ok(n2.modules.includes("bibliografico"));
 assert.ok(!n2.modules.includes("web_abierta"));
 
+// El filtro temático debe aceptar materias compuestas, no comparar la frase entera como un token.
+const subjectFiltered = bibliography.search("historia política", 10, { subject: "historia política" });
+assert.ok(subjectFiltered.total > 0);
+assert.ok(subjectFiltered.results.every(item =>
+    item.subjects.some(subject => /historia/i.test(subject)) &&
+    item.subjects.some(subject => /pol[ií]tica/i.test(subject))
+));
+
 const n2Results = bibliography.search("reformas institucionales de Tucumán 1820-1852", 5);
 assert.ok(n2Results.total > 0);
 assert.ok(n2Results.results.some(item => item.id === "nanni-wilde-2021-reformas-tucumanas"));
