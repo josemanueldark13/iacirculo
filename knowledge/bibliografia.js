@@ -48,9 +48,13 @@ function makeSearchIndex(records) {
 function activeRecords(options = {}) {
     return catalog.records.filter(record => record.record_status === "active")
         .filter(record => !options.recordType || record.record_type === options.recordType)
-        .filter(record => !options.subject || (record.subjects || []).some(subject =>
-            hybridRetriever.tokenize(subject).includes(hybridRetriever.stem(hybridRetriever.normalize(options.subject)))
-        ));
+        .filter(record => {
+            if (!options.subject) return true;
+            const requestedTerms = [...new Set(hybridRetriever.tokenize(options.subject))];
+            if (!requestedTerms.length) return true;
+            const availableTerms = new Set(hybridRetriever.tokenize(asText(record.subjects)));
+            return requestedTerms.every(term => availableTerms.has(term));
+        });
 }
 
 function search(query, limit = 5, options = {}) {
