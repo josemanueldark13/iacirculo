@@ -5,7 +5,9 @@ const crypto = require("crypto");
 const router = express.Router();
 const kernel = require("../Kernels/kernel");
 const circuloIA = require("../knowledge/agents/circuloIA");
-const bibliography = require("../knowledge/bibliografia");
+const ragComposer = require("../knowledge/ragComposer");
+const openWebRetriever = require("../knowledge/openWebRetriever");
+const ragRouter = require("../Kernels/ragRouter");
 const reviewInboxStore = require("../Kernels/reviewInboxStore");
 const messengerSender = require("../Kernels/messengerSender");
 const outlookNotifier = require("../Kernels/outlookNotifier");
@@ -53,6 +55,9 @@ router.get("/status", (req, res) => res.json({
     token_operador_configurado: Boolean(envFirst("REVIEW_API_TOKEN")),
     dispatch_enabled: envFirst("DISPATCH_ENABLED") === "true",
     outlook_notificaciones_configuradas: outlookNotifier.isConfigured(),
+    rag_arquitectura: ragRouter.getArchitecture().id,
+    n3_fuentes_seleccionadas: ragRouter.getArchitecture().curatedSourceCount,
+    n4_proveedor_configurado: openWebRetriever.isConfigured(),
     site_url: envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/"
 }));
 
@@ -98,7 +103,7 @@ router.get("/", (req, res) => {
     return res.sendStatus(403);
 });
 
-function buildResponse(question, decision) {
+async function buildResponse(question, decision) {
     if (decision.agente === "atencion_humana") {
         return decision.prioridad === "critica"
             ? "Recibimos tu mensaje prioritario. Será derivado para revisión humana."
@@ -117,32 +122,18 @@ function buildResponse(question, decision) {
     if (decision.agente === "operativo") return "Voy a ayudarte con información operativa del Círculo. ¿Qué necesitás saber?";
     if (decision.agente === "contacto") return "Recibimos tu solicitud de contacto para que pueda ser atendida por el equipo del Círculo.";
     if (decision.agente === "formativo") return "Puedo ayudarte sobre el Círculo, la historia parlamentaria y la participación ciudadana. ¿Sobre qué tema querés aprender?";
-    if (decision.modulos_rag?.includes("bibliografico")) {
-        const sections = [];
-        if (decision.modulos_rag.includes("oficial")) {
-            sections.push(circuloIA.responder(question));
-        }
-        sections.push(bibliography.formatResults(decision.recuperacion_bibliografica, {
-            limit: 2,
-            abstractLength: 140
-        }));
-        return sections.join("\n\n").slice(0, 1900);
-    }
-    if (decision.plan_rag?.open_web?.enabled) {
-        return "N4 está habilitado para esta consulta, pero el adaptador de búsqueda abierta todavía no está conectado. No voy a inventar resultados externos.";
-    }
-    if (decision.plan_rag?.modules?.includes("web_seleccionada")) {
-        const sources = decision.plan_rag.selected_sources || [];
-        if (!sources.length) {
-            return "La lista de páginas seleccionadas N3 no contiene por ahora una fuente coincidente. N4 permanece como último recurso hasta confirmar que N3 es insuficiente.";
-        }
-        return [
-            "Encontré estas páginas seleccionadas para continuar la investigación:",
-            ...sources.slice(0, 3).map((source, index) =>
-                (index + 1) + ". " + source.title + " — " + source.organization + "\n" + source.url
-            ),
-            "La selección de fuentes está activa; la lectura automática de sus páginas todavía requiere el adaptador N3."
-        ].join("\n\n").slice(0, 1900);
+    if (decision.plan_rag?.modules?.some(level =>
+        ["bibliografico", "web_seleccionada", "web_abierta"].includes(level)
+    )) {
+        const composed = await ragComposer.compose(question, decision, {
+            bibliographyLimit: 2,
+            abstractLength: 160,
+            maxSources: 3,
+            webLimit: 3,
+            openWebLimit: 3,
+            timeoutMs: 4500
+        });
+        return composed.answer.slice(0, 1900);
     }
     if (decision.requiere_fuente_externa) {
         const siteUrl = envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/";
@@ -187,15 +178,18 @@ router.post("/", async (req, res) => {
             const decision = kernel.process(question, { mode, conversationContext });
             const policy = decision.decision_mensajeria || {};
             if (policy.action === "IGNORE") continue;
+            const proposedResponse = policy.draft_response === false
+                ? ""
+                : await buildResponse(question, decision);
 
             const eventKey = event.message?.mid || (senderId + ":" + (event.timestamp || "no-ts") + ":" + question);
             const shouldCreateCase = policy.create_case !== false || policy.action === "AUTO_REPLY";
             let item = null;
 
             if (shouldCreateCase) {
-                const proposedResponse = policy.draft_response === false ? "" : buildResponse(question, decision);
+                const savedResponse = proposedResponse;
                 const created = await reviewInboxStore.createPending({
-                    senderId, messageText: question, proposedResponse,
+                    senderId, messageText: question, proposedResponse: savedResponse,
                     semanticAnalysis: decision.analisis_mensaje,
                     kernelDecision: decision,
                     priority: decision.prioridad || "normal"
@@ -211,7 +205,7 @@ router.post("/", async (req, res) => {
                 if (!messengerSender.dispatchEnabled() || !messengerSender.isConfigured()) {
                     if (!item) {
                         const created = await reviewInboxStore.createPending({
-                            senderId, messageText: question, proposedResponse: buildResponse(question, decision),
+                            senderId, messageText: question, proposedResponse,
                             semanticAnalysis: decision.analisis_mensaje, kernelDecision: decision,
                             priority: decision.prioridad || "normal"
                         }, eventKey);
@@ -225,14 +219,14 @@ router.post("/", async (req, res) => {
                     continue;
                 }
                 try {
-                    const sent = await messengerSender.sendApprovedMessage(senderId, buildResponse(question, decision));
+                    const sent = await messengerSender.sendApprovedMessage(senderId, proposedResponse);
                     if (item) {
                         await reviewInboxStore.transition(item.id, ["pending"], {
                             status: "sent", sentAt: new Date().toISOString(), messageId: sent.messageId,
                             sentMode: mode
                         });
                     }
-                    try { await reviewInboxStore.appendConversationTurn(senderId, { role: "assistant", content: buildResponse(question, decision) }); }
+                    try { await reviewInboxStore.appendConversationTurn(senderId, { role: "assistant", content: proposedResponse }); }
                     catch (error) { console.error("[Messenger] No se pudo guardar respuesta en contexto:", error.code || "CONTEXT_STORE_ERROR"); }
                 } catch (error) {
                     if (item) {
