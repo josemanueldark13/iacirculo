@@ -13,7 +13,7 @@ function normalizeResult(item, sourceMetadata = {}) {
     if (!/^https:\/\//i.test(url)) return null;
     const snippets = Array.isArray(item?.snippets) ? item.snippets : [];
     const description = String(item?.description || "").trim();
-    const snippet = [description, ...snippets].filter(Boolean).join("\\n\\n");
+    const snippet = [description, ...snippets].filter(Boolean).join("\n\n");
     let hostname = "";
     try { hostname = new URL(url).hostname; } catch { /* URL ya se filtró arriba. */ }
     const metadata = sourceMetadata[url] || {};
