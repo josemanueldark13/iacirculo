@@ -72,17 +72,27 @@ async function run() {
     // N4 se valida con un proveedor simulado, sin consumir cuota ni usar credenciales.
     const mockN4Fetch = async (url, init) => {
         assert.equal(new URL(url).hostname, "api.search.brave.com");
+        assert.equal(new URL(url).pathname, "/res/v1/llm/context");
         assert.equal(init.headers["X-Subscription-Token"], "test-api-key");
         return {
             ok: true,
             status: 200,
             json: async () => ({
-                web: {
-                    results: [{
+                grounding: {
+                    generic: [{
                         title: "Archivo histórico: Congreso de Tucumán",
                         url: "https://archivo.example.org/congreso",
-                        description: "Descripción de la documentación histórica y parlamentaria del Congreso de Tucumán."
+                        snippets: [
+                            "Descripción de la documentación histórica y parlamentaria del Congreso de Tucumán.",
+                            "El fondo reúne actas, correspondencia y documentos de las sesiones."
+                        ]
                     }]
+                },
+                sources: {
+                    "https://archivo.example.org/congreso": {
+                        title: "Archivo histórico: Congreso de Tucumán",
+                        hostname: "archivo.example.org"
+                    }
                 }
             })
         };
