@@ -118,10 +118,6 @@ async function buildResponse(question, decision) {
     if (decision.estado === "fuera_de_dominio") {
         return "La consulta está fuera del ámbito institucional de CÍRCULO IA. El equipo puede orientarte sobre el canal adecuado.";
     }
-    if (decision.agente === "orientacion") return "Voy a ayudarte con orientación y datos de contacto del Círculo. ¿Qué dato necesitás?";
-    if (decision.agente === "operativo") return "Voy a ayudarte con información operativa del Círculo. ¿Qué necesitás saber?";
-    if (decision.agente === "contacto") return "Recibimos tu solicitud de contacto para que pueda ser atendida por el equipo del Círculo.";
-    if (decision.agente === "formativo") return "Puedo ayudarte sobre el Círculo, la historia parlamentaria y la participación ciudadana. ¿Sobre qué tema querés aprender?";
     if (decision.plan_rag?.modules?.some(level =>
         ["bibliografico", "web_seleccionada", "web_abierta"].includes(level)
     )) {
@@ -135,6 +131,11 @@ async function buildResponse(question, decision) {
         });
         return composed.answer.slice(0, 1900);
     }
+    if (decision.agente === "orientacion") return "Voy a ayudarte con orientación y datos de contacto del Círculo. ¿Qué dato necesitás?";
+    if (decision.agente === "operativo") return "Voy a ayudarte con información operativa del Círculo. ¿Qué necesitás saber?";
+    if (decision.agente === "contacto") return "Recibimos tu solicitud de contacto para que pueda ser atendida por el equipo del Círculo.";
+    if (decision.agente === "formativo") return "Puedo ayudarte sobre el Círculo, la historia parlamentaria y la participación ciudadana. ¿Sobre qué tema querés aprender?";
+
     if (decision.requiere_fuente_externa) {
         const siteUrl = envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/";
         return "Esta consulta requiere una fuente externa que todavía no está disponible en los sitios seleccionados. Podés continuar en el portal: " + siteUrl;
