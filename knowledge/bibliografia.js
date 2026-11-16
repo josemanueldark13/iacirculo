@@ -1,36 +1,10 @@
 "use strict";
 
 const catalog = require("./bibliografia.json");
+const hybridRetriever = require("./hybridRetriever");
 
-const STOP_WORDS = new Set([
-    "que", "cual", "quien", "quienes", "como", "donde", "cuando", "para",
-    "por", "con", "sin", "sobre", "entre", "desde", "hacia", "del", "las",
-    "los", "una", "uno", "unos", "unas", "este", "esta", "estos", "estas",
-    "tiene", "tienen", "hay", "fue", "son", "era", "eran", "sus", "mas",
-    "muy", "obra", "obras", "libro", "libros", "tema", "temas", "historia"
-]);
-
-function normalize(value = "") {
-    return String(value ?? "").toLowerCase().normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9\s]/g, " ")
-        .replace(/\s+/g, " ").trim();
-}
-
-function stemToken(token) {
-    if (token.length > 6 && token.endsWith("es")) return token.slice(0, -2);
-    if (token.length > 4 && token.endsWith("s")) return token.slice(0, -1);
-    return token;
-}
-
-function tokens(value) {
-    return normalize(value).split(" ")
-        .filter(token => token.length > 2 && !STOP_WORDS.has(token))
-        .map(stemToken);
-}
-
-function asText(values) {
-    return Array.isArray(values) ? values.join(" ") : String(values ?? "");
+function asText(value) {
+    return Array.isArray(value) ? value.join(" ") : String(value ?? "");
 }
 
 function citation(record) {
@@ -39,73 +13,68 @@ function citation(record) {
     const publication = record.publication ? ". " + record.publication : "";
     const publisher = record.publisher ? ". " + record.publisher : "";
     const doi = record.doi ? ". https://doi.org/" + record.doi : "";
-    return authors + " (" + year + "). " + record.title + publication + publisher + doi;
+    const isbn = record.isbn ? ". ISBN " + record.isbn : "";
+    return authors + " (" + year + "). " + record.title + publication + publisher + doi + isbn;
 }
 
-function scoreRecord(record, queryTokens, normalizedQuery) {
-    const fields = [
-        { value: record.title, weight: 6 },
-        { value: asText(record.authors), weight: 4.5 },
-        { value: asText(record.keywords), weight: 3.5 },
-        { value: asText(record.subjects), weight: 3 },
-        { value: record.publication, weight: 2 },
-        { value: record.abstract, weight: 1.5 }
-    ];
-    const normalizedTitle = normalize(record.title);
-    let score = 0;
-    const matchedTerms = [];
-
-    if (normalizedQuery.length > 5 && normalizedTitle.includes(normalizedQuery)) score += 10;
-
-    const indexedFields = fields.map(field => ({
-        weight: field.weight,
-        terms: new Set(tokens(field.value))
+function makeSearchIndex(records) {
+    const documents = records.map(record => ({
+        id: record.id,
+        title: record.title,
+        authors: asText(record.authors),
+        keywords: asText(record.keywords),
+        subjects: asText(record.subjects),
+        category: record.record_type,
+        publication: record.publication,
+        abstract: record.abstract,
+        content: record.abstract || record.verification_note || ""
     }));
-
-    for (const token of queryTokens) {
-        let bestWeight = 0;
-        for (const field of indexedFields) {
-            if (field.terms.has(token)) bestWeight = Math.max(bestWeight, field.weight);
+    return hybridRetriever.buildIndex(documents, {
+        maxTokens: 220,
+        overlap: 30,
+        fieldWeights: {
+            title: 5.0,
+            authors: 3.2,
+            keywords: 2.8,
+            subjects: 2.6,
+            category: 1.5,
+            publication: 1.7,
+            abstract: 1.4,
+            content: 0.9
         }
-        if (bestWeight > 0) {
-            score += bestWeight;
-            matchedTerms.push(token);
-        }
-    }
+    });
+}
 
-    const coverage = queryTokens.length ? matchedTerms.length / queryTokens.length : 0;
-    if (coverage >= 0.75) score += 2;
-    else if (coverage >= 0.5) score += 1;
-
-    return { score: Number(score.toFixed(2)), matchedTerms, coverage: Number(coverage.toFixed(2)) };
+function activeRecords(options = {}) {
+    return catalog.records.filter(record => record.record_status === "active")
+        .filter(record => !options.recordType || record.record_type === options.recordType)
+        .filter(record => !options.subject || (record.subjects || []).some(subject =>
+            hybridRetriever.tokenize(subject).includes(hybridRetriever.stem(hybridRetriever.normalize(options.subject)))
+        ));
 }
 
 function search(query, limit = 5, options = {}) {
-    const normalizedQuery = normalize(query);
-    const queryTokens = [...new Set(tokens(query))];
-    if (!normalizedQuery || queryTokens.length === 0) {
-        return { catalogVersion: catalog.version, query: String(query ?? ""), total: 0, results: [] };
-    }
+    const records = activeRecords(options);
+    const recordById = new Map(records.map(record => [record.id, record]));
+    const index = makeSearchIndex(records);
+    const recovered = hybridRetriever.search(index, query, { limit: Math.min(20, Math.max(limit * 4, limit)) });
+    const seen = new Set();
+    const results = [];
 
-    const results = catalog.records
-        .filter(record => record.record_status === "active")
-        .filter(record => !options.recordType || record.record_type === options.recordType)
-        .map(record => {
-            const relevance = scoreRecord(record, queryTokens, normalizedQuery);
-            return { record, relevance };
-        })
-        .filter(item => item.relevance.score > 0)
-        .sort((a, b) => b.relevance.score - a.relevance.score
-            || (b.relevance.coverage - a.relevance.coverage)
-            || String(a.record.title).localeCompare(String(b.record.title), "es"))
-        .slice(0, Math.max(1, Math.min(Number(limit) || 5, 10)))
-        .map(({ record, relevance }) => ({
+    for (const hit of recovered.results) {
+        const id = hit.document.id;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const record = recordById.get(id);
+        if (!record) continue;
+        results.push({
             id: record.id,
             title: record.title,
             authors: record.authors,
             year: record.year,
             publication: record.publication || null,
             publisher: record.publisher || null,
+            isbn: record.isbn || null,
             doi: record.doi || null,
             url: record.url || null,
             subjects: record.subjects || [],
@@ -114,30 +83,37 @@ function search(query, limit = 5, options = {}) {
             metadata_status: record.metadata_status,
             source_metadata_url: record.source_metadata_url || null,
             verification_note: record.verification_note || record.year_note || null,
-            relevance
-        }));
+            relevance: {
+                score: hit.score,
+                matchedTerms: hit.matchedTerms,
+                coverage: hit.coverage,
+                engine: recovered.engine
+            }
+        });
+        if (results.length >= Math.max(1, Math.min(Number(limit) || 5, 10))) break;
+    }
 
     return {
         catalogVersion: catalog.version,
         query: String(query ?? ""),
         total: results.length,
+        engine: recovered.engine,
         results
     };
 }
 
 function getCatalogInfo() {
     const records = catalog.records.filter(record => record.record_status === "active");
+    const candidates = catalog.records.filter(record => record.record_status === "candidate");
     return {
         version: catalog.version,
         level: catalog.level,
         total: records.length,
-        verified: records.filter(record => record.metadata_status === "verificado_en_ficha_editorial"
-            || record.metadata_status === "verificado_en_fuente_institucional"
-            || record.metadata_status === "verificado_en_catalogo_institucional").length,
-        secondaryCitations: records.filter(record => record.metadata_status === "referencia_citada_en_bibliografia_academica").length
+        verified: records.filter(record => String(record.metadata_status || "").startsWith("verificado_")).length,
+        secondaryCitations: records.filter(record => record.metadata_status === "referencia_citada_en_bibliografia_academica").length,
+        candidates: candidates.length
     };
 }
-
 
 function formatResults(searchResult, options = {}) {
     const results = Array.isArray(searchResult?.results) ? searchResult.results : [];
@@ -147,24 +123,21 @@ function formatResults(searchResult, options = {}) {
 
     const limit = Math.max(1, Math.min(Number(options.limit) || 3, 5));
     const abstractLength = Math.max(100, Math.min(Number(options.abstractLength) || 320, 700));
-    const lines = [
-        "Encontré estas referencias en el núcleo bibliográfico N2:",
-        ""
-    ];
+    const lines = ["Referencias recuperadas del núcleo bibliográfico N2:", ""];
 
     results.slice(0, limit).forEach((item, index) => {
         lines.push((index + 1) + ". " + item.citation);
         if (item.abstract) lines.push("   Síntesis: " + item.abstract.slice(0, abstractLength) + (item.abstract.length > abstractLength ? "…" : ""));
         if (item.doi) lines.push("   DOI: https://doi.org/" + item.doi);
-        else if (item.url) lines.push("   Consulta: " + item.url);
+        if (item.url) lines.push("   Consulta: " + item.url);
         if (item.verification_note) lines.push("   Nota de catálogo: " + item.verification_note);
-        if (item.source_metadata_url) lines.push("   Fuente de verificación: " + item.source_metadata_url);
-        lines.push("   Metadatos: " + item.metadata_status);
+        if (item.source_metadata_url) lines.push("   Fuente de metadatos: " + item.source_metadata_url);
+        lines.push("   Estado de metadatos: " + item.metadata_status);
         lines.push("");
     });
 
-    lines.push("Estas referencias son bibliografía secundaria o fondos de consulta; no sustituyen documentos oficiales del núcleo N1.");
+    lines.push("N2 aporta bibliografía y fuentes historiográficas; no sustituye documentos oficiales del núcleo N1.");
     return lines.join("\n").trim();
 }
 
-module.exports = { search, citation, normalize, getCatalogInfo, formatResults, stemToken };
+module.exports = { search, citation, getCatalogInfo, formatResults, makeSearchIndex };
