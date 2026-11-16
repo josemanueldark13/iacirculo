@@ -49,6 +49,21 @@ assert.equal(urgentDecision.prioridad, "critica");
 assert.equal(urgentDecision.decision_mensajeria.action, "ESCALATE");
 assert.equal(urgentDecision.analisis_mensaje.requires_human, true);
 
+const contactMessages = [
+    "Quiero hablar con alguien de la institución",
+    "Necesito comunicarme con el Círculo",
+    "¿Me pueden pasar un teléfono para contactar al Círculo?"
+];
+for (const mode of ["AUTO", "SUPERVISION", "MANUAL"]) {
+    for (const message of contactMessages) {
+        const decision = kernel.process(message, { mode });
+        assert.equal(decision.agente, "atencion_humana", message + " / " + mode);
+        assert.equal(decision.requiere_revision_humana, true, message + " / " + mode);
+        assert.equal(decision.decision_mensajeria.action, mode === "MANUAL" ? "HUMAN_REVIEW" : "ESCALATE", message + " / " + mode);
+        assert.equal(decision.decision_mensajeria.auto_reply, false, message + " / " + mode);
+    }
+}
+
 const ambiguousDecision = kernel.process("Necesito hacer una consulta", { mode: "AUTO" });
 assert.equal(ambiguousDecision.decision_mensajeria.action, "CLARIFY");
 
