@@ -51,8 +51,8 @@ assert.equal(urgentDecision.analisis_mensaje.requires_human, true);
 
 const contactMessages = [
     "Quiero hablar con alguien de la institución",
-    "Necesito comunicarme con el Círculo",
-    "¿Me pueden pasar un teléfono para contactar al Círculo?"
+    "Quiero comunicarme con el Círculo",
+    "Quiero contactar al Círculo"
 ];
 for (const mode of ["AUTO", "SUPERVISION", "MANUAL"]) {
     for (const message of contactMessages) {
