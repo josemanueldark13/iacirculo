@@ -62,6 +62,23 @@ function process(question, context = {}) {
     if (humanRequired) {
         return { ...base, estado: "requiere_atencion_humana", accion: "derivar_a_revision" };
     }
+    if (conversationalMatch) {
+        const delivery = messagingDecision.auto_reply ? "auto"
+            : messagingDecision.draft_response ? "borrador_para_revision" : "manual";
+        return {
+            ...base,
+            estado: "respuesta_conversacional_disponible",
+            respuesta_conversacional: {
+                id: conversationalMatch.id,
+                intent: conversationalMatch.intent,
+                version: conversationalMatch.version,
+                reviewed_at: conversationalMatch.reviewed_at,
+                status: conversationalMatch.status,
+                delivery,
+                content: delivery === "manual" ? null : conversationalMatch.answer
+            }
+        };
+    }
     if (domainDecision.estado === "requiere_reformulacion") {
         return { ...base, estado: "requiere_reformulacion", sugerencias: reformulator.suggest(question) };
     }
