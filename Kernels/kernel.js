@@ -12,6 +12,8 @@ const ragRouter = require("./ragRouter");
 const responsePolicy = require("./responsePolicy");
 const intentRouter = require("./intentRouter");
 
+const PRIORITY_RANK = { baja: 1, normal: 2, alta: 3, critica: 4 };
+
 function process(question, context = {}) {
     const analysis = semanticAnalyzer.analyze(question);
     const semanticFrame = semanticFrameAnalyzer.analyzeFrame({
@@ -22,14 +24,24 @@ function process(question, context = {}) {
         hasPreviousMessage: semanticFrame.context.supplied,
         previousDomain: semanticFrame.domain
     });
-    const messagingDecision = messagingRouter.route(messageAnalysis, context.mode, semanticFrame);
-    const domainDecision = domainRouter.route(analysis);
     const intent = intentRouter.classify(question);
 
-    const humanRequired = messageAnalysis.requires_human;
+    // La derivación humana es una política transversal: ningún modo puede
+    // anular una solicitud explícita de contacto ni una derivación del analizador.
+    const humanRequired = Boolean(messageAnalysis.requires_human || intent.requiere_humano);
+    const priority = (PRIORITY_RANK[intent.prioridad] || 0) > (PRIORITY_RANK[messageAnalysis.priority] || 0)
+        ? intent.prioridad
+        : (messageAnalysis.priority || intent.prioridad || "normal");
+    const routingAnalysis = {
+        ...messageAnalysis,
+        requires_human: humanRequired,
+        priority
+    };
+    const messagingDecision = messagingRouter.route(routingAnalysis, context.mode, semanticFrame);
+    const domainDecision = domainRouter.route(analysis);
+
     const agent = humanRequired ? "atencion_humana" : intent.agente;
-    const intentType = humanRequired ? messageAnalysis.intent : intent.tipo;
-    const priority = messageAnalysis.priority || "normal";
+    const intentType = humanRequired ? (messageAnalysis.intent === "contacto" ? "contacto" : messageAnalysis.intent) : intent.tipo;
     const base = {
         pregunta: question,
         intencion: intentType,
