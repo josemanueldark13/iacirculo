@@ -131,7 +131,8 @@ async function buildResponse(question, decision) {
             maxSources: 3,
             webLimit: 3,
             openWebLimit: 3,
-            timeoutMs: 4500
+            n3TimeoutMs: 3000,
+            n4TimeoutMs: 4500
         });
         return composed.answer.slice(0, 1900);
     }
