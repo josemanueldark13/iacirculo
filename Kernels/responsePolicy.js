@@ -2,92 +2,71 @@
  * AXIAL KERNEL
  * Response Policy
  *
- * Determina qué tipo de respuesta corresponde
- * según la naturaleza de la pregunta.
+ * Clasifica la forma de respuesta solicitada.
+ * No determina la veracidad del contenido ni reemplaza al analizador semántico.
  */
 
+function normalize(value) {
+    return String(value ?? "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9ñ]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+const POLICIES = [
+    {
+        type: "opinion",
+        terms: [
+            "que opinas", "que pensas", "opinion",
+            "te parece", "consideras", "cual es tu postura"
+        ]
+    },
+    {
+        type: "analisis",
+        terms: [
+            "por que", "importancia", "significado", "impacto",
+            "influencia", "contexto", "relacion", "analiza",
+            "explica", "desarrolla", "compara", "causas"
+        ]
+    },
+    {
+        type: "sintesis",
+        terms: [
+            "resumi", "resumen", "sintesis", "en pocas palabras",
+            "brevemente", "puntos principales"
+        ]
+    },
+    {
+        type: "hecho",
+        terms: [
+            "cuando", "quien", "donde", "que decreto",
+            "que ley", "que ano", "cual", "cuanto",
+            "fecha", "numero de ley"
+        ]
+    }
+];
+
 function determine(question) {
+    const text = normalize(question);
 
-    const text = question.toLowerCase();
+    if (!text) return "hecho";
 
-    // HECHOS DOCUMENTALES
-    const factTerms = [
-        "cuándo",
-        "cuando",
-        "quién",
-        "quien",
-        "dónde",
-        "donde",
-        "qué decreto",
-        "que decreto",
-        "qué ley",
-        "que ley",
-        "qué año",
-        "que año",
-        "cuál",
-        "cual"
-    ];
-
-    // ANÁLISIS
-    const analysisTerms = [
-        "por qué",
-        "por que",
-        "importancia",
-        "significado",
-        "impacto",
-        "influencia",
-        "contexto",
-        "relación",
-        "analizá",
-        "analiza",
-        "explicá",
-        "explica"
-    ];
-
-    // OPINIÓN
-    const opinionTerms = [
-        "qué opinás",
-        "que opinas",
-        "qué pensás",
-        "que pensas",
-        "opinión",
-        "opinion",
-        "te parece",
-        "considerás",
-        "consideras"
-    ];
-
-    // SÍNTESIS
-    const synthesisTerms = [
-        "resumí",
-        "resumi",
-        "resumen",
-        "síntesis",
-        "sintesis",
-        "en pocas palabras",
-        "brevemente"
-    ];
-
-    if (opinionTerms.some(term => text.includes(term))) {
-        return "opinion";
+    for (const policy of POLICIES) {
+        if (policy.terms.some(term => {
+            const normalizedTerm = normalize(term);
+            return (` ${text} `).includes(` ${normalizedTerm} `);
+        })) {
+            return policy.type;
+        }
     }
 
-    if (analysisTerms.some(term => text.includes(term))) {
-        return "analisis";
-    }
-
-    if (synthesisTerms.some(term => text.includes(term))) {
-        return "sintesis";
-    }
-
-    if (factTerms.some(term => text.includes(term))) {
-        return "hecho";
-    }
-
-    // Por defecto
     return "hecho";
 }
 
 module.exports = {
-    determine
+    determine,
+    normalize
 };
