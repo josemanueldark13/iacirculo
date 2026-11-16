@@ -134,13 +134,18 @@ function route(question, analysis = {}, options = {}) {
     const requiresOfficial = hasAny(text, officialTerms);
     const wantsBibliography = hasAny(text, bibliographyTerms)
         || (analysis.domain === "institucional" && /\b(historia|historico|historiografia)\b/.test(text));
+    const explicitBibliographyRequest = hasAny(text, [
+        "bibliografia", "referencias bibliograficas", "investigacion", "investigaciones",
+        "libro", "libros", "articulo academico", "tesis", "estudio", "estudios",
+        "fuentes secundarias", "publicaciones academicas"
+    ]);
     const asksWeb = hasAny(text, webTerms) || Boolean(analysis.requiere_fuente_externa);
     const asksSelected = hasAny(text, selectedTerms);
     const asksOpen = hasAny(text, openTerms);
     const timeSensitive = hasAny(text, currentTerms);
     const requiresExternal = asksWeb || asksSelected || asksOpen || timeSensitive;
 
-    if (requiresOfficial || (analysis.domain === "institucional" && !wantsBibliography && !requiresExternal)) {
+    if (requiresOfficial || (analysis.domain === "institucional" && !requiresExternal && !explicitBibliographyRequest)) {
         modules.push("oficial");
     }
 
