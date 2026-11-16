@@ -13,6 +13,7 @@ const responsePolicy = require("./responsePolicy");
 const intentRouter = require("./intentRouter");
 const conversationBase = require("./conversationBase");
 const bibliographyRetriever = require("../knowledge/bibliografia");
+const documentRetriever = require("../knowledge/documentRetriever");
 
 const PRIORITY_RANK = { baja: 1, normal: 2, alta: 3, critica: 4 };
 
@@ -93,6 +94,9 @@ function process(question, context = {}) {
         maxSelectedSources: context.rag?.maxSelectedSources
     };
     const ragDecision = ragRouter.route(question, analysis, ragOptions);
+    const officialRecovery = ragDecision.modules.includes("oficial")
+        ? documentRetriever.search(question, 5)
+        : { level: "N1", query: question, total: 0, results: [] };
     const bibliographyRecovery = ragDecision.modules.includes("bibliografico")
         ? bibliographyRetriever.search(question, 5)
         : { catalogVersion: null, query: question, total: 0, results: [] };
@@ -103,6 +107,7 @@ function process(question, context = {}) {
         modulos_rag: ragDecision.modules,
         modulo_prioritario: ragDecision.priority,
         plan_rag: ragDecision,
+        recuperacion_oficial: officialRecovery,
         recuperacion_bibliografica: bibliographyRecovery,
         tipo_respuesta: responsePolicy.determine(question),
         requiere_fuente_externa: Boolean(ragDecision.requires_external_source),
