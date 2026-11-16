@@ -55,10 +55,16 @@ router.post("/", (req, res) => {
     }
 
     if (decision.modulos_rag?.includes("bibliografico")) {
-        const respuesta = bibliography.formatResults(decision.recuperacion_bibliografica, {
+        const respuestaBibliografica = bibliography.formatResults(decision.recuperacion_bibliografica, {
             limit: 5,
             abstractLength: 520
         });
+        const respuestaOficial = decision.modulos_rag.includes("oficial")
+            ? circuloIA.responder(pregunta)
+            : null;
+        const respuesta = respuestaOficial
+            ? respuestaOficial + "\\n\\nContexto bibliográfico complementario:\\n" + respuestaBibliografica
+            : respuestaBibliografica;
         return res.json({
             agente: "CÍRCULO IA",
             estado: "respuesta_bibliografica",
