@@ -79,10 +79,10 @@ function detectImplicitComplaint(text) {
 }
 
 function isExplicitContactRequest(text) {
-    return /\\b(quiero|necesito|solicito|deseo)\\s+(contactar|comunicarme|ponerme en contacto|hablar)\\b/.test(text)
-        || /\\b(contactar|comunicarme)\\s+(con|al|a la)\\s+(el\\s+)?(circulo|institucion)\\b/.test(text)
-        || /\\b(dejar|enviar|mandar)\\s+(un\\s+)?(mensaje|consulta|pedido)\\b/.test(text)
-        || /\\b(solicito|necesito|requiero)\\s+contacto\\s+con\\b/.test(text);
+    return /\b(quiero|necesito|solicito|deseo)\s+(contactar|comunicarme|ponerme en contacto|hablar)\b/.test(text)
+        || /\b(contactar|comunicarme)\s+(con|al|a la)\s+(el\s+)?(circulo|institucion)\b/.test(text)
+        || /\b(dejar|enviar|mandar)\s+(un\s+)?(mensaje|consulta|pedido)\b/.test(text)
+        || /\b(solicito|necesito|requiero)\s+contacto\s+con\b/.test(text);
 }
 
 function analyze(message, context = {}) {
