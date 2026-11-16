@@ -42,6 +42,23 @@ assert.equal(kernelN2.estado, "aceptada");
 assert.ok(kernelN2.modulos_rag.includes("bibliografico"));
 assert.ok(kernelN2.recuperacion_bibliografica.total > 0);
 
+const formattedN2 = bibliography.formatResults(kernelN2.recuperacion_bibliografica, { limit: 2 });
+assert.match(formattedN2, /núcleo bibliográfico N2/);
+assert.match(formattedN2, /Fuente de verificación:/);
+
+const historyRoute = ragRouter.route("Historia política de Tucumán", {
+    domain: "institucional",
+    confidence: 0.8
+});
+assert.ok(historyRoute.modules.includes("oficial"));
+assert.ok(historyRoute.modules.includes("bibliografico"));
+
+const kernelN4Fallback = kernel.process("Ampliá la búsqueda externa sobre historia de Tucumán", {
+    rag: { n3Insufficient: true }
+});
+assert.ok(kernelN4Fallback.plan_rag.modules.includes("web_abierta"));
+assert.equal(kernelN4Fallback.plan_rag.open_web.enabled, true);
+
 // N3: se seleccionan páginas concretas de una lista controlada.
 const n3 = ragRouter.route("Buscá en páginas seleccionadas sobre historia política de Tucumán", {
     domain: "institucional",
