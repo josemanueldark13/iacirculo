@@ -6,29 +6,39 @@
  * Las fuentes se etiquetan como externas y no verificadas institucionalmente.
  */
 
-const ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
+const ENDPOINT = "https://api.search.brave.com/res/v1/llm/context";
 
-function normalizeResult(item) {
+function normalizeResult(item, sourceMetadata = {}) {
     const url = String(item?.url || "").trim();
     if (!/^https:\/\//i.test(url)) return null;
+    const snippets = Array.isArray(item?.snippets) ? item.snippets : [];
+    const description = String(item?.description || "").trim();
+    const snippet = [description, ...snippets].filter(Boolean).join("\\n\\n");
+    let hostname = "";
+    try { hostname = new URL(url).hostname; } catch { /* URL ya se filtró arriba. */ }
+    const metadata = sourceMetadata[url] || {};
     return {
-        title: String(item.title || "Resultado sin título").slice(0, 260),
+        title: String(item.title || metadata.title || "Resultado sin título").slice(0, 260),
         url,
-        snippet: String(item.description || item.extra_snippets?.[0] || "").slice(0, 1200),
-        page_age: item.page_age || item.age || null,
+        hostname: metadata.hostname || hostname,
+        snippet: snippet.slice(0, 6000),
         source_level: "N4",
         trust_level: "externa_no_verificada",
-        verification_required: true
+        verification_required: true,
+        fetched_content_timestamp: metadata.fetched_content_timestamp || null
     };
 }
 
 function normalizePayload(payload, limit = 6) {
-    const raw = Array.isArray(payload?.web?.results) ? payload.web.results : [];
+    const raw = Array.isArray(payload?.grounding?.generic)
+        ? payload.grounding.generic
+        : Array.isArray(payload?.web?.results) ? payload.web.results : [];
+    const sourceMetadata = payload?.sources || {};
     const seen = new Set();
     const results = [];
     for (const item of raw) {
-        const normalized = normalizeResult(item);
-        if (!normalized || seen.has(normalized.url)) continue;
+        const normalized = normalizeResult(item, sourceMetadata);
+        if (!normalized || seen.has(normalized.url) || !normalized.snippet) continue;
         seen.add(normalized.url);
         results.push(normalized);
         if (results.length >= Math.max(1, Math.min(limit, 10))) break;
@@ -62,9 +72,13 @@ async function search(query, options = {}) {
     url.searchParams.set("q", cleanQuery);
     url.searchParams.set("country", country);
     url.searchParams.set("search_lang", searchLang);
-    url.searchParams.set("count", String(limit));
+    url.searchParams.set("count", String(Math.max(limit, 8)));
+    url.searchParams.set("maximum_number_of_urls", String(limit));
+    url.searchParams.set("maximum_number_of_tokens", "4096");
+    url.searchParams.set("maximum_number_of_tokens_per_url", "2048");
+    url.searchParams.set("context_threshold_mode", "balanced");
+    url.searchParams.set("enable_source_metadata", "true");
     url.searchParams.set("safesearch", "moderate");
-    url.searchParams.set("extra_snippets", "true");
 
     const fetchImpl = options.fetchImpl || globalThis.fetch;
     if (typeof fetchImpl !== "function") {
