@@ -55,7 +55,7 @@ router.post("/", async (req, res) => {
     }
 
     if (decision.plan_rag?.modules?.some(level =>
-        ["bibliografico", "web_seleccionada", "web_abierta"].includes(level)
+        ["oficial", "bibliografico", "web_seleccionada", "web_abierta"].includes(level)
     )) {
         const composed = await ragComposer.compose(pregunta, decision, {
             bibliographyLimit: 5,
@@ -70,7 +70,7 @@ router.post("/", async (req, res) => {
                 ? "respuesta_web_seleccionada"
                 : decision.modulos_rag?.includes("bibliografico")
                     ? "respuesta_bibliografica"
-                    : "consulta_rag_externo";
+                    : "respuesta_institucional";
         return res.json({
             agente: "CÍRCULO IA",
             estado: state,
