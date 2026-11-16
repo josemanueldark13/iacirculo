@@ -1,0 +1,107 @@
+{
+  "version": "1.0.0",
+  "level": "N3",
+  "policy": "allowlist_exact_urls",
+  "description": "Páginas seleccionadas manualmente para consulta web temática. No equivale a una búsqueda abierta ni convierte sus contenidos en fuentes oficiales del Círculo.",
+  "sources": [
+    {
+      "id": "unt-colecciones-historia-tucuman",
+      "title": "Colecciones de libros sobre Historia de Tucumán",
+      "organization": "Universidad Nacional de Tucumán",
+      "url": "https://medios.unt.edu.ar/2019/09/09/se-encuentran-disponibles-dos-colecciones-libros-sobre-historia-tucuman/",
+      "source_type": "universidad",
+      "trust_level": "institucional_academico",
+      "topics": ["historia de Tucumán", "historia provincial", "municipios", "bibliografía", "bibliotecas", "siglos XIX y XX"],
+      "purpose": "Localizar colecciones académicas de historia provincial y municipal.",
+      "selection_status": "active"
+    },
+    {
+      "id": "unlp-reformas-tucumanas-1820-1852",
+      "title": "El ideal y lo posible. Las reformas tucumanas en la construcción del estado provincial (1820-1852)",
+      "organization": "Universidad Nacional de La Plata",
+      "url": "https://www.trabajosycomunicaciones.fahce.unlp.edu.ar/article/view/tyce155",
+      "source_type": "revista_academica",
+      "trust_level": "academico",
+      "topics": ["historia de Tucumán", "legislatura", "instituciones", "historia política", "siglo XIX", "estado provincial"],
+      "purpose": "Consultar investigación académica sobre instituciones y reformas políticas tucumanas.",
+      "selection_status": "active"
+    },
+    {
+      "id": "polhis-facciones-tucuman-1814-1841",
+      "title": "Grupos políticos y facciones en la construcción de la provincia de Tucumán. 1814-1841",
+      "organization": "PolHis - Programa Interuniversitario de Historia Política",
+      "url": "https://www.polhis.com.ar/index.php/polhis/article/view/251",
+      "source_type": "revista_academica",
+      "trust_level": "academico",
+      "topics": ["historia de Tucumán", "historia política", "facciones", "gobernación", "siglo XIX"],
+      "purpose": "Consultar investigación especializada sobre facciones y construcción política provincial.",
+      "selection_status": "active"
+    },
+    {
+      "id": "anh-politica-tucumana-1867-1893",
+      "title": "La política tucumana entre 1867 y 1893. ¿Oligarquías provinciales y orden conservador?",
+      "organization": "Academia Nacional de la Historia de la República Argentina",
+      "url": "https://iye.anh.org.ar/index.php/iye/article/download/188/543?inline=1",
+      "source_type": "revista_academica",
+      "trust_level": "academico",
+      "topics": ["historia de Tucumán", "historia política", "élites", "participación política", "siglo XIX"],
+      "purpose": "Consultar un estudio especializado sobre dirigencias y conflictos políticos tucumanos.",
+      "selection_status": "active"
+    },
+    {
+      "id": "uncuyo-poblacion-territorio-tucuman",
+      "title": "La población y el territorio en Tucumán durante el siglo XIX",
+      "organization": "Universidad Nacional de Cuyo",
+      "url": "https://revistas.uncu.edu.ar/ojs3/index.php/beg/article/view/6766",
+      "source_type": "revista_academica",
+      "trust_level": "academico",
+      "topics": ["historia de Tucumán", "geografía histórica", "demografía", "territorio", "industria azucarera", "siglo XIX"],
+      "purpose": "Consultar investigación sobre transformaciones demográficas, territoriales y económicas.",
+      "selection_status": "active"
+    },
+    {
+      "id": "edunt-historiografia-tucumana",
+      "title": "Historia, historiador, historiografía en Tucumán (1850-1950)",
+      "organization": "EDUNT - Editorial de la Universidad Nacional de Tucumán",
+      "url": "https://www.edunt.unt.edu.ar/publicaciones/historia-historiador-historiografia-en-tucuman-1850-1950/",
+      "source_type": "editorial_universitaria",
+      "trust_level": "institucional_academico",
+      "topics": ["historia de Tucumán", "historiografía", "historiadores", "historia regional", "siglos XIX y XX"],
+      "purpose": "Consultar ficha editorial de una obra de referencia sobre historiografía tucumana.",
+      "selection_status": "active"
+    },
+    {
+      "id": "casa-historica-biblioteca-tucumana",
+      "title": "Biblioteca Tucumana - Casa Histórica, Museo Nacional de la Independencia",
+      "organization": "Casa Histórica, Museo Nacional de la Independencia",
+      "url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
+      "source_type": "biblioteca_museo",
+      "trust_level": "institucional",
+      "topics": ["historia de Tucumán", "biblioteca", "fuentes históricas", "guerras de independencia", "historia económica", "patrimonio"],
+      "purpose": "Identificar colecciones y fondos bibliográficos vinculados con Tucumán.",
+      "selection_status": "active"
+    },
+    {
+      "id": "bcn-publicaciones-parlamentarias",
+      "title": "Publicaciones de la Biblioteca del Congreso de la Nación",
+      "organization": "Biblioteca del Congreso de la Nación",
+      "url": "https://bcn.gob.ar/publicaciones",
+      "source_type": "biblioteca_parlamentaria",
+      "trust_level": "institucional",
+      "topics": ["historia parlamentaria", "funcionamiento parlamentario", "legislación", "archivos", "biblioteca legislativa", "investigación"],
+      "purpose": "Consultar publicaciones, dossiers, materiales legislativos y guías para investigación parlamentaria.",
+      "selection_status": "active"
+    },
+    {
+      "id": "bcn-historia-institucional",
+      "title": "Historia de la Biblioteca del Congreso de la Nación",
+      "organization": "Biblioteca del Congreso de la Nación",
+      "url": "https://bcn.gob.ar/la-biblioteca/historia",
+      "source_type": "biblioteca_parlamentaria",
+      "trust_level": "institucional",
+      "topics": ["historia parlamentaria", "bibliotecas legislativas", "historia institucional", "bibliotecología"],
+      "purpose": "Consultar antecedentes históricos de una biblioteca parlamentaria argentina.",
+      "selection_status": "active"
+    }
+  ]
+}
