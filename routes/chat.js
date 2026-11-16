@@ -75,21 +75,25 @@ router.post("/", (req, res) => {
         });
     }
 
-    if (decision.plan_rag?.modules?.includes("web_seleccionada")) {
-        return res.json({
-            agente: "CÍRCULO IA",
-            estado: "fuentes_web_seleccionadas",
-            respuesta: "Estas son las páginas seleccionadas pertinentes para iniciar la consulta. En esta etapa se presenta el catálogo de fuentes; la recuperación automática del contenido de esas páginas todavía requiere su adaptador de consulta.",
-            fuentes: decision.plan_rag.selected_sources,
-            decision
-        });
-    }
-
     if (decision.plan_rag?.open_web?.enabled) {
         return res.json({
             agente: "CÍRCULO IA",
             estado: "busqueda_web_abierta_pendiente",
-            respuesta: "El plan permite ampliar la consulta a la web abierta, pero el adaptador de búsqueda abierta todavía no está conectado. No voy a presentar resultados web que no se hayan recuperado.",
+            respuesta: "N4 está habilitado para esta consulta, pero el adaptador de búsqueda abierta todavía no está conectado. No voy a presentar resultados web que no se hayan recuperado.",
+            fuentes_n3: decision.plan_rag.selected_sources || [],
+            decision
+        });
+    }
+
+    if (decision.plan_rag?.modules?.includes("web_seleccionada")) {
+        const fuentes = decision.plan_rag.selected_sources || [];
+        return res.json({
+            agente: "CÍRCULO IA",
+            estado: fuentes.length ? "fuentes_web_seleccionadas" : "sin_fuentes_n3_coincidentes",
+            respuesta: fuentes.length
+                ? "Estas son las páginas de la lista seleccionada que coinciden temáticamente. La recuperación automática del contenido todavía requiere el adaptador N3."
+                : "La lista de páginas seleccionadas N3 no contiene por ahora una fuente coincidente para esta consulta. N4 permanece como último recurso y no se activa hasta confirmar la insuficiencia de N3.",
+            fuentes,
             decision
         });
     }
