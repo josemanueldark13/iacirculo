@@ -522,6 +522,171 @@
       "metadata_status": "verificado_en_catalogo_institucional",
       "verification_note": "La página institucional identifica autor, título, lugar/editorial y año; se requiere consulta del ejemplar para completar descripción y volumen.",
       "record_status": "active"
+    },
+    {
+      "id": "lichtmajer-2017-politica-facciones-partidos",
+      "record_type": "libro_colectivo",
+      "title": "La política: de las facciones a los partidos",
+      "authors": [
+        "Leandro Lichtmajer (coordinador)"
+      ],
+      "year": 2017,
+      "publication": "Colección Historias Temáticas de Tucumán, 304 páginas",
+      "publisher": "Ediciones Imago Mundi",
+      "isbn": "978-950-793-268-7",
+      "url": "https://ri.conicet.gov.ar/bitstream/handle/11336/114885/CONICET_Digital_Nro.5010e872-659b-4ea3-914a-0c49460a7b8e_B.pdf?sequence=5",
+      "access": "acceso_abierto",
+      "subjects": [
+        "historia de Tucumán",
+        "historia política",
+        "partidos políticos",
+        "facciones",
+        "participación política",
+        "siglos XIX y XX"
+      ],
+      "keywords": [
+        "identidades políticas",
+        "Estado provincial",
+        "partidos",
+        "facciones",
+        "sistema electoral",
+        "sociabilidad política"
+      ],
+      "abstract": "Obra colectiva que estudia la política tucumana desde las facciones del siglo XIX hasta la formación y consolidación de partidos políticos en el siglo XX. Incluye capítulos sobre identidades políticas, clubes, partidos conservadores y hegemonía radical.",
+      "source_metadata_url": "https://ri.conicet.gov.ar/bitstream/handle/11336/114885/CONICET_Digital_Nro.5010e872-659b-4ea3-914a-0c49460a7b8e_B.pdf?sequence=5",
+      "metadata_status": "verificado_en_repositorio_academico",
+      "verification_note": "Ficha catalográfica del volumen, coordinador, editorial, año, extensión e ISBN visibles en el PDF depositado en CONICET Digital.",
+      "record_status": "active"
+    },
+    {
+      "id": "tio-vallejo-nanni-2016-dificil-centralidad",
+      "record_type": "articulo_academico",
+      "title": "Una difícil centralidad. El clima político en Tucumán en tiempos del Congreso",
+      "authors": [
+        "Gabriela Tío Vallejo",
+        "Facundo Nanni"
+      ],
+      "year": 2016,
+      "publication": "Anuario del Instituto de Historia Argentina, vol. 16, núm. 1",
+      "publisher": "Facultad de Humanidades y Ciencias de la Educación, Universidad Nacional de La Plata",
+      "url": "https://www.anuarioiha.fahce.unlp.edu.ar/article/view/IHAv16n1a02",
+      "access": "acceso_abierto",
+      "subjects": [
+        "Congreso de Tucumán",
+        "historia política",
+        "independencia",
+        "Tucumán",
+        "1814-1816",
+        "historiografía"
+      ],
+      "keywords": [
+        "clima político",
+        "sesiones secretas",
+        "gobernabilidad",
+        "legitimidad",
+        "Congreso de la Independencia"
+      ],
+      "abstract": "Analiza el clima político tucumano en la coyuntura de 1814-1816 y la actividad del Congreso de Tucumán, atendiendo a la legitimidad, la gobernabilidad y el valor de las sesiones secretas como fuente para estudiar sus intervenciones.",
+      "source_metadata_url": "https://www.anuarioiha.fahce.unlp.edu.ar/article/view/IHAv16n1a02",
+      "metadata_status": "verificado_en_ficha_editorial",
+      "verification_note": "La ficha de la revista consigna título, autoría, fecha de publicación, volumen, número y resumen.",
+      "record_status": "active"
+    },
+    {
+      "id": "fundacion-miguel-lillo-2016-sesiones-congreso",
+      "record_type": "fuente_historica_editada",
+      "title": "Sesiones del Congreso de Tucumán, 1816 y en Buenos Aires 1817-1820",
+      "authors": [
+        "Autores varios"
+      ],
+      "year": 2016,
+      "publication": "Colección del Bicentenario",
+      "publisher": "Fundación Miguel Lillo",
+      "url": "https://www.lillo.org.ar/editorial/index.php/publicaciones/catalog/book/323",
+      "access": "ficha_editorial",
+      "subjects": [
+        "Congreso de Tucumán",
+        "historia parlamentaria",
+        "independencia argentina",
+        "fuentes primarias",
+        "1816-1820"
+      ],
+      "keywords": [
+        "actas",
+        "El Redactor del Congreso Nacional",
+        "sesiones secretas",
+        "historia legislativa"
+      ],
+      "abstract": "Volumen que reúne El Redactor del Congreso Nacional, las actas secretas de 1816 y las actas de la etapa porteña de 1817-1820, compilando la documentación existente sobre las sesiones del Congreso.",
+      "source_metadata_url": "https://www.lillo.org.ar/editorial/index.php/publicaciones/catalog/book/323",
+      "metadata_status": "verificado_en_ficha_editorial",
+      "verification_note": "La ficha editorial informa título, fecha de publicación (10 de junio de 2016), colección, autoría colectiva y descripción del contenido.",
+      "record_status": "active"
+    },
+    {
+      "id": "lizondo-borda-1956-derecho-patrio-tucuman",
+      "record_type": "libro",
+      "title": "Nuestro Derecho Patrio en la Legislación de Tucumán (1810-1870)",
+      "authors": [
+        "Manuel Lizondo Borda"
+      ],
+      "year": 1956,
+      "publication": "Colección de Estudios para la Historia del Derecho Patrio en las Provincias, vol. II",
+      "publisher": "Editorial Perrot; Instituto de Historia del Derecho, Facultad de Derecho y Ciencias Sociales, Universidad de Buenos Aires",
+      "url": "https://www.derecho.uba.ar/investigacion/pdf/2018-borda-manuel-lizondo-nuestro-derecho-patrio-en-la-legislacion-de-tucuman.pdf",
+      "access": "acceso_abierto",
+      "subjects": [
+        "historia del derecho",
+        "legislación de Tucumán",
+        "historia institucional",
+        "derecho patrio",
+        "1810-1870"
+      ],
+      "keywords": [
+        "legislación provincial",
+        "leyes",
+        "decretos",
+        "derecho tucumano",
+        "historia jurídica"
+      ],
+      "abstract": "Estudio de la legislación tucumana entre 1810 y 1870, útil para investigar la formación del derecho provincial y sus antecedentes normativos.",
+      "source_metadata_url": "https://www.derecho.uba.ar/investigacion/pdf/2018-borda-manuel-lizondo-nuestro-derecho-patrio-en-la-legislacion-de-tucuman.pdf",
+      "metadata_status": "verificado_en_documento_digital_universitario",
+      "verification_note": "La portada y los datos editoriales reproducidos en el documento digital identifican autor, título, período, editorial, colección y año 1956.",
+      "record_status": "active"
+    },
+    {
+      "id": "agn-2017-guia-documentos-congreso-tucuman",
+      "record_type": "instrumento_descripcion_archivistica",
+      "title": "Documentos relativos al Congreso de Tucumán existentes en el Archivo General de la Nación",
+      "authors": [
+        "Archivo General de la Nación"
+      ],
+      "year": 2017,
+      "publication": "Legado, núm. 2",
+      "publisher": "Ministerio del Interior de la República Argentina",
+      "url": "https://www.mininterior.gob.ar/agn/pdf/Legado2.pdf",
+      "access": "acceso_abierto",
+      "subjects": [
+        "Congreso de Tucumán",
+        "fuentes primarias",
+        "archivo histórico",
+        "historia parlamentaria",
+        "1816-1820"
+      ],
+      "keywords": [
+        "Fondo Congreso General Constituyente",
+        "Sala VII",
+        "legajos",
+        "actas",
+        "correspondencia",
+        "Redactor del Congreso"
+      ],
+      "abstract": "Guía de localización de documentos originales o copias de época relativos al Congreso, con referencias a legajos, actas, correspondencia, órdenes, votos, borradores de sesiones y ejemplares de El Redactor del Congreso.",
+      "source_metadata_url": "https://www.mininterior.gob.ar/agn/pdf/Legado2.pdf",
+      "metadata_status": "verificado_en_publicacion_institucional",
+      "verification_note": "La publicación identifica el fondo documental, la sala, los legajos y los tipos de documentos. Se cataloga como instrumento de descripción archivística, no como monografía.",
+      "record_status": "active"
     }
   ]
 }
