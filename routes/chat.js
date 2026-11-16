@@ -3,6 +3,7 @@ const router = express.Router();
 
 const kernel = require("../Kernels/kernel");
 const circuloIA = require("../knowledge/agents/circuloIA");
+const bibliography = require("../knowledge/bibliografia");
 
 router.post("/", (req, res) => {
     const pregunta = req.body.message;
@@ -53,11 +54,45 @@ router.post("/", (req, res) => {
         });
     }
 
+    if (decision.modulos_rag?.includes("bibliografico")) {
+        const respuesta = bibliography.formatResults(decision.recuperacion_bibliografica, {
+            limit: 5,
+            abstractLength: 520
+        });
+        return res.json({
+            agente: "CÍRCULO IA",
+            estado: "respuesta_bibliografica",
+            respuesta,
+            bibliografia: decision.recuperacion_bibliografica,
+            fuentes_web_seleccionadas: decision.plan_rag?.selected_sources || [],
+            decision
+        });
+    }
+
+    if (decision.plan_rag?.modules?.includes("web_seleccionada")) {
+        return res.json({
+            agente: "CÍRCULO IA",
+            estado: "fuentes_web_seleccionadas",
+            respuesta: "Estas son las páginas seleccionadas pertinentes para iniciar la consulta. En esta etapa se presenta el catálogo de fuentes; la recuperación automática del contenido de esas páginas todavía requiere su adaptador de consulta.",
+            fuentes: decision.plan_rag.selected_sources,
+            decision
+        });
+    }
+
+    if (decision.plan_rag?.open_web?.enabled) {
+        return res.json({
+            agente: "CÍRCULO IA",
+            estado: "busqueda_web_abierta_pendiente",
+            respuesta: "El plan permite ampliar la consulta a la web abierta, pero el adaptador de búsqueda abierta todavía no está conectado. No voy a presentar resultados web que no se hayan recuperado.",
+            decision
+        });
+    }
+
     if (decision.requiere_fuente_externa) {
         return res.json({
             agente: "CÍRCULO IA",
             estado: "requiere_fuente_externa",
-            respuesta: "La consulta requiere información de fuentes externas al corpus institucional local.",
+            respuesta: "La consulta requiere información externa. No se encontraron todavía fuentes seleccionadas suficientes para resolverla.",
             decision
         });
     }
