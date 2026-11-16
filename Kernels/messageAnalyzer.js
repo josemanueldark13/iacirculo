@@ -29,10 +29,10 @@ const RULES = [
         /\b(problema|no funciona|no me respondieron|nadie me contesta|sigo esperando|mal servicio|mala atencion)\b/
     ]},
     { intent: "contacto", domain: "institucional", priority: "normal", patterns: [
-        /\\b(contacto|comunicarme|comunicar|llamar|telefono|whatsapp|correo|email)\\b/,
-        /\\b(dejar un mensaje|enviar un mensaje|hablar con el circulo)\\b/,
-        /\\b(quiero|necesito|solicito)\\s+(contactar|comunicarme|ponerme en contacto)\\b/,
-        /\\b(contactar|comunicarme)\\s+(con|al|a la)\\s+(el\\s+)?(circulo|institucion)\\b/
+        /\b(contacto|comunicarme|comunicar|llamar|telefono|whatsapp|correo|email)\b/,
+        /\b(dejar un mensaje|enviar un mensaje|hablar con el circulo)\b/,
+        /\b(quiero|necesito|solicito)\s+(contactar|comunicarme|ponerme en contacto)\b/,
+        /\b(contactar|comunicarme)\s+(con|al|a la)\s+(el\s+)?(circulo|institucion)\b/
     ]},
     { intent: "consulta_institucional", domain: "institucional", priority: "normal", patterns: [
         /\b(circulo|legisladores|ex legisladores|legislatura|institucion|autoridades|presidente|historia|decreto|sede|direccion|horario|actividad|actividades)\b/,
