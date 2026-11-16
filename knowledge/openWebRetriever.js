@@ -76,7 +76,7 @@ async function search(query, options = {}) {
     url.searchParams.set("maximum_number_of_urls", String(limit));
     url.searchParams.set("maximum_number_of_tokens", "4096");
     url.searchParams.set("maximum_number_of_tokens_per_url", "2048");
-    url.searchParams.set("context_threshold_mode", "balanced");
+    url.searchParams.set("context_threshold_mode", "strict");
     url.searchParams.set("enable_source_metadata", "true");
     url.searchParams.set("safesearch", "moderate");
 
