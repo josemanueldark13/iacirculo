@@ -17,9 +17,16 @@ function normalize(value = "") {
         .replace(/\s+/g, " ").trim();
 }
 
+function stemToken(token) {
+    if (token.length > 6 && token.endsWith("es")) return token.slice(0, -2);
+    if (token.length > 4 && token.endsWith("s")) return token.slice(0, -1);
+    return token;
+}
+
 function tokens(value) {
     return normalize(value).split(" ")
-        .filter(token => token.length > 2 && !STOP_WORDS.has(token));
+        .filter(token => token.length > 2 && !STOP_WORDS.has(token))
+        .map(stemToken);
 }
 
 function asText(values) {
@@ -50,13 +57,15 @@ function scoreRecord(record, queryTokens, normalizedQuery) {
 
     if (normalizedQuery.length > 5 && normalizedTitle.includes(normalizedQuery)) score += 10;
 
+    const indexedFields = fields.map(field => ({
+        weight: field.weight,
+        terms: new Set(tokens(field.value))
+    }));
+
     for (const token of queryTokens) {
         let bestWeight = 0;
-        for (const field of fields) {
-            const normalizedField = normalize(field.value);
-            if (normalizedField && (" " + normalizedField + " ").includes(" " + token + " ")) {
-                bestWeight = Math.max(bestWeight, field.weight);
-            }
+        for (const field of indexedFields) {
+            if (field.terms.has(token)) bestWeight = Math.max(bestWeight, field.weight);
         }
         if (bestWeight > 0) {
             score += bestWeight;
@@ -158,4 +167,4 @@ function formatResults(searchResult, options = {}) {
     return lines.join("\n").trim();
 }
 
-module.exports = { search, citation, normalize, getCatalogInfo, formatResults };
+module.exports = { search, citation, normalize, getCatalogInfo, formatResults, stemToken };
