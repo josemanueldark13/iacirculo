@@ -3,9 +3,9 @@ const router = express.Router();
 
 const kernel = require("../Kernels/kernel");
 const circuloIA = require("../knowledge/agents/circuloIA");
-const bibliography = require("../knowledge/bibliografia");
+const ragComposer = require("../knowledge/ragComposer");
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
     const pregunta = req.body.message;
 
     if (!pregunta) {
@@ -54,55 +54,30 @@ router.post("/", (req, res) => {
         });
     }
 
-    if (decision.modulos_rag?.includes("bibliografico")) {
-        const respuestaBibliografica = bibliography.formatResults(decision.recuperacion_bibliografica, {
-            limit: 5,
-            abstractLength: 520
+    if (decision.plan_rag?.modules?.some(level =>
+        ["bibliografico", "web_seleccionada", "web_abierta"].includes(level)
+    )) {
+        const composed = await ragComposer.compose(pregunta, decision, {
+            bibliographyLimit: 5,
+            abstractLength: 520,
+            maxSources: 3,
+            webLimit: 4,
+            openWebLimit: 5
         });
-        const respuestaOficial = decision.modulos_rag.includes("oficial")
-            ? circuloIA.responder(pregunta)
-            : null;
-        const respuesta = respuestaOficial
-            ? respuestaOficial + "\n\nContexto bibliográfico complementario:\n" + respuestaBibliografica
-            : respuestaBibliografica;
+        const state = composed.statuses.N4 === "retrieved"
+            ? "respuesta_web_abierta"
+            : composed.statuses.N3 === "retrieved" || composed.statuses.N3 === "partial"
+                ? "respuesta_web_seleccionada"
+                : decision.modulos_rag?.includes("bibliografico")
+                    ? "respuesta_bibliografica"
+                    : "consulta_rag_externo";
         return res.json({
             agente: "CÍRCULO IA",
-            estado: "respuesta_bibliografica",
-            respuesta,
-            bibliografia: decision.recuperacion_bibliografica,
-            fuentes_web_seleccionadas: decision.plan_rag?.selected_sources || [],
-            decision
-        });
-    }
-
-    if (decision.plan_rag?.open_web?.enabled) {
-        return res.json({
-            agente: "CÍRCULO IA",
-            estado: "busqueda_web_abierta_pendiente",
-            respuesta: "N4 está habilitado para esta consulta, pero el adaptador de búsqueda abierta todavía no está conectado. No voy a presentar resultados web que no se hayan recuperado.",
-            fuentes_n3: decision.plan_rag.selected_sources || [],
-            decision
-        });
-    }
-
-    if (decision.plan_rag?.modules?.includes("web_seleccionada")) {
-        const fuentes = decision.plan_rag.selected_sources || [];
-        return res.json({
-            agente: "CÍRCULO IA",
-            estado: fuentes.length ? "fuentes_web_seleccionadas" : "sin_fuentes_n3_coincidentes",
-            respuesta: fuentes.length
-                ? "Estas son las páginas de la lista seleccionada que coinciden temáticamente. La recuperación automática del contenido todavía requiere el adaptador N3."
-                : "La lista de páginas seleccionadas N3 no contiene por ahora una fuente coincidente para esta consulta. N4 permanece como último recurso y no se activa hasta confirmar la insuficiencia de N3.",
-            fuentes,
-            decision
-        });
-    }
-
-    if (decision.requiere_fuente_externa) {
-        return res.json({
-            agente: "CÍRCULO IA",
-            estado: "requiere_fuente_externa",
-            respuesta: "La consulta requiere información externa. No se encontraron todavía fuentes seleccionadas suficientes para resolverla.",
+            estado: state,
+            respuesta: composed.answer,
+            evidencia: composed.evidence,
+            niveles_consultados: composed.used_levels,
+            estados_nucleos: composed.statuses,
             decision
         });
     }
