@@ -67,6 +67,10 @@ for (const mode of ["AUTO", "SUPERVISION", "MANUAL"]) {
 const ambiguousDecision = kernel.process("Necesito hacer una consulta", { mode: "AUTO" });
 assert.equal(ambiguousDecision.decision_mensajeria.action, "CLARIFY");
 
+const phoneInfo = kernel.process("¿Cuál es el teléfono del Círculo?", { mode: "AUTO" });
+assert.equal(phoneInfo.agente, "orientacion");
+assert.equal(phoneInfo.requiere_revision_humana, false);
+
 
 const autoGreeting = kernel.process("Hola, buenas tardes", { mode: "AUTO" });
 assert.equal(autoGreeting.estado, "respuesta_conversacional_disponible");
