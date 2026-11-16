@@ -42,8 +42,8 @@ function process(question, context = {}) {
     const conversationalMatch = humanRequired ? null : conversationBase.match(question);
     const domainDecision = domainRouter.route(analysis);
 
-    const agent = humanRequired ? "atencion_humana" : intent.agente;
-    const intentType = humanRequired ? (messageAnalysis.intent === "contacto" ? "contacto" : messageAnalysis.intent) : intent.tipo;
+    const agent = humanRequired ? "atencion_humana" : (conversationalMatch?.intent || intent.agente);
+    const intentType = humanRequired ? (messageAnalysis.intent === "contacto" ? "contacto" : messageAnalysis.intent) : (conversationalMatch?.intent || intent.tipo);
     const base = {
         pregunta: question,
         intencion: intentType,
