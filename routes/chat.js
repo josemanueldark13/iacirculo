@@ -16,6 +16,15 @@ router.post("/", (req, res) => {
 
     const decision = kernel.process(pregunta);
 
+    if (decision.estado === "requiere_atencion_humana") {
+        return res.json({
+            agente: "atencion_humana",
+            estado: decision.estado,
+            respuesta: "Esta solicitud requiere atención de una persona del equipo. No voy a responderla automáticamente por este canal.",
+            decision
+        });
+    }
+
     if (decision.respuesta_conversacional?.content) {
         return res.json({
             agente: "CÍRCULO IA",
