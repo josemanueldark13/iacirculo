@@ -11,7 +11,14 @@
       "url": "https://medios.unt.edu.ar/2019/09/09/se-encuentran-disponibles-dos-colecciones-libros-sobre-historia-tucuman/",
       "source_type": "universidad",
       "trust_level": "institucional_academico",
-      "topics": ["historia de Tucumán", "historia provincial", "municipios", "bibliografía", "bibliotecas", "siglos XIX y XX"],
+      "topics": [
+        "historia de Tucumán",
+        "historia provincial",
+        "municipios",
+        "bibliografía",
+        "bibliotecas",
+        "siglos XIX y XX"
+      ],
       "purpose": "Localizar colecciones académicas de historia provincial y municipal.",
       "selection_status": "active"
     },
@@ -22,7 +29,14 @@
       "url": "https://www.trabajosycomunicaciones.fahce.unlp.edu.ar/article/view/tyce155",
       "source_type": "revista_academica",
       "trust_level": "academico",
-      "topics": ["historia de Tucumán", "legislatura", "instituciones", "historia política", "siglo XIX", "estado provincial"],
+      "topics": [
+        "historia de Tucumán",
+        "legislatura",
+        "instituciones",
+        "historia política",
+        "siglo XIX",
+        "estado provincial"
+      ],
       "purpose": "Consultar investigación académica sobre instituciones y reformas políticas tucumanas.",
       "selection_status": "active"
     },
@@ -33,7 +47,13 @@
       "url": "https://www.polhis.com.ar/index.php/polhis/article/view/251",
       "source_type": "revista_academica",
       "trust_level": "academico",
-      "topics": ["historia de Tucumán", "historia política", "facciones", "gobernación", "siglo XIX"],
+      "topics": [
+        "historia de Tucumán",
+        "historia política",
+        "facciones",
+        "gobernación",
+        "siglo XIX"
+      ],
       "purpose": "Consultar investigación especializada sobre facciones y construcción política provincial.",
       "selection_status": "active"
     },
@@ -44,7 +64,13 @@
       "url": "https://iye.anh.org.ar/index.php/iye/article/download/188/543?inline=1",
       "source_type": "revista_academica",
       "trust_level": "academico",
-      "topics": ["historia de Tucumán", "historia política", "élites", "participación política", "siglo XIX"],
+      "topics": [
+        "historia de Tucumán",
+        "historia política",
+        "élites",
+        "participación política",
+        "siglo XIX"
+      ],
       "purpose": "Consultar un estudio especializado sobre dirigencias y conflictos políticos tucumanos.",
       "selection_status": "active"
     },
@@ -55,7 +81,14 @@
       "url": "https://revistas.uncu.edu.ar/ojs3/index.php/beg/article/view/6766",
       "source_type": "revista_academica",
       "trust_level": "academico",
-      "topics": ["historia de Tucumán", "geografía histórica", "demografía", "territorio", "industria azucarera", "siglo XIX"],
+      "topics": [
+        "historia de Tucumán",
+        "geografía histórica",
+        "demografía",
+        "territorio",
+        "industria azucarera",
+        "siglo XIX"
+      ],
       "purpose": "Consultar investigación sobre transformaciones demográficas, territoriales y económicas.",
       "selection_status": "active"
     },
@@ -66,7 +99,13 @@
       "url": "https://www.edunt.unt.edu.ar/publicaciones/historia-historiador-historiografia-en-tucuman-1850-1950/",
       "source_type": "editorial_universitaria",
       "trust_level": "institucional_academico",
-      "topics": ["historia de Tucumán", "historiografía", "historiadores", "historia regional", "siglos XIX y XX"],
+      "topics": [
+        "historia de Tucumán",
+        "historiografía",
+        "historiadores",
+        "historia regional",
+        "siglos XIX y XX"
+      ],
       "purpose": "Consultar ficha editorial de una obra de referencia sobre historiografía tucumana.",
       "selection_status": "active"
     },
@@ -77,7 +116,14 @@
       "url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
       "source_type": "biblioteca_museo",
       "trust_level": "institucional",
-      "topics": ["historia de Tucumán", "biblioteca", "fuentes históricas", "guerras de independencia", "historia económica", "patrimonio"],
+      "topics": [
+        "historia de Tucumán",
+        "biblioteca",
+        "fuentes históricas",
+        "guerras de independencia",
+        "historia económica",
+        "patrimonio"
+      ],
       "purpose": "Identificar colecciones y fondos bibliográficos vinculados con Tucumán.",
       "selection_status": "active"
     },
@@ -85,11 +131,18 @@
       "id": "bcn-publicaciones-parlamentarias",
       "title": "Publicaciones de la Biblioteca del Congreso de la Nación",
       "organization": "Biblioteca del Congreso de la Nación",
-      "url": "https://bcn.gob.ar/publicaciones",
+      "url": "https://bcn.gob.ar/la-biblioteca/publicaciones",
       "source_type": "biblioteca_parlamentaria",
       "trust_level": "institucional",
-      "topics": ["historia parlamentaria", "funcionamiento parlamentario", "legislación", "archivos", "biblioteca legislativa", "investigación"],
-      "purpose": "Consultar publicaciones, dossiers, materiales legislativos y guías para investigación parlamentaria.",
+      "topics": [
+        "historia parlamentaria",
+        "funcionamiento parlamentario",
+        "legislación",
+        "archivos",
+        "biblioteca legislativa",
+        "investigación"
+      ],
+      "purpose": "Consultar publicaciones digitales, dossiers legislativos, compilaciones bibliográficas y guías de investigación parlamentaria.",
       "selection_status": "active"
     },
     {
@@ -99,7 +152,12 @@
       "url": "https://bcn.gob.ar/la-biblioteca/historia",
       "source_type": "biblioteca_parlamentaria",
       "trust_level": "institucional",
-      "topics": ["historia parlamentaria", "bibliotecas legislativas", "historia institucional", "bibliotecología"],
+      "topics": [
+        "historia parlamentaria",
+        "bibliotecas legislativas",
+        "historia institucional",
+        "bibliotecología"
+      ],
       "purpose": "Consultar antecedentes históricos de una biblioteca parlamentaria argentina.",
       "selection_status": "active"
     }
