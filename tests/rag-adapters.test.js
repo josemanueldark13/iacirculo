@@ -39,6 +39,17 @@ async function run() {
     assert.equal(n1.level, "N1");
     assert.ok(n1.total > 0);
 
+    const kernelN1 = require("../Kernels/kernel");
+    const n1Decision = kernelN1.process("¿Quién es actualmente el presidente del Círculo de Legisladores?");
+    assert.ok(n1Decision.modulos_rag.includes("oficial"));
+    const composedN1 = await ragComposer.compose(
+        "¿Quién es actualmente el presidente del Círculo de Legisladores?",
+        n1Decision
+    );
+    assert.equal(composedN1.statuses.N1, "retrieved");
+    assert.match(composedN1.answer, /Evidencia documental recuperada de N1:/);
+    assert.match(composedN1.answer, /Autoridades/);
+
     const n2 = bibliography.search("política tucumana facciones partidos", 5);
     assert.equal(n2.engine, "BM25-fields-v1");
     assert.ok(n2.total > 0);
