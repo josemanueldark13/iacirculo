@@ -66,7 +66,8 @@ async function compose(question, decision, options = {}) {
         evidence.N3 = await webRetriever.searchSelected(question, {
             maxSources: options.maxSources || 3,
             limit: options.webLimit || 4,
-            timeoutMs: options.timeoutMs || 4500
+            timeoutMs: options.timeoutMs || 4500,
+            fetchImpl: options.fetchImpl
         });
         n3Insufficient = evidence.N3.insufficient;
         statuses.N3 = evidence.N3.total_sources_retrieved > 0
@@ -81,7 +82,9 @@ async function compose(question, decision, options = {}) {
     if (n4Required) {
         evidence.N4 = await openWebRetriever.search(question, {
             limit: options.openWebLimit || 5,
-            timeoutMs: options.timeoutMs || 8000
+            timeoutMs: options.timeoutMs || 8000,
+            fetchImpl: options.fetchImpl,
+            apiKey: options.apiKey
         });
         statuses.N4 = evidence.N4.status;
 
