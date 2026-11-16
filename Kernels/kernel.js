@@ -12,6 +12,7 @@ const ragRouter = require("./ragRouter");
 const responsePolicy = require("./responsePolicy");
 const intentRouter = require("./intentRouter");
 const conversationBase = require("./conversationBase");
+const bibliographyRetriever = require("../knowledge/bibliografia");
 
 const PRIORITY_RANK = { baja: 1, normal: 2, alta: 3, critica: 4 };
 
@@ -87,15 +88,20 @@ function process(question, context = {}) {
     }
 
     const ragDecision = ragRouter.route(question, analysis);
+    const bibliographyRecovery = ragDecision.modules.includes("bibliografico")
+        ? bibliographyRetriever.search(question, 5)
+        : { catalogVersion: null, query: question, total: 0, results: [] };
     return {
         ...base,
         estado: "aceptada",
         dominio: "institucional",
         modulos_rag: ragDecision.modules,
         modulo_prioritario: ragDecision.priority,
+        plan_rag: ragDecision,
+        recuperacion_bibliografica: bibliographyRecovery,
         tipo_respuesta: responsePolicy.determine(question),
-        requiere_fuente_externa: Boolean(ragDecision.requiere_fuente_externa),
-        internet: Boolean(ragDecision.requiere_fuente_externa)
+        requiere_fuente_externa: Boolean(ragDecision.requires_external_source),
+        internet: ragDecision.modules.includes("web_seleccionada") || ragDecision.modules.includes("web_abierta")
     };
 }
 
