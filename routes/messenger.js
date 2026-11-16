@@ -126,7 +126,7 @@ function buildResponse(question, decision) {
             limit: 2,
             abstractLength: 140
         }));
-        return sections.join("\\n\\n").slice(0, 1900);
+        return sections.join("\n\n").slice(0, 1900);
     }
     if (decision.plan_rag?.modules?.includes("web_seleccionada")) {
         const sources = decision.plan_rag.selected_sources || [];
