@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const router = express.Router();
 const kernel = require("../Kernels/kernel");
 const circuloIA = require("../knowledge/agents/circuloIA");
+const bibliography = require("../knowledge/bibliografia");
 const reviewInboxStore = require("../Kernels/reviewInboxStore");
 const messengerSender = require("../Kernels/messengerSender");
 const outlookNotifier = require("../Kernels/outlookNotifier");
@@ -116,9 +117,29 @@ function buildResponse(question, decision) {
     if (decision.agente === "operativo") return "Voy a ayudarte con información operativa del Círculo. ¿Qué necesitás saber?";
     if (decision.agente === "contacto") return "Recibimos tu solicitud de contacto para que pueda ser atendida por el equipo del Círculo.";
     if (decision.agente === "formativo") return "Puedo ayudarte sobre el Círculo, la historia parlamentaria y la participación ciudadana. ¿Sobre qué tema querés aprender?";
+    if (decision.modulos_rag?.includes("bibliografico")) {
+        return bibliography.formatResults(decision.recuperacion_bibliografica, {
+            limit: 2,
+            abstractLength: 180
+        }).slice(0, 1900);
+    }
+    if (decision.plan_rag?.modules?.includes("web_seleccionada")) {
+        const sources = decision.plan_rag.selected_sources || [];
+        if (!sources.length) return "No encontré páginas seleccionadas pertinentes para esta consulta.";
+        return [
+            "Encontré estas páginas seleccionadas para continuar la investigación:",
+            ...sources.slice(0, 3).map((source, index) =>
+                (index + 1) + ". " + source.title + " — " + source.organization + "\n" + source.url
+            ),
+            "En esta etapa se seleccionan las fuentes; la lectura automática de sus páginas todavía requiere el adaptador N3."
+        ].join("\n\n").slice(0, 1900);
+    }
+    if (decision.plan_rag?.open_web?.enabled) {
+        return "La búsqueda N4 en la web abierta está habilitada para esta consulta, pero su adaptador todavía no está conectado. No voy a inventar resultados externos.";
+    }
     if (decision.requiere_fuente_externa) {
         const siteUrl = envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/";
-        return "Esta consulta requiere una fuente externa. Podés continuar en el portal: " + siteUrl;
+        return "Esta consulta requiere una fuente externa que todavía no está disponible en los sitios seleccionados. Podés continuar en el portal: " + siteUrl;
     }
     return circuloIA.responder(question);
 }
