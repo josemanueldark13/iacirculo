@@ -11,6 +11,7 @@ const reformulator = require("./reformulator");
 const ragRouter = require("./ragRouter");
 const responsePolicy = require("./responsePolicy");
 const intentRouter = require("./intentRouter");
+const conversationBase = require("./conversationBase");
 
 const PRIORITY_RANK = { baja: 1, normal: 2, alta: 3, critica: 4 };
 
@@ -38,6 +39,7 @@ function process(question, context = {}) {
         priority
     };
     const messagingDecision = messagingRouter.route(routingAnalysis, context.mode, semanticFrame);
+    const conversationalMatch = humanRequired ? null : conversationBase.match(question);
     const domainDecision = domainRouter.route(analysis);
 
     const agent = humanRequired ? "atencion_humana" : intent.agente;
