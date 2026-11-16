@@ -8,6 +8,8 @@ const circuloIA = require("../knowledge/agents/circuloIA");
 const ragComposer = require("../knowledge/ragComposer");
 const openWebRetriever = require("../knowledge/openWebRetriever");
 const ragRouter = require("../Kernels/ragRouter");
+const documentRetriever = require("../knowledge/documentRetriever");
+const bibliography = require("../knowledge/bibliografia");
 const reviewInboxStore = require("../Kernels/reviewInboxStore");
 const messengerSender = require("../Kernels/messengerSender");
 const outlookNotifier = require("../Kernels/outlookNotifier");
@@ -56,6 +58,8 @@ router.get("/status", (req, res) => res.json({
     dispatch_enabled: envFirst("DISPATCH_ENABLED") === "true",
     outlook_notificaciones_configuradas: outlookNotifier.isConfigured(),
     rag_arquitectura: ragRouter.getArchitecture().id,
+    n1_documentos: documentRetriever.count,
+    n2_catalogo: bibliography.getCatalogInfo(),
     n3_fuentes_seleccionadas: ragRouter.getArchitecture().curatedSourceCount,
     n4_proveedor_configurado: openWebRetriever.isConfigured(),
     site_url: envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/"
