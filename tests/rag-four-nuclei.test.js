@@ -8,12 +8,13 @@ const kernel = require("../Kernels/kernel");
 const architecture = ragRouter.getArchitecture();
 assert.equal(architecture.id, "AXIAL-RAG-4N");
 assert.deepEqual(architecture.nuclei.map(item => item.id), ["N1", "N2", "N3", "N4"]);
-assert.equal(architecture.curatedSourceCount, 9);
+assert.equal(architecture.curatedSourceCount, 12);
 
 const catalogInfo = bibliography.getCatalogInfo();
-assert.equal(catalogInfo.total, 15);
-assert.equal(catalogInfo.verified, 13);
+assert.equal(catalogInfo.total, 20);
+assert.equal(catalogInfo.verified, 18);
 assert.equal(catalogInfo.secondaryCitations, 2);
+assert.equal(catalogInfo.candidates, 2);
 
 // N1: una petición normativa debe conservar prioridad oficial.
 const n1 = ragRouter.route("Necesito el texto oficial de la Ley Provincial 6333", {
@@ -44,7 +45,7 @@ assert.ok(kernelN2.recuperacion_bibliografica.total > 0);
 
 const formattedN2 = bibliography.formatResults(kernelN2.recuperacion_bibliografica, { limit: 2 });
 assert.match(formattedN2, /núcleo bibliográfico N2/);
-assert.match(formattedN2, /Fuente de verificación:/);
+assert.match(formattedN2, /Fuente de metadatos:/);
 
 const historyRoute = ragRouter.route("Historia política de Tucumán", {
     domain: "institucional",
