@@ -103,6 +103,7 @@ function search(query, limit = 5, options = {}) {
             abstract: record.abstract || "",
             citation: citation(record),
             metadata_status: record.metadata_status,
+            source_metadata_url: record.source_metadata_url || null,
             verification_note: record.verification_note || record.year_note || null,
             relevance
         }));
@@ -122,7 +123,8 @@ function getCatalogInfo() {
         level: catalog.level,
         total: records.length,
         verified: records.filter(record => record.metadata_status === "verificado_en_ficha_editorial"
-            || record.metadata_status === "verificado_en_fuente_institucional").length,
+            || record.metadata_status === "verificado_en_fuente_institucional"
+            || record.metadata_status === "verificado_en_catalogo_institucional").length,
         secondaryCitations: records.filter(record => record.metadata_status === "referencia_citada_en_bibliografia_academica").length
     };
 }
@@ -147,6 +149,7 @@ function formatResults(searchResult, options = {}) {
         if (item.doi) lines.push("   DOI: https://doi.org/" + item.doi);
         else if (item.url) lines.push("   Consulta: " + item.url);
         if (item.verification_note) lines.push("   Nota de catálogo: " + item.verification_note);
+        if (item.source_metadata_url) lines.push("   Fuente de verificación: " + item.source_metadata_url);
         lines.push("   Metadatos: " + item.metadata_status);
         lines.push("");
     });
