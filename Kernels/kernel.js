@@ -87,7 +87,12 @@ function process(question, context = {}) {
         return { ...base, estado: "fuera_de_dominio", accion: "flujo_externo" };
     }
 
-    const ragDecision = ragRouter.route(question, analysis);
+    const ragOptions = {
+        n3Insufficient: context.rag?.n3Insufficient === true,
+        forceOpenWeb: context.rag?.forceOpenWeb === true,
+        maxSelectedSources: context.rag?.maxSelectedSources
+    };
+    const ragDecision = ragRouter.route(question, analysis, ragOptions);
     const bibliographyRecovery = ragDecision.modules.includes("bibliografico")
         ? bibliographyRetriever.search(question, 5)
         : { catalogVersion: null, query: question, total: 0, results: [] };
