@@ -62,7 +62,9 @@ router.post("/", async (req, res) => {
             abstractLength: 520,
             maxSources: 3,
             webLimit: 4,
-            openWebLimit: 5
+            openWebLimit: 5,
+            n3TimeoutMs: 3500,
+            n4TimeoutMs: 5000
         });
         const state = composed.statuses.N4 === "retrieved"
             ? "respuesta_web_abierta"
