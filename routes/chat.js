@@ -63,7 +63,7 @@ router.post("/", (req, res) => {
             ? circuloIA.responder(pregunta)
             : null;
         const respuesta = respuestaOficial
-            ? respuestaOficial + "\\n\\nContexto bibliográfico complementario:\\n" + respuestaBibliografica
+            ? respuestaOficial + "\n\nContexto bibliográfico complementario:\n" + respuestaBibliografica
             : respuestaBibliografica;
         return res.json({
             agente: "CÍRCULO IA",
