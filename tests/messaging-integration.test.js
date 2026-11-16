@@ -67,4 +67,29 @@ for (const mode of ["AUTO", "SUPERVISION", "MANUAL"]) {
 const ambiguousDecision = kernel.process("Necesito hacer una consulta", { mode: "AUTO" });
 assert.equal(ambiguousDecision.decision_mensajeria.action, "CLARIFY");
 
+
+const autoGreeting = kernel.process("Hola, buenas tardes", { mode: "AUTO" });
+assert.equal(autoGreeting.estado, "respuesta_conversacional_disponible");
+assert.equal(autoGreeting.respuesta_conversacional.id, "saludo-inicial");
+assert.equal(autoGreeting.respuesta_conversacional.delivery, "auto");
+assert.ok(autoGreeting.respuesta_conversacional.content);
+
+const supervisedHelp = kernel.process("¿Cómo podés ayudarme?", { mode: "SUPERVISION" });
+assert.equal(supervisedHelp.estado, "respuesta_conversacional_disponible");
+assert.equal(supervisedHelp.respuesta_conversacional.delivery, "borrador_para_revision");
+assert.ok(supervisedHelp.respuesta_conversacional.content);
+
+const manualGreeting = kernel.process("Hola", { mode: "MANUAL" });
+assert.equal(manualGreeting.estado, "respuesta_conversacional_disponible");
+assert.equal(manualGreeting.respuesta_conversacional.delivery, "manual");
+assert.equal(manualGreeting.respuesta_conversacional.content, null);
+
+const contactStillEscalates = kernel.process("Quiero hablar con una persona", { mode: "AUTO" });
+assert.equal(contactStillEscalates.estado, "requiere_atencion_humana");
+assert.equal(contactStillEscalates.respuesta_conversacional, undefined);
+
+const emailDraftHelp = kernel.process("Quiero enviar un correo", { mode: "AUTO" });
+assert.equal(emailDraftHelp.estado, "respuesta_conversacional_disponible");
+assert.match(emailDraftHelp.respuesta_conversacional.content, /confirmación expresa/);
+
 console.log("MESSAGING UNIFIED INTEGRATION: PASS");
