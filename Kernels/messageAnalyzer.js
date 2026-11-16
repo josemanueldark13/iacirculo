@@ -78,6 +78,13 @@ function detectImplicitComplaint(text) {
     return signals;
 }
 
+function isExplicitContactRequest(text) {
+    return /\\b(quiero|necesito|solicito|deseo)\\s+(contactar|comunicarme|ponerme en contacto|hablar)\\b/.test(text)
+        || /\\b(contactar|comunicarme)\\s+(con|al|a la)\\s+(el\\s+)?(circulo|institucion)\\b/.test(text)
+        || /\\b(dejar|enviar|mandar)\\s+(un\\s+)?(mensaje|consulta|pedido)\\b/.test(text)
+        || /\\b(solicito|necesito|requiero)\\s+contacto\\s+con\\b/.test(text);
+}
+
 function analyze(message, context = {}) {
     const original = String(message ?? "").trim();
     const text = normalize(original);
@@ -120,7 +127,7 @@ function analyze(message, context = {}) {
     const sensitive = selected.intent === "denuncia_sensible";
     const urgent = selected.intent === "urgencia";
     const asksHuman = selected.intent === "solicitud_humano";
-    const explicitContact = selected.intent === "contacto";
+    const explicitContact = isExplicitContactRequest(text);
     const insultOnly = /\b(inutil|idiota|imbecil|estupido|tarado|pelotudo|boludo|forro|hdp)\b/.test(text) && !complaint;
     if (insultOnly && !urgent && !sensitive && !asksHuman) {
         selected = { intent: "insulto", domain: "conversacional", priority: "baja" };
