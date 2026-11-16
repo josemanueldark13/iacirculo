@@ -128,19 +128,21 @@ function buildResponse(question, decision) {
         }));
         return sections.join("\n\n").slice(0, 1900);
     }
+    if (decision.plan_rag?.open_web?.enabled) {
+        return "N4 está habilitado para esta consulta, pero el adaptador de búsqueda abierta todavía no está conectado. No voy a inventar resultados externos.";
+    }
     if (decision.plan_rag?.modules?.includes("web_seleccionada")) {
         const sources = decision.plan_rag.selected_sources || [];
-        if (!sources.length) return "No encontré páginas seleccionadas pertinentes para esta consulta.";
+        if (!sources.length) {
+            return "La lista de páginas seleccionadas N3 no contiene por ahora una fuente coincidente. N4 permanece como último recurso hasta confirmar que N3 es insuficiente.";
+        }
         return [
             "Encontré estas páginas seleccionadas para continuar la investigación:",
             ...sources.slice(0, 3).map((source, index) =>
                 (index + 1) + ". " + source.title + " — " + source.organization + "\n" + source.url
             ),
-            "En esta etapa se seleccionan las fuentes; la lectura automática de sus páginas todavía requiere el adaptador N3."
+            "La selección de fuentes está activa; la lectura automática de sus páginas todavía requiere el adaptador N3."
         ].join("\n\n").slice(0, 1900);
-    }
-    if (decision.plan_rag?.open_web?.enabled) {
-        return "La búsqueda N4 en la web abierta está habilitada para esta consulta, pero su adaptador todavía no está conectado. No voy a inventar resultados externos.";
     }
     if (decision.requiere_fuente_externa) {
         const siteUrl = envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/";
