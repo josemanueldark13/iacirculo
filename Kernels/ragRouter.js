@@ -102,7 +102,11 @@ function route(question, analysis = {}, options = {}) {
         "referencias bibliograficas", "investigacion", "investigador",
         "libro", "libros", "autor", "autores", "articulo academico",
         "tesis", "estudio", "estudios", "contexto historico",
-        "historia legislativa", "fuentes secundarias", "publicaciones academicas"
+        "historia legislativa", "fuentes secundarias", "publicaciones academicas",
+        "reformas institucionales", "reformas politicas", "historia provincial", "historia politica",
+        "politica tucumana", "instituciones provinciales", "estado provincial", "facciones",
+        "caudillismo", "geografia historica", "historia regional", "participacion politica",
+        "siglo xix", "historia parlamentaria", "debate historiografico"
     ];
     const webTerms = [
         "internet", "en la web", "busca en la web", "buscar en la web",
@@ -149,9 +153,7 @@ function route(question, analysis = {}, options = {}) {
 
     // N4 se habilita solo si se solicita búsqueda libre, la consulta necesita
     // actualidad que la allowlist no garantiza o N3 no ofrece páginas pertinentes.
-    const openWebNeeded = asksOpen || (requiresExternal && (
-        selectedSources.length === 0 || timeSensitive || options.forceOpenWeb === true
-    ));
+    const openWebNeeded = asksOpen || options.n3Insufficient === true || options.forceOpenWeb === true;
     if (openWebNeeded) modules.push("web_abierta");
 
     if (modules.length === 0 && analysis.domain === "institucional") modules.push("oficial");
@@ -176,6 +178,8 @@ function route(question, analysis = {}, options = {}) {
         requires_external_source: requiresExternal,
         open_web: {
             enabled: openWebNeeded,
+            eligible: requiresExternal && !asksOpen,
+            fallback_trigger: "n3_insufficient_or_no_relevant_curated_source",
             status: openWebStatus,
             must_be_last_resort: true,
             requires_citations: true,
