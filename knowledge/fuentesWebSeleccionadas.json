@@ -160,6 +160,59 @@
       ],
       "purpose": "Consultar antecedentes históricos de una biblioteca parlamentaria argentina.",
       "selection_status": "active"
+    },
+    {
+      "id": "anuario-unlp-clima-politico-congreso",
+      "title": "Una difícil centralidad. El clima político en Tucumán en tiempos del Congreso",
+      "organization": "Anuario del Instituto de Historia Argentina, Universidad Nacional de La Plata",
+      "url": "https://www.anuarioiha.fahce.unlp.edu.ar/article/view/IHAv16n1a02",
+      "source_type": "articulo_academico",
+      "trust_level": "academico",
+      "topics": [
+        "Congreso de Tucumán",
+        "historia política",
+        "independencia",
+        "sesiones secretas",
+        "Tucumán",
+        "1814-1816"
+      ],
+      "purpose": "Consultar investigación historiográfica sobre el contexto político del Congreso de Tucumán.",
+      "selection_status": "active"
+    },
+    {
+      "id": "fundacion-lillo-sesiones-congreso",
+      "title": "Sesiones del Congreso de Tucumán, 1816 y en Buenos Aires 1817-1820",
+      "organization": "Fundación Miguel Lillo",
+      "url": "https://www.lillo.org.ar/editorial/index.php/publicaciones/catalog/book/323",
+      "source_type": "catalogo_editorial",
+      "trust_level": "institucional_academico",
+      "topics": [
+        "Congreso de Tucumán",
+        "sesiones legislativas",
+        "actas",
+        "El Redactor del Congreso Nacional",
+        "1816-1820"
+      ],
+      "purpose": "Consultar la ficha editorial de una compilación de documentos sobre las sesiones del Congreso.",
+      "selection_status": "active"
+    },
+    {
+      "id": "ahpba-fondo-congreso-soberano",
+      "title": "Fondo Soberano Congreso de las Provincias Unidas del Río de la Plata",
+      "organization": "Archivo Histórico de la Provincia de Buenos Aires Dr. Ricardo Levene",
+      "url": "https://ahpbagestion.gba.gob.ar/index.php/f-ct-2?sf_culture=es",
+      "source_type": "descripcion_archivistica",
+      "trust_level": "archivo_publico",
+      "topics": [
+        "Congreso de Tucumán",
+        "fuentes primarias",
+        "fondo documental",
+        "actas",
+        "correspondencia",
+        "1816-1820"
+      ],
+      "purpose": "Localizar la descripción archivística del fondo documental del Congreso y sus secciones.",
+      "selection_status": "active"
     }
   ]
 }
