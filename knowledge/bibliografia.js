@@ -127,4 +127,32 @@ function getCatalogInfo() {
     };
 }
 
-module.exports = { search, citation, normalize, getCatalogInfo };
+
+function formatResults(searchResult, options = {}) {
+    const results = Array.isArray(searchResult?.results) ? searchResult.results : [];
+    if (!results.length) {
+        return "No encontré registros bibliográficos coincidentes en el catálogo N2. La consulta queda identificada para ampliar el corpus.";
+    }
+
+    const limit = Math.max(1, Math.min(Number(options.limit) || 3, 5));
+    const abstractLength = Math.max(100, Math.min(Number(options.abstractLength) || 320, 700));
+    const lines = [
+        "Encontré estas referencias en el núcleo bibliográfico N2:",
+        ""
+    ];
+
+    results.slice(0, limit).forEach((item, index) => {
+        lines.push((index + 1) + ". " + item.citation);
+        if (item.abstract) lines.push("   Síntesis: " + item.abstract.slice(0, abstractLength) + (item.abstract.length > abstractLength ? "…" : ""));
+        if (item.doi) lines.push("   DOI: https://doi.org/" + item.doi);
+        else if (item.url) lines.push("   Consulta: " + item.url);
+        if (item.verification_note) lines.push("   Nota de catálogo: " + item.verification_note);
+        lines.push("   Metadatos: " + item.metadata_status);
+        lines.push("");
+    });
+
+    lines.push("Estas referencias son bibliografía secundaria o fondos de consulta; no sustituyen documentos oficiales del núcleo N1.");
+    return lines.join("\n").trim();
+}
+
+module.exports = { search, citation, normalize, getCatalogInfo, formatResults };
