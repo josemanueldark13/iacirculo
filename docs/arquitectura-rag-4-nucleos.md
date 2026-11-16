@@ -23,7 +23,7 @@ AXIAL separa la procedencia y autoridad del conocimiento. Los cuatro núcleos fo
 3. N2 complementa consultas históricas e historiográficas. En una consulta institucional histórica pueden activarse N1 y N2, manteniendo N1 como fuente primaria.
 4. N3 busca páginas solo dentro de `knowledge/fuentesWebSeleccionadas.json`, descarga HTML, limpia el contenido, lo segmenta y recupera fragmentos con BM25.
 5. Si N3 no obtiene texto suficiente, el compositor puede activar N4 cuando el plan permite fuentes externas. Si la persona solicita expresamente web abierta, N4 se ejecuta directamente.
-6. El compositor común entrega evidencia, referencias y estado de cada núcleo a chat web y Messenger.
+6. El compositor común entrega evidencia, referencias y estado de cada núcleo a chat web y Messenger. En Messenger, los eventos que requieren N3/N4 quedan persistidos en KV antes de iniciar consultas externas; si la recuperación falla, el borrador y el caso permanecen disponibles para revisión humana. Los tiempos de N3 y N4 se limitan por separado para no bloquear el webhook.
 
 ## Separación de autoridad
 
@@ -76,7 +76,7 @@ Configuración de servidor:
 - `BRAVE_SEARCH_COUNTRY` — por defecto `AR`.
 - `BRAVE_SEARCH_LANG` — por defecto `es`.
 
-La clave no se incluye en el repositorio ni se expone al cliente. El endpoint devuelve `grounding.generic` y `sources`; el adaptador conserva título, URL, host y extractos. Los resultados se etiquetan como `externa_no_verificada`.
+La clave no se incluye en el repositorio ni se expone al cliente. Debe configurarse como variable de entorno `BRAVE_SEARCH_API_KEY` en Vercel para Preview y Production. El endpoint devuelve `grounding.generic` y `sources`; el adaptador conserva título, URL, host y extractos. Los resultados se etiquetan como `externa_no_verificada`.
 
 ## Compositor común
 
