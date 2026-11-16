@@ -112,8 +112,17 @@ function route(question, analysis = {}, options = {}) {
         "internet", "en la web", "busca en la web", "buscar en la web",
         "fuentes externas", "informacion externa", "consulta externa",
         "noticias", "actualidad", "ultima informacion", "ultimas noticias",
-        "reciente", "recientes", "hoy", "actualmente", "a la fecha",
-        "fuentes adicionales", "ampliar la busqueda", "investiga en linea"
+        "reciente", "recientes", "hoy", "en este momento", "ultima version",
+        "fuentes adicionales", "ampliar la busqueda", "investiga en linea",
+        "otras instituciones", "otras instituciones similares",
+        "instituciones similares de argentina", "otros lugares del pais",
+        "otros lugares", "otros circulos", "otros circulos de legisladores",
+        "en otros lugares", "en otros lugares del pais",
+        "consulta un investigador", "donde podria consultar",
+        "donde podria consultar un investigador",
+        "verificarse en fuentes oficiales", "fuentes oficiales antes",
+        "antes de considerarla definitiva", "informacion historica externa",
+        "informacion adicional"
     ];
     const selectedTerms = [
         "paginas seleccionadas", "sitios seleccionados", "fuentes seleccionadas",
@@ -126,9 +135,9 @@ function route(question, analysis = {}, options = {}) {
         "internet libre", "busca en cualquier sitio"
     ];
     const currentTerms = [
-        "hoy", "actualmente", "en este momento", "ultima noticia",
-        "ultimas noticias", "reciente", "recientes", "actualizado",
-        "ultima version", "a la fecha", "vigente"
+        "hoy", "en este momento", "ultima noticia", "ultimas noticias",
+        "noticia reciente", "noticias recientes", "actualidad",
+        "version actualizada", "actualizacion reciente", "a la fecha"
     ];
 
     const requiresOfficial = hasAny(text, officialTerms);
@@ -152,9 +161,7 @@ function route(question, analysis = {}, options = {}) {
     if (wantsBibliography) modules.push("bibliografico");
 
     const selectedWebNeeded = asksSelected || asksWeb || asksOpen || timeSensitive;
-    if (selectedWebNeeded && selectedSources.length > 0) {
-        modules.push("web_seleccionada");
-    }
+    if (selectedWebNeeded) modules.push("web_seleccionada");
 
     // N4 se habilita solo si se solicita búsqueda libre, la consulta necesita
     // actualidad que la allowlist no garantiza o N3 no ofrece páginas pertinentes.
