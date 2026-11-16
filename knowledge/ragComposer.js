@@ -47,14 +47,9 @@ async function compose(question, decision, options = {}) {
         const answer = circuloIA.responder(question);
         if (answer) sections.push(answer);
         statuses.N1 = evidence.N1?.total ? "retrieved" : "no_local_match";
-        const officialSources = (evidence.N1?.results || []).slice(0, 3);
-        if (officialSources.length) {
-            sections.push(
-                "Documentación institucional N1 consultada:\\n" +
-                officialSources.map((item, index) =>
-                    (index + 1) + ". " + item.title + " [" + item.category + "]"
-                ).join("\\n")
-            );
+        const officialDetails = documentRetriever.formatResults(evidence.N1, { limit: 3 });
+        if (officialDetails) {
+            sections.push("Evidencia documental recuperada de N1:\n" + officialDetails);
         }
     }
 
