@@ -103,6 +103,7 @@ function buildResponse(question, decision) {
             ? "Recibimos tu mensaje prioritario. Será derivado para revisión humana."
             : "Recibimos tu reclamo. Será revisado por el equipo del Círculo.";
     }
+    if (decision.respuesta_conversacional?.content) return decision.respuesta_conversacional.content;
     if (decision.estado === "requiere_reformulacion") {
         const suggestion = Array.isArray(decision.sugerencias) ? decision.sugerencias[0] : null;
         return suggestion ? "Necesito precisar la consulta. Podés reformularla así: " + suggestion
