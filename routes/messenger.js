@@ -98,6 +98,11 @@ router.get("/", (req, res) => {
 });
 
 function buildResponse(pregunta, decision) {
+    // Las acciones estáticas del Kernel tienen prioridad sobre el RAG.
+    if (typeof decision?.responseMessage === "string" && decision.responseMessage.trim()) {
+        return decision.responseMessage;
+    }
+
     const q = normalizeText(pregunta);
 
     // La bienvenida configurada en Meta se conserva. Estas respuestas se usan
