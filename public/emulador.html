@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AXIAL · Emulador conversacional</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#111c2e;--panel2:#16243a;--line:#263850;--text:#e8eef6;--muted:#91a4ba;--blue:#3986c8;--cyan:#70c6d8;--green:#55c49a;--amber:#e6b65c}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top left,#142641 0,#0b1220 55%);color:var(--text);font:14px Inter,Segoe UI,Arial,sans-serif;min-height:100vh}
+header{height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:#0b1220dd;position:sticky;top:0;z-index:5;backdrop-filter:blur(12px)}
+.brand{display:flex;align-items:center;gap:12px}.mark{width:36px;height:36px;border:1px solid #4779a5;border-radius:11px;display:grid;place-items:center;color:#9bd9ed;font-size:20px}.brand strong{letter-spacing:.12em;font-size:13px}.brand small{display:block;color:var(--muted);font-size:11px;margin-top:3px}.header-right{display:flex;align-items:center;gap:10px}.status{border:1px solid #735b2b;background:#302817;color:#f0cb7b;border-radius:99px;padding:6px 10px;font-size:10px;font-weight:800;letter-spacing:.08em}
+main{max-width:1500px;margin:auto;padding:22px;display:grid;grid-template-columns:minmax(280px,.78fr) minmax(350px,1.05fr) minmax(280px,.78fr);gap:16px}
+.panel{background:#101b2b;border:1px solid var(--line);border-radius:15px;overflow:hidden;min-width:0}.panel-head{padding:15px 17px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px}.panel-head h2{font-size:12px;letter-spacing:.1em;margin:0;color:#dce9f7}.eyebrow{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}.body{padding:16px}
+.block-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.block{border:1px solid #2b405a;background:#14243a;color:#dce8f5;border-radius:11px;padding:12px;text-align:left;cursor:pointer;min-height:76px;transition:.15s}.block:hover{border-color:var(--blue);background:#1a304a}.block b{display:block;font-size:12px;margin:8px 0 3px}.block small{font-size:10px;color:var(--muted);line-height:1.4}.ico{font-size:17px;color:#82c8e3}.section{margin:19px 0 9px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.field{width:100%;background:#0c1625;border:1px solid #2a405b;color:var(--text);padding:10px 11px;border-radius:9px;outline:none;font:inherit}.field:focus{border-color:var(--blue)}textarea.field{resize:vertical;min-height:75px}.row{display:flex;gap:8px;align-items:center}.btn{border:1px solid #36516e;background:#192b42;color:#e5eef8;padding:9px 12px;border-radius:9px;font-weight:700;font-size:11px;cursor:pointer}.btn.primary{background:#245d8d;border-color:#347db7;color:white}.btn:disabled{opacity:.4;cursor:not-allowed}.btn.full{width:100%}
+.phone{background:#080f19;border-radius:17px;border:1px solid #30465e;padding:12px;max-width:560px;margin:auto;min-height:570px;display:flex;flex-direction:column}.phone-top{display:flex;align-items:center;gap:9px;border-bottom:1px solid #223248;padding:5px 3px 12px}.avatar{width:33px;height:33px;border-radius:50%;background:#1e527d;display:grid;place-items:center;font-weight:800}.phone-top strong{font-size:12px}.phone-top small{display:block;color:#7f98b1;font-size:10px;margin-top:3px}.messages{flex:1;min-height:380px;max-height:510px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:16px 3px}.bubble{max-width:85%;padding:10px 12px;border-radius:13px;font-size:12px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}.bubble.in{align-self:flex-start;background:#1b2b40;border:1px solid #2c4159;border-bottom-left-radius:4px}.bubble.out{align-self:flex-end;background:#174d76;border:1px solid #286b9d;border-bottom-right-radius:4px}.bubble.system{align-self:center;color:#8ea5bb;font-size:10px;background:#111d2c;border:1px dashed #33465d}.quick-replies{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.quick{border:1px solid #4a8fbd;background:#102b43;color:#a9dfff;border-radius:99px;padding:6px 9px;font-size:10px;cursor:pointer}.chat-compose{display:flex;gap:7px;border-top:1px solid #223248;padding-top:11px}.chat-compose input{flex:1;min-width:0;background:#111d2c;border:1px solid #2a405b;border-radius:99px;padding:10px 13px;color:var(--text);outline:none}.send{width:38px;border:0;border-radius:50%;background:#286a9e;color:white;font-size:16px;cursor:pointer}
+.inspector{display:grid;gap:10px}.inspect-card{border:1px solid #263c55;background:#132238;border-radius:11px;padding:12px}.inspect-card label{display:block;color:#91a7bd;font-size:10px;margin-bottom:6px}.inspect-card strong{font-size:12px;color:#e6f0fa;overflow-wrap:anywhere}.trace{display:grid;gap:9px}.trace-item{display:grid;grid-template-columns:17px 1fr;gap:8px;font-size:11px;color:#c4d2e1;line-height:1.4}.dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);margin:3px auto;box-shadow:0 0 0 4px #70c6d81a}.trace-item small{display:block;color:var(--muted);font-size:10px;margin-top:3px}.payload{font:10px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#a9c6dc;white-space:pre-wrap;overflow-wrap:anywhere;background:#091321;border:1px solid #253b54;border-radius:9px;padding:10px;max-height:190px;overflow:auto}
+.notice{font-size:10px;line-height:1.5;color:#c9ad72;background:#2a2418;border:1px solid #59482a;border-radius:9px;padding:10px;margin-top:12px}
+@media(max-width:1050px){main{grid-template-columns:1fr 1.2fr}.right{grid-column:1/-1}.right .inspector{grid-template-columns:1fr 1fr}.right .section{grid-column:1/-1}}
+@media(max-width:720px){header{padding:0 14px}main{padding:12px;grid-template-columns:1fr}.right{grid-column:auto}.right .inspector{grid-template-columns:1fr}.right .section{grid-column:auto}.phone{min-height:500px}.messages{min-height:300px}}
+</style>
+</head>
+<body>
+<header><div class="brand"><div class="mark">∴</div><div><strong>AXIAL · CONVERSATION STUDIO</strong><small>Emulador de experiencias conversacionales</small></div></div><div class="header-right"><span class="status">MODO SIMULACIÓN · SIN ENVÍO REAL</span></div></header>
+<main>
+<section class="panel">
+ <div class="panel-head"><h2>01 · CONSTRUCTOR</h2><span class="eyebrow">Experiencia</span></div>
+ <div class="body">
+  <div class="eyebrow">Agregar un bloque a la conversación</div>
+  <div class="block-grid" style="margin-top:10px">
+   <button class="block" data-kind="text"><span class="ico">▤</span><b>Mensaje</b><small>Texto libre institucional</small></button>
+   <button class="block" data-kind="menu"><span class="ico">☷</span><b>Menú contextual</b><small>Opciones para continuar</small></button>
+   <button class="block" data-kind="form"><span class="ico">▣</span><b>Consulta guiada</b><small>Pregunta y captura de datos</small></button>
+   <button class="block" data-kind="assistant"><span class="ico">✳</span><b>Asistencia IA</b><small>Respuesta contextual simulada</small></button>
+   <button class="block" data-kind="handoff"><span class="ico">♙</span><b>Atención humana</b><small>Derivar a un operador</small></button>
+   <button class="block" data-kind="close"><span class="ico">◉</span><b>Cierre</b><small>Finalizar el recorrido</small></button>
+  </div>
+  <div class="section">Bloque seleccionado</div>
+  <label class="eyebrow" for="blockTitle">Nombre interno</label><input id="blockTitle" class="field" value="Bienvenida institucional" style="margin:7px 0 10px">
+  <label class="eyebrow" for="blockText">Contenido / instrucción</label><textarea id="blockText" class="field" style="margin:7px 0 10px">Bienvenido al canal de atención del Círculo de Legisladores. ¿En qué podemos ayudarte?</textarea>
+  <label class="eyebrow" for="blockOptions">Opciones del menú (una por línea)</label><textarea id="blockOptions" class="field" style="margin:7px 0 12px;min-height:65px">Historia institucional
+Autoridades
+Contacto</textarea>
+  <div class="row"><button class="btn primary" id="applyBlock">Aplicar al chat</button><button class="btn" id="reset">Reiniciar simulación</button></div>
+  <div class="notice">Los bloques se ejecutan localmente en este emulador. Todavía no modifican el Kernel ni envían mensajes a Meta.</div>
+ </div>
+</section>
+<section class="panel">
+ <div class="panel-head"><h2>02 · VISTA CIUDADANA</h2><span class="eyebrow">Canal emulado</span></div>
+ <div class="body">
+  <div class="phone">
+   <div class="phone-top"><div class="avatar">C</div><div><strong>CÍRCULO DE LEGISLADORES</strong><small>Simulación de Messenger · Canal de prueba</small></div></div>
+   <div class="messages" id="messages" aria-live="polite">
+    <div class="bubble system">Sesión de prueba iniciada · Los mensajes no salen de este navegador.</div>
+    <div class="bubble out">Bienvenido al canal de atención del Círculo de Legisladores. ¿En qué podemos ayudarte?</div>
+    <div class="bubble out"><div>Seleccioná una opción para continuar:</div><div class="quick-replies"><button class="quick">Historia institucional</button><button class="quick">Autoridades</button><button class="quick">Contacto</button></div></div>
+   </div>
+   <form class="chat-compose" id="chatForm"><input id="userMessage" maxlength="500" placeholder="Escribí un mensaje de prueba…" autocomplete="off"><button class="send" aria-label="Enviar mensaje">➤</button></form>
+  </div>
+ </div>
+</section>
+<section class="panel right">
+ <div class="panel-head"><h2>03 · INSPECTOR DE EJECUCIÓN</h2><span class="eyebrow">Trazabilidad</span></div>
+ <div class="body inspector">
+  <div class="inspect-card"><label>ESTADO DE SESIÓN</label><strong id="sessionState">Activa · Simulación local</strong></div>
+  <div class="inspect-card"><label>BLOQUE ACTUAL</label><strong id="currentBlock">Bienvenida institucional</strong></div>
+  <div class="inspect-card"><label>INTENCIÓN DETECTADA</label><strong id="intent">inicio_conversacion</strong></div>
+  <div class="inspect-card"><label>DESTINO CALCULADO</label><strong id="destination">experience.preview</strong></div>
+  <div class="section">Traza de eventos</div>
+  <div class="trace" id="trace"><div class="trace-item"><span class="dot"></span><div>Emulador iniciado<small>Runtime local · sin conexión con Meta</small></div></div></div>
+  <div class="section">Representación de salida</div>
+  <pre class="payload" id="payload">{
+  "channel": "messenger",
+  "mode": "simulation",
+  "outbound": {
+    "type": "text",
+    "text": "Bienvenido al canal de atención..."
+  }
+}</pre>
+  <button class="btn full" id="copyPayload">Copiar representación</button>
+  <div class="notice">La representación es una vista previa conceptual del mensaje saliente. La conversión definitiva a Graph API se implementará en el adaptador del canal.</div>
+ </div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const messages=$('messages'),trace=$('trace');let selectedKind='text',lastPayload={channel:'messenger',mode:'simulation',outbound:{type:'text',text:'Bienvenido al canal de atención del Círculo de Legisladores.'}};
+function log(title,detail){const item=document.createElement('div');item.className='trace-item';const dot=document.createElement('span');dot.className='dot';const copy=document.createElement('div');copy.textContent=title;const small=document.createElement('small');small.textContent=detail;copy.appendChild(small);item.append(dot,copy);trace.prepend(item)}
+function bubble(text,side='out',options=[]){const el=document.createElement('div');el.className='bubble '+side;const p=document.createElement('div');p.textContent=text;el.appendChild(p);if(options.length){const wrap=document.createElement('div');wrap.className='quick-replies';options.forEach(option=>{const b=document.createElement('button');b.className='quick';b.textContent=option;b.addEventListener('click',()=>{bubble(option,'in');handleInput(option)});wrap.appendChild(b)});el.appendChild(wrap)}messages.appendChild(el);messages.scrollTop=messages.scrollHeight}
+function setPayload(type,text,options=[]){lastPayload={channel:'messenger',mode:'simulation',outbound:{type,text,...(options.length?{quick_replies:options.map(title=>({title,payload:title.toLowerCase().replace(/[^a-z0-9]+/g,'_')}))}:{})}};$('payload').textContent=JSON.stringify(lastPayload,null,2)}
+function choose(kind){selectedKind=kind;const data={text:['Mensaje institucional','Escribí el texto que recibirá el ciudadano.',''],menu:['Menú contextual','Seleccioná una opción para continuar.','Historia institucional\nAutoridades\nContacto'],form:['Consulta guiada','Para orientarte, ¿qué información necesitás?','Historia\nContacto\nOtra consulta'],assistant:['Asistencia IA','Voy a interpretar tu consulta y preparar una respuesta contextual.',''],handoff:['Derivación humana','Voy a derivar esta conversación a un operador institucional.',''],close:['Cierre de conversación','Gracias por comunicarte con el Círculo de Legisladores.','']};const d=data[kind]||data.text;$('blockTitle').value=d[0];$('blockText').value=d[1];$('blockOptions').value=d[2];log('Bloque seleccionado',d[0]);}
+document.querySelectorAll('[data-kind]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.kind)));
+function applyBlock(){const title=$('blockTitle').value.trim()||'Bloque sin título',text=$('blockText').value.trim(),opts=$('blockOptions').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);$('currentBlock').textContent=title;let out=text,type=selectedKind;
+if(type==='menu'){out=out||'Seleccioná una opción:';bubble(out,'out',opts);$('intent').textContent='seleccion_menu';}
+else if(type==='form'){bubble(out||'Comencemos la consulta.', 'out',opts);$('intent').textContent='captura_datos';}
+else if(type==='assistant'){bubble(out||'Estoy analizando tu consulta.');$('intent').textContent='asistencia_contextual';}
+else if(type==='handoff'){bubble(out||'Tu consulta fue derivada a un operador.');$('intent').textContent='derivacion_humana';}
+else if(type==='close'){bubble(out||'Gracias por comunicarte.');$('intent').textContent='cierre_conversacion';$('sessionState').textContent='Finalizada · Simulación local';}
+else{bubble(out||'Mensaje sin contenido.');$('intent').textContent='respuesta_textual';}
+$('destination').textContent='experience.'+type;setPayload(type,out,opts);log('Bloque ejecutado',title+' · '+type);}
+$('applyBlock').addEventListener('click',applyBlock);
+function handleInput(text){const lower=text.toLowerCase();let reply='Recibí tu consulta. Puedo orientarte con información institucional o derivarla a un operador.';let intent='consulta_general';if(/historia/.test(lower)){reply='El Círculo de Legisladores de Tucumán fue creado por la Ley Provincial 6.333. ¿Querés consultar su historia o recibir información institucional?';intent='consulta_historica'}else if(/autoridad/.test(lower)){reply='Puedo orientarte sobre las autoridades institucionales. Para una respuesta precisa, consultaremos el registro oficial.';intent='consulta_autoridades'}else if(/contacto/.test(lower)){reply='Podés comunicarte con el Círculo por sus canales institucionales. ¿Querés que te derive a una persona?';intent='consulta_contacto'}else if(/persona|humano|operador|reclamo/.test(lower)){reply='La conversación quedaría en la bandeja de atención humana para su seguimiento.';intent='solicitud_atencion_humana'}$('intent').textContent=intent;$('currentBlock').textContent='Respuesta simulada';$('destination').textContent='semantic-engine → experience.runtime';bubble(reply);setPayload('text',reply);log('Entrada del ciudadano',text);log('Análisis semántico',intent);log('Respuesta preparada','Salida simulada · no enviada a Messenger');}
+function sendUser(text){text=text.trim();if(!text)return;bubble(text,'in');$('userMessage').value='';handleInput(text)}
+$('chatForm').addEventListener('submit',e=>{e.preventDefault();sendUser($('userMessage').value)});
+function reset(){messages.innerHTML='<div class="bubble system">Sesión de prueba reiniciada · Sin conexión con Meta.</div>';trace.innerHTML='';$('sessionState').textContent='Activa · Simulación local';$('currentBlock').textContent='Bienvenida institucional';$('intent').textContent='inicio_conversacion';$('destination').textContent='experience.preview';log('Emulador reiniciado','Nueva sesión de prueba');choose('text')}
+$('reset').addEventListener('click',reset);
+$('copyPayload').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(JSON.stringify(lastPayload,null,2));$('copyPayload').textContent='Copiado';setTimeout(()=>$('copyPayload').textContent='Copiar representación',1400)}catch{$('copyPayload').textContent='No se pudo copiar'}});
+messages.addEventListener('click',e=>{if(e.target.classList.contains('quick'))return});
+</script>
+</body></html>
