@@ -1,6 +1,6 @@
 # AXIAL RAG — arquitectura de cuatro núcleos
 
-Versión: 1.1.0
+Versión: 1.2.0
 Estado de código: implementado en rama de trabajo; ver pruebas CI al final.
 
 ## Principio de diseño
@@ -21,7 +21,7 @@ AXIAL separa la procedencia y autoridad del conocimiento. Los cuatro núcleos fo
 1. El Kernel identifica intención, dominio y sensibilidad.
 2. N1 recupera documentación institucional para hechos y normativa propios.
 3. N2 complementa consultas históricas e historiográficas. En una consulta institucional histórica pueden activarse N1 y N2, manteniendo N1 como fuente primaria.
-4. N3 busca páginas solo dentro de `knowledge/fuentesWebSeleccionadas.json`, descarga HTML, limpia el contenido, lo segmenta y recupera fragmentos con BM25.
+4. N3 busca páginas solo dentro de `knowledge/fuentesWebSeleccionadas.json`, descarga HTML o PDF de texto, extrae el contenido, lo segmenta y recupera fragmentos con BM25.
 5. Si N3 no obtiene texto suficiente, el compositor puede activar N4 cuando el plan permite fuentes externas. Si la persona solicita expresamente web abierta, N4 se ejecuta directamente.
 6. El compositor común entrega evidencia, referencias y estado de cada núcleo a chat web y Messenger. En Messenger, los eventos que requieren N3/N4 quedan persistidos en KV antes de iniciar consultas externas; si la recuperación falla, el borrador y el caso permanecen disponibles para revisión humana. Los tiempos de N3 y N4 se limitan por separado para no bloquear el webhook.
 
@@ -34,7 +34,7 @@ AXIAL separa la procedencia y autoridad del conocimiento. Los cuatro núcleos fo
 
 ## Corpus N1
 
-La fuente institucional se mantiene en `knowledge/documentos.json`. `knowledge/documentRetriever.js` indexa título, categoría y contenido mediante el recuperador híbrido local. El Kernel expone los resultados como `recuperacion_oficial`.
+La fuente institucional se mantiene en `knowledge/documentos.json`. `knowledge/documentRetriever.js` indexa título, categoría y contenido mediante el recuperador híbrido local. El Kernel expone los resultados como `recuperacion_oficial`. Su función `ingestPdf(buffer, metadata)` valida y extrae PDF para incorporarlo al índice N1 en memoria durante la ejecución. Esta ingesta aún no persiste el archivo ni sobrevive a un reinicio; requiere una futura interfaz/almacenamiento documental para operación institucional.
 
 ## Corpus N2
 
@@ -51,7 +51,7 @@ Los registros conservan identificador, tipo, título, autoría, año (si está c
 
 ### Recuperación
 
-`knowledge/hybridRetriever.js` implementa BM25 por campos, ponderación diferenciada de título/autoría/materias/resumen, normalización morfológica básica y segmentación de textos largos con solapamiento. N2 utiliza ese motor en `knowledge/bibliografia.js`.
+`knowledge/hybridRetriever.js` implementa BM25 por campos, ponderación diferenciada de título/autoría/materias/resumen, normalización morfológica básica y segmentación de textos largos con solapamiento. N2 utiliza ese motor en `knowledge/bibliografia.js`. `knowledge/pdfBibliographyRetriever.js` selecciona únicamente PDFs HTTPS de acceso abierto declarados en el catálogo activo, los descarga con límites de tamaño/tiempo, extrae el texto y aplica BM25 sobre el contenido completo. El compositor lo activa en el chat web con un máximo de dos documentos por consulta; Messenger conserva por ahora la recuperación de metadatos/resúmenes para no sumar latencia externa al webhook.
 
 ## Corpus N3
 
@@ -65,7 +65,7 @@ Adaptador: `knowledge/webRetriever.js`.
 - Recupera fragmentos con BM25 y conserva URL, organización y fecha de consulta.
 - Mantiene caché en memoria por 30 minutos cuando la función permanece caliente.
 
-Los PDF identificados en la lista se marcan como `pdf_ingestion_required`; no se finge haber leído su contenido.
+Cuando una URL exacta permitida devuelve `application/pdf` (o termina en `.pdf`), N3 aplica `knowledge/pdfTextExtractor.js` y recupera el texto extraíble. Se mantienen límites de tamaño y tiempo, HTTPS y bloqueo de redirecciones.
 
 ## Núcleo N4
 
