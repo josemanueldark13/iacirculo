@@ -26,7 +26,7 @@ router.use(requireAdmin);
 router.get("/", async (req, res) => {
     try {
         const items = await store.listMetadata(req.query.limit);
-        return res.json({ ok: true, items: items.map(({ pathname, checksum, ...item }) => ({ ...item, pdf_guardado: Boolean(pathname), checksum })) });
+        return res.json({ ok: true, items: items.map(({ pathname, textPathname, checksum, ...item }) => ({ ...item, pdf_guardado: Boolean(pathname), checksum })) });
     } catch (error) {
         console.error("[Documents] Error listando documentos:", error.code || "STORE_ERROR");
         return res.status(503).json({ ok: false, error: "No se pudo consultar el repositorio documental." });
@@ -104,14 +104,16 @@ router.post("/:id/approve", async (req, res) => {
         if (checksum !== current.checksum) return res.status(409).json({ ok: false, error: "El PDF almacenado no coincide con su huella SHA-256." });
         const extracted = extractor.extractPdfText(pdf, { maxBytes: 4 * 1024 * 1024 });
         if (!extracted.ok) return res.status(422).json({ ok: false, error: "No se pudo validar nuevamente el texto del PDF." });
+        const textBlob = await store.putExtractedText(current.id, extracted.text);
         const approved = await store.updateMetadata(current.id, {
             status: "approved", approvedAt: new Date().toISOString(),
-            approvedBy: "operator", extractedCharacters: extracted.characters
+            approvedBy: "operator", extractedCharacters: extracted.characters,
+            textPathname: textBlob.pathname
         });
-        const ingested = documentRetriever.ingestPdf(pdf, {
+        const ingested = documentRetriever.ingestExtractedText(extracted.text, {
             id: current.id, title: current.title, category: current.category,
             subjects: current.category, keywords: current.keywords,
-            sourceName: current.issuingBody
+            sourceName: current.issuingBody, extraction: extracted.diagnostics
         });
         if (!ingested.ok) return res.status(422).json({ ok: false, error: "El documento quedó aprobado pero no se pudo indexar en esta instancia; se reintentará al reconstruir el índice." });
         return res.json({ ok: true, item: { id: approved.id, title: approved.title, status: approved.status, indexedInThisInstance: true } });
