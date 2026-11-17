@@ -45,7 +45,7 @@ function search(query, limit = 5) {
             category: hit.document.category,
             content: hit.document.content,
             source_level: "N1",
-            source_type: "documentacion_institucional",
+            source_type: hit.document.source_type || "documentacion_institucional",
             relevance: {
                 score: hit.score,
                 matchedTerms: hit.matchedTerms,
