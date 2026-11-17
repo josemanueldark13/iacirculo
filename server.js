@@ -19,7 +19,7 @@ app.use(cors());
 app.use((req,res,next) => {
  const metaPaths = ["/api/webhook/facebook","/webhook/messenger"];
  const isMetaWebhook = req.method === "POST" && metaPaths.includes(req.path);
- const isDocumentUpload = req.method === "POST" && req.path === "/api/documents";
+ const isDocumentUpload = req.method === "POST" && /^\\/api\\/documents\\/?$/.test(req.path);
  if (isDocumentUpload) {
   const expected = (process.env.REVIEW_API_TOKEN || "").trim();
   const supplied = (req.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
