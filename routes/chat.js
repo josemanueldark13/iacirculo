@@ -4,6 +4,7 @@ const router = express.Router();
 const kernel = require("../Kernels/kernel");
 const circuloIA = require("../knowledge/agents/circuloIA");
 const ragComposer = require("../knowledge/ragComposer");
+const documentRetriever = require("../knowledge/documentRetriever");
 
 router.post("/", async (req, res) => {
     const pregunta = req.body.message;
@@ -57,6 +58,7 @@ router.post("/", async (req, res) => {
     if (decision.plan_rag?.modules?.some(level =>
         ["oficial", "bibliografico", "web_seleccionada", "web_abierta"].includes(level)
     )) {
+        await documentRetriever.ensureLoaded();
         const composed = await ragComposer.compose(pregunta, decision, {
             bibliographyLimit: 5,
             abstractLength: 520,
