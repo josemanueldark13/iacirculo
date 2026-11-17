@@ -18,7 +18,64 @@ const ragRouter = require("./ragRouter");
 const responsePolicy = require("./responsePolicy");
 const intentRouter = require("./intentRouter");
 
-function process(question) {
+const DIRECT_ACTIONS = {
+    ACTION_QUERY_PATRIMONY: {
+        tipo: "consulta_patrimonio",
+        pregunta: "¿Qué patrimonio documental conserva el Círculo de Legisladores de Tucumán?"
+    }
+};
+
+function process(input) {
+    const structured = input && typeof input === "object" && !Array.isArray(input);
+    const question = structured ? String(input.pregunta || "").trim() : String(input || "").trim();
+    const type = structured ? input.type : "text";
+    const senderId = structured ? input.senderId || null : null;
+
+    if (!question) {
+        return {
+            estado: "entrada_vacia",
+            pregunta: "",
+            intencion: "desconocida",
+            agente: "institucional"
+        };
+    }
+
+    // Los postbacks son comandos: solo se ejecutan si coinciden con una
+    // acción explícitamente registrada. Nunca se interpretan como lenguaje libre.
+    // Los quick replies pueden contener texto humano o un código ACTION_.
+    const isActionPayload = type === "postback" ||
+        (type === "quick_reply" && Object.prototype.hasOwnProperty.call(DIRECT_ACTIONS, question));
+
+    if (isActionPayload) {
+        const action = DIRECT_ACTIONS[question];
+        if (!action) {
+            return {
+                estado: "accion_no_reconocida",
+                pregunta: question,
+                payload: question,
+                tipo_evento: type,
+                intencion: "accion_desconocida",
+                agente: "institucional",
+                senderId
+            };
+        }
+
+        return {
+            estado: "aceptada",
+            dominio: "institucional",
+            pregunta: action.pregunta,
+            payload: question,
+            tipo_evento: type,
+            accion_directa: true,
+            intencion: action.tipo,
+            agente: "institucional",
+            senderId
+        };
+    }
+
+    // Compatibilidad: las llamadas históricas kernel.process("texto")
+    // y los mensajes de texto/quick reply siguen el flujo semántico original.
+
     const analysis = semanticAnalyzer.analyze(question);
     const domainDecision = domainRouter.route(analysis);
     const intent = intentRouter.classify(question);
