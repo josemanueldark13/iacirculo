@@ -63,26 +63,32 @@ function search(query, limit = 5) {
     };
 }
 
-function ingestPdf(buffer, metadata = {}) {
+function ingestExtractedText(text, metadata = {}) {
     const title = String(metadata.title || "").trim();
     const category = String(metadata.category || "Documento institucional").trim();
+    const content = String(text || "").slice(0, 1_200_000).trim();
     if (!title) return { ok: false, status: "metadata_required", error: "DOCUMENT_TITLE_REQUIRED" };
-    const extracted = pdfTextExtractor.extractPdfText(buffer, { maxBytes: metadata.maxBytes || 8 * 1024 * 1024 });
-    if (!extracted.ok) return extracted;
+    if (content.length < 40) return { ok: false, status: "no_extractable_text", error: "PDF_TEXT_LAYER_NOT_FOUND" };
     const id = String(metadata.id || "n1-pdf-" + Date.now()).replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 100);
     const record = {
         id, title, category, subjects: String(metadata.subjects || category),
         keywords: String(metadata.keywords || ""),
-        abstract: String(metadata.abstract || extracted.text.slice(0, 500)),
-        content: extracted.text, source_level: "N1",
+        abstract: String(metadata.abstract || content.slice(0, 500)),
+        content, source_level: "N1",
         source_type: "documentacion_institucional_pdf",
         source_name: String(metadata.sourceName || ""),
         ingested_at: new Date().toISOString(),
-        extraction: extracted.diagnostics
+        extraction: metadata.extraction || { method: "persisted-pdf-text-v1" }
     };
     records = records.filter(item => item.id !== id).concat(record);
     index = hybridRetriever.buildIndex(records, indexOptions);
-    return { ok: true, status: "ingested_in_memory", id, title, characters: extracted.characters, count: records.length };
+    return { ok: true, status: "ingested_in_memory", id, title, characters: content.length, count: records.length };
+}
+
+function ingestPdf(buffer, metadata = {}) {
+    const extracted = pdfTextExtractor.extractPdfText(buffer, { maxBytes: metadata.maxBytes || 4 * 1024 * 1024 });
+    if (!extracted.ok) return extracted;
+    return ingestExtractedText(extracted.text, { ...metadata, extraction: extracted.diagnostics });
 }
 
 let persistentLoadPromise = null;
@@ -96,11 +102,22 @@ async function ensureLoaded() {
         for (const item of approved) {
             if (records.some(record => record.id === item.id)) continue;
             try {
-                const pdf = await store.getPdf(item.pathname);
-                const result = ingestPdf(pdf, {
+                let text;
+                let extraction;
+                if (item.textPathname) {
+                    text = await store.getExtractedText(item.textPathname);
+                    extraction = { method: "persisted-pdf-text-v1" };
+                } else {
+                    const pdf = await store.getPdf(item.pathname);
+                    const extracted = pdfTextExtractor.extractPdfText(pdf, { maxBytes: 4 * 1024 * 1024 });
+                    if (!extracted.ok) continue;
+                    text = extracted.text;
+                    extraction = extracted.diagnostics;
+                }
+                const result = ingestExtractedText(text, {
                     id: item.id, title: item.title, category: item.category,
                     subjects: item.category, keywords: item.keywords,
-                    sourceName: item.issuingBody
+                    sourceName: item.issuingBody, extraction
                 });
                 if (result.ok) loaded++;
             } catch (error) {
@@ -124,4 +141,4 @@ function formatResults(result, options = {}) {
     ).join("\n\n");
 }
 
-module.exports = { search, formatResults, ingestPdf, ensureLoaded, get count() { return records.length; } };
+module.exports = { search, formatResults, ingestPdf, ingestExtractedText, ensureLoaded, get count() { return records.length; } };
