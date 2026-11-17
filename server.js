@@ -4,6 +4,7 @@ const path = require("path");
 const chatRoutes = require("./routes/chat");
 const truthTableRoutes = require("./routes/truthtable");
 const messengerRoutes = require("./routes/messenger");
+const inboxRoutes = require("./routes/inbox");
 const kernel = require("./Kernels/kernel");
 const circuloIA = require("./knowledge/agents/circuloIA");
 
@@ -11,25 +12,25 @@ const app = express();
 
 app.use(cors());
 
-// Conservamos el cuerpo original para verificar X-Hub-Signature-256 de Meta.
 app.use(express.json({
     verify: (req, res, buf) => {
         req.rawBody = Buffer.from(buf);
     }
 }));
 
-// Frontend institucional servido por el mismo deployment.
 app.use(express.static(path.join(__dirname, "public")));
 
 // API del Kernel AXIAL / CÍRCULO IA.
 app.use("/api/chat", chatRoutes);
 app.use("/api/truthtable", truthTableRoutes);
 
-// Webhook unificado de Facebook Messenger.
+// Gestor autónomo de mensajería institucional.
+app.use("/api/inbox", inboxRoutes);
+
+// Webhook externo existente, conservado sin cambios funcionales.
 app.use("/webhook/messenger", messengerRoutes);
 app.use("/api/webhook/facebook", messengerRoutes);
 
-// Healthcheck funcional: verifica que Kernel + agente + corpus cargan en runtime.
 app.get("/api/health", (req, res) => {
     try {
         const pregunta = "¿Quién es el presidente del Círculo de Legisladores?";
