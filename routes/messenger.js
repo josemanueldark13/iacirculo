@@ -243,7 +243,7 @@ router.post("/", async (req, res) => {
             });
 
             if (decision?.estado === "accion_no_reconocida") {
-                await sendMessage(
+                await messengerSend.sendMessage(
                     senderId,
                     "Ese botón no está disponible en este momento. Podés escribir tu consulta y te ayudo."
                 );
@@ -253,7 +253,7 @@ router.post("/", async (req, res) => {
             const preguntaParaResponder = decision?.pregunta || pregunta;
             const respuesta = buildResponse(preguntaParaResponder, decision);
 
-            await sendMessage(senderId, respuesta);
+            await messengerSend.sendMessage(senderId, respuesta);
         }
 
         return res.sendStatus(200);
