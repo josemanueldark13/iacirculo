@@ -38,7 +38,10 @@ function process(input) {
     // Solo la pregunta canónica registrada puede continuar hacia el pipeline RAG.
     let directAction = null;
     const isActionPayload = type === "postback" ||
-        (type === "quick_reply" && /^ACTION_[A-Z0-9_]+$/.test(question));
+        (type === "quick_reply" && (
+            Object.prototype.hasOwnProperty.call(actionRouter.ACTIONS, question) ||
+            /^ACTION_[A-Z0-9_]+$/.test(question)
+        ));
 
     if (isActionPayload) {
         directAction = actionRouter.routeAction(question, type);
