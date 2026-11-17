@@ -125,6 +125,7 @@ async function buildResponse(question, decision) {
     if (decision.plan_rag?.modules?.some(level =>
         ["oficial", "bibliografico", "web_seleccionada", "web_abierta"].includes(level)
     )) {
+        await documentRetriever.ensureLoaded();
         const composed = await ragComposer.compose(question, decision, {
             bibliographyLimit: 2,
             abstractLength: 160,
