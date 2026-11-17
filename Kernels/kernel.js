@@ -55,27 +55,21 @@ function process(input) {
             };
         }
 
-        // Las acciones de menú/ayuda responden directamente, sin NLP ni RAG.
-        if (directAction.responseMessage) {
-            return {
-                estado: "aceptada",
-                dominio: "institucional",
-                pregunta: question,
-                payload: directAction.payload,
-                tipo_evento: directAction.tipo_evento,
-                accion_directa: true,
-                responseMessage: directAction.responseMessage,
-                intencion: directAction.tipo,
-                agente: "institucional",
-                senderId
-            };
-        }
-
-        // Las acciones documentales sustituyen el payload por una pregunta
-        // canónica y continúan por el pipeline institucional/RAG.
-        question = directAction.pregunta;
-        // No se ejecuta el NLP sobre el payload: el análisis se aplica
-        // exclusivamente a la pregunta institucional registrada.
+        // Las acciones estáticas y los comandos documentales se resuelven
+        // antes del analizador semántico. El payload nunca entra al NLP.
+        return {
+            estado: "aceptada",
+            dominio: "institucional",
+            pregunta: directAction.pregunta || question,
+            payload: directAction.payload,
+            tipo_evento: directAction.tipo_evento,
+            accion_directa: true,
+            documentQuery: Boolean(directAction.pregunta),
+            responseMessage: directAction.responseMessage,
+            intencion: directAction.tipo,
+            agente: "institucional",
+            senderId
+        };
     }
 
     // Compatibilidad: las llamadas históricas kernel.process("texto")
