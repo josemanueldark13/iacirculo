@@ -19,13 +19,6 @@ const responsePolicy = require("./responsePolicy");
 const intentRouter = require("./intentRouter");
 const actionRouter = require("./actionRouter");
 
-const DIRECT_ACTIONS = {
-    ACTION_QUERY_PATRIMONY: {
-        tipo: "consulta_patrimonio",
-        pregunta: "¿Qué patrimonio documental conserva el Círculo de Legisladores de Tucumán?"
-    }
-};
-
 function process(input) {
     const structured = input && typeof input === "object" && !Array.isArray(input);
     let question = structured ? String(input.pregunta || "").trim() : String(input || "").trim();
@@ -62,19 +55,27 @@ function process(input) {
             };
         }
 
-        // La acción se resuelve aquí sin ejecutar semanticAnalyzer ni ragRouter.
-        // La pregunta canónica pasa a la capa documental de Messenger, nunca el payload.
-        return {
-            estado: "aceptada",
-            dominio: "institucional",
-            pregunta: directAction.pregunta,
-            payload: directAction.payload,
-            tipo_evento: directAction.tipo_evento,
-            accion_directa: true,
-            intencion: directAction.tipo,
-            agente: "institucional",
-            senderId
-        };
+        // Las acciones de menú/ayuda responden directamente, sin NLP ni RAG.
+        if (directAction.responseMessage) {
+            return {
+                estado: "aceptada",
+                dominio: "institucional",
+                pregunta: question,
+                payload: directAction.payload,
+                tipo_evento: directAction.tipo_evento,
+                accion_directa: true,
+                responseMessage: directAction.responseMessage,
+                intencion: directAction.tipo,
+                agente: "institucional",
+                senderId
+            };
+        }
+
+        // Las acciones documentales sustituyen el payload por una pregunta
+        // canónica y continúan por el pipeline institucional/RAG.
+        question = directAction.pregunta;
+        // No se ejecuta el NLP sobre el payload: el análisis se aplica
+        // exclusivamente a la pregunta institucional registrada.
     }
 
     // Compatibilidad: las llamadas históricas kernel.process("texto")
