@@ -4,13 +4,16 @@ const CORE_CONCEPTS = [
     "historia institucional", "historia legislativa", "autoridades", "biblioteca", "publicaciones",
     "actividades", "patrimonio", "decreto", "ley", "resolución", "acta", "estatuto",
     "creación del círculo", "creado", "fundación", "fecha de creación", "misión", "ubicación",
-    "contacto", "memoria legislativa", "memoria institucional"
+    "contacto", "memoria legislativa", "memoria institucional", "correo electrónico", "email",
+    "e mail", "teléfono", "número de contacto", "whatsapp", "horarios"
 ];
 
 const INTENT_CONCEPTS = [
     "nombre completo", "cómo se llama", "como se llama", "dónde funciona", "donde funciona", "dónde queda", "donde queda",
     "dónde está ubicado", "donde esta ubicado", "dónde está ubicada", "donde esta ubicada", "dirección institucional", "direccion institucional",
-    "dirección", "direccion", "sede", "ubicación", "ubicacion", "contacto", "quién dirige", "quien dirige", "quién preside", "quien preside",
+    "dirección", "direccion", "sede", "ubicación", "ubicacion", "contacto", "teléfono", "telefono",
+    "número de contacto", "numero de contacto", "correo electrónico", "correo electronico", "email", "e mail", "whatsapp",
+    "horario", "horarios", "quién dirige", "quien dirige", "quién preside", "quien preside",
     "presidente", "vicepresidencia", "vicepresidente", "estructura de autoridades", "quiénes son las autoridades", "quienes son las autoridades",
     "quiénes somos", "quienes somos", "finalidad", "para qué existe", "para que existe", "qué hace", "que hace", "propósito", "proposito",
     "misión", "mision", "motivo de la creación", "motivo de la creacion", "función", "funcion", "cómo funciona", "como funciona",
@@ -46,7 +49,9 @@ const CONCEPT_ALIASES = {
     "que establece la ley 6333": "ley",
     "que dice la ley 6333": "ley",
     "quienes integran las autoridades": "quiénes son las autoridades",
-    "que decreto reconoce al circulo": "qué decreto"
+    "que decreto reconoce al circulo": "qué decreto",
+    "como contactar al circulo": "contacto",
+    "como me comunico con el circulo": "contacto"
 };
 
 function normalize(text) {
@@ -67,7 +72,7 @@ function analyze(question) {
     else if (effectiveCoreMatches.length > 0) score = 0.55 + Math.min(0.20, (effectiveCoreMatches.length - 1) * 0.08);
     else if (intentMatches.length > 0) score = Math.min(0.65, 0.52 + (intentMatches.length - 1) * 0.06);
 
-    const uiInstitutionalIntents = ["historia institucional", "ubicación", "misión", "actividades", "ley", "quiénes somos", "cómo funciona"];
+    const uiInstitutionalIntents = ["historia institucional", "ubicación", "misión", "actividades", "ley", "quiénes somos", "cómo funciona", "contacto"];
     if (uiInstitutionalIntents.some(intent => effectiveCoreMatches.includes(intent))) score = Math.max(score, 0.60);
     if (normalized.includes("historia legislativa") && normalized.includes("tucuman")) score = Math.max(score, 0.62);
     if (normalized.includes("investigador") && (normalized.includes("historia") || normalized.includes("fuentes"))) score = Math.max(score, 0.52);
