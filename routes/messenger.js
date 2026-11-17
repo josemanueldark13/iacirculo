@@ -13,6 +13,16 @@ function envFirst(...names) {
     return null;
 }
 
+function normalizeText(value) {
+    return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
 function appSecretProof(token) {
     const appSecret = envFirst("FACEBOOK_APP_SECRET", "META_APP_SECRET");
     if (!appSecret) return null;
@@ -25,10 +35,12 @@ function appSecretProof(token) {
 
 function verifySignature(req) {
     const appSecret = envFirst("FACEBOOK_APP_SECRET", "META_APP_SECRET");
-    if (!appSecret) return true;
+
+    // En producción no aceptamos eventos sin poder verificar su origen.
+    if (!appSecret || !req.rawBody) return false;
 
     const signature = req.get("x-hub-signature-256");
-    if (!signature || !req.rawBody) return false;
+    if (!signature) return false;
 
     const expected = "sha256=" + crypto
         .createHmac("sha256", appSecret)
@@ -50,14 +62,14 @@ async function graphRequest(path, options = {}, useProof = false) {
     const proof = useProof ? appSecretProof(token) : null;
     const separator = path.includes("?") ? "&" : "?";
     const url = proof
-        ? `https://graph.facebook.com/${version}${path}${separator}appsecret_proof=${encodeURIComponent(proof)}`
-        : `https://graph.facebook.com/${version}${path}`;
-    
+        ? "https://graph.facebook.com/" + version + path + separator + "appsecret_proof=" + encodeURIComponent(proof)
+        : "https://graph.facebook.com/" + version + path;
+
     const response = await fetch(url, {
         ...options,
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: "Bearer " + token,
             ...(options.headers || {})
         }
     });
@@ -73,7 +85,7 @@ async function graphRequest(path, options = {}, useProof = false) {
 
     if (!response.ok) {
         const message = body?.error?.message || bodyText || "Respuesta desconocida de Graph API";
-        throw new Error(`Graph API ${response.status}: ${message}`);
+        throw new Error("Graph API " + response.status + ": " + message);
     }
 
     return body;
@@ -91,7 +103,7 @@ router.get("/status", (req, res) => {
 });
 
 // Diagnóstico real de Graph API + suscripción de la Página.
-// No expone tokens ni app secret.
+// No expone tokens ni app secret. Puede requerir permisos adicionales de Meta.
 router.get("/diagnose", async (req, res) => {
     const result = {
         ok: false,
@@ -160,72 +172,82 @@ router.get("/", (req, res) => {
 });
 
 function buildResponse(pregunta, decision) {
-    if (decision.agente === "orientacion") {
-        return "Voy a ayudarte con orientación y datos de contacto del Círculo de Legisladores. ¿Qué dato necesitás?";
+    const q = normalizeText(pregunta);
+
+    // La bienvenida configurada en Meta se conserva. Estas respuestas se usan
+    // cuando la persona ya empezó a escribirle a la Página.
+    const greetings = new Set([
+        "hola", "holi", "buen dia", "buenos dias", "buenas tardes",
+        "buenas noches", "buenas", "saludos", "que tal", "hey",
+        "hello", "hola circulo ia", "hola circulo"
+    ]);
+    if (greetings.has(q)) {
+        return "¡Hola! Soy CÍRCULO IA, el asistente del Círculo de Legisladores de Tucumán. Puedo orientarte sobre la institución, autoridades, historia, legislación, actividades y contacto. ¿Qué necesitás saber?";
     }
 
-    if (decision.agente === "operativo") {
-        return "Voy a ayudarte con información operativa del Círculo. ¿Qué necesitás saber?";
+    const thanks = new Set(["gracias", "muchas gracias", "te agradezco", "perfecto gracias"]);
+    if (thanks.has(q)) {
+        return "¡De nada! Estoy para ayudarte con información del Círculo de Legisladores.";
     }
 
-    if (decision.agente === "contacto") {
-        return "Claro. Podés dejar tu mensaje para el Círculo y será recibido para su atención.";
+    const farewells = new Set(["chau", "adios", "hasta luego", "hasta pronto", "nos vemos"]);
+    if (farewells.has(q)) {
+        return "Hasta luego. Gracias por comunicarte con el Círculo de Legisladores.";
     }
 
-    if (decision.agente === "formativo") {
-        return "Puedo ayudarte a aprender sobre el Círculo, la historia parlamentaria y la participación ciudadana. ¿Sobre qué tema querés aprender?";
+    // Una solicitud para dejar un mensaje debe abrir el canal de atención,
+    // no responder con una ficha documental genérica.
+    if (decision?.agente === "contacto") {
+        return "Claro. Contame brevemente tu consulta o el motivo de tu mensaje. Lo dejamos preparado para su atención por el Círculo de Legisladores.";
     }
 
-    if (decision.requiere_fuente_externa) {
+    if (decision?.estado === "requiere_reformulacion") {
+        const suggestions = Array.isArray(decision.sugerencias) ? decision.sugerencias : [];
+        const topics = suggestions.length ? suggestions.join(", ") : "autoridades, historia, legislación, actividades o contacto";
+        return "No terminé de comprender la consulta. ¿Podés expresarla de otra manera? También podés preguntar por: " + topics + ".";
+    }
+
+    if (decision?.requiere_fuente_externa) {
         const siteUrl = envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/";
-        return `Necesito consultar una fuente externa para darte una respuesta precisa sobre ese tema. Podés continuar en el portal: ${siteUrl}`;
+        return "Esa consulta requiere verificar información en fuentes externas. Podés continuar en el portal de CÍRCULO IA: " + siteUrl;
     }
 
+    // Si el Kernel no reconoce relación institucional, explicamos el alcance
+    // de forma cordial. No se envía una respuesta genérica de otro agente.
+    if (decision?.estado === "fuera_de_dominio" && decision?.agente === "institucional") {
+        return "Puedo ayudarte con información del Círculo de Legisladores de Tucumán: autoridades, historia, Ley Provincial 6.333, actividades, documentación y contacto. ¿Tu consulta está relacionada con alguno de esos temas?";
+    }
+
+    // Para consultas reconocidas, priorizamos la respuesta documental concreta.
+    // Así orientación/operativo/formativo no reemplazan datos por frases vacías.
     return circuloIA.responder(pregunta);
 }
 
 async function sendMessage(recipientId, text) {
-    const token = envFirst("FACEBOOK_PAGE_ACCESS_TOKEN", "META_PAGE_ACCESS_TOKEN");
-    if (!token) throw new Error("Falta FACEBOOK_PAGE_ACCESS_TOKEN / META_PAGE_ACCESS_TOKEN");
-
     const version = envFirst("META_GRAPH_VERSION") || "v23.0";
-    const response = await fetch(
-        `https://graph.facebook.com/${version}/me/messages`,
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                recipient: { id: recipientId },
-                messaging_type: "RESPONSE",
-                message: { text }
-            })
-        }
-    );
+    const response = await graphRequest("/me/messages", {
+        method: "POST",
+        body: JSON.stringify({
+            recipient: { id: recipientId },
+            messaging_type: "RESPONSE",
+            message: { text }
+        })
+    });
 
-    const body = await response.text();
-
-    if (!response.ok) {
-        let detail = body;
-        try {
-            const parsed = JSON.parse(body);
-            detail = parsed?.error?.message || body;
-        } catch {
-            // Conservamos la respuesta textual de Graph API.
-        }
-
-        throw new Error(`Messenger Send API ${response.status}: ${detail}`);
-    }
-
-    console.log("[Messenger] Respuesta enviada correctamente.");
+    console.log("[Messenger] Respuesta enviada correctamente.", {
+        recipient_present: Boolean(recipientId),
+        message_id: response?.message_id || null
+    });
 }
 
 router.post("/", async (req, res) => {
     if (!verifySignature(req)) {
-        console.warn("[Messenger] Firma X-Hub-Signature-256 inválida o ausente.");
+        console.warn("[Messenger] Firma inválida o ausente; evento rechazado.");
         return res.sendStatus(403);
+    }
+
+    if (req.body?.object !== "page") {
+        return res.sendStatus(404);
     }
 
     const entries = Array.isArray(req.body?.entry) ? req.body.entry : [];
@@ -234,41 +256,50 @@ router.post("/", async (req, res) => {
     );
 
     console.log("[Messenger] Webhook recibido:", {
-        object: req.body?.object || null,
         entries: entries.length,
         events: events.length,
-        text_events: events.filter(event => Boolean(event.message?.text) && !event.message?.is_echo).length
+        text_events: events.filter(event => Boolean(event.message?.text) && !event.message?.is_echo).length,
+        attachment_events: events.filter(event => Boolean(event.message?.attachments?.length) && !event.message?.is_echo).length,
+        postback_events: events.filter(event => Boolean(event.postback)).length
     });
 
     try {
-        if (req.body?.object !== "page") {
-            return res.sendStatus(200);
-        }
-
-        const jobs = [];
-
+        // Procesamiento secuencial para conservar el orden de los mensajes
+        // dentro de un mismo evento de webhook.
         for (const event of events) {
             const senderId = event.sender?.id;
-            const pregunta = event.message?.text;
+            if (!senderId || event.message?.is_echo) continue;
 
-            if (!senderId || !pregunta || event.message?.is_echo) continue;
+            const pregunta = typeof event.message?.text === "string"
+                ? event.message.text.trim()
+                : "";
+
+            if (!pregunta && event.message?.attachments?.length) {
+                await sendMessage(
+                    senderId,
+                    "Recibí el archivo o la imagen. Contame qué necesitás consultar sobre ese material y te ayudo."
+                );
+                continue;
+            }
+
+            // El saludo inicial/Get Started de la Página sigue a cargo de la
+            // configuración de bienvenida de Meta; no enviamos otro saludo
+            // desde el webhook para evitar duplicarlo.
+            if (!pregunta) continue;
 
             const decision = kernel.process(pregunta);
             const respuesta = buildResponse(pregunta, decision);
 
-            jobs.push(
-                sendMessage(senderId, respuesta).catch(error => {
-                    console.error("[Messenger] Error al enviar respuesta:", error.message);
-                })
-            );
+            await sendMessage(senderId, respuesta);
         }
 
-        await Promise.all(jobs);
         return res.sendStatus(200);
     } catch (error) {
-        console.error("[Messenger] Error procesando webhook:", error);
-        return res.sendStatus(200);
+        console.error("[Messenger] Error procesando o enviando respuesta:", error.message);
+        // Un 5xx permite que Meta reintente la entrega del evento.
+        return res.sendStatus(500);
     }
 });
 
 module.exports = router;
+module.exports.buildResponse = buildResponse;
