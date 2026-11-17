@@ -108,7 +108,36 @@ async function updateMetadata(id, changes) {
     if (!current) return null;
     return saveMetadata({ ...current, ...changes, updatedAt: new Date().toISOString() });
 }
+
+async function transitionMetadata(id, expectedStatus, changes) {
+    const script = [
+        "local raw = redis.call('GET', KEYS[1])",
+        "if not raw then return nil end",
+        "local item = cjson.decode(raw)",
+        "if item.status ~= ARGV[1] then return cjson.encode({__conflict=true,currentStatus=item.status}) end",
+        "local changes = cjson.decode(ARGV[2])",
+        "for key,value in pairs(changes) do item[key] = value end",
+        "item.updatedAt = ARGV[3]",
+        "local encoded = cjson.encode(item)",
+        "redis.call('SET', KEYS[1], encoded)",
+        "return encoded"
+    ].join("\\n");
+    const raw = await command([
+        "EVAL", script, "1", META_PREFIX + id,
+        String(expectedStatus), JSON.stringify(changes || {}), new Date().toISOString()
+    ]);
+    if (!raw) return null;
+    const record = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (record.__conflict) {
+        const error = new Error("El estado del documento cambió durante la operación.");
+        error.code = "DOCUMENT_STATUS_CONFLICT";
+        error.currentStatus = record.currentStatus;
+        throw error;
+    }
+    return record;
+}
+
 function createId() {
     return "doc-" + crypto.randomUUID();
 }
-module.exports = { isConfigured, putPdf, getPdf, putExtractedText, getExtractedText, saveMetadata, getMetadata, listMetadata, updateMetadata, createId };
+module.exports = { isConfigured, putPdf, getPdf, putExtractedText, getExtractedText, saveMetadata, getMetadata, listMetadata, updateMetadata, transitionMetadata, createId };
