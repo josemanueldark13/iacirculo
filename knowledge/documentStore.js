@@ -3,7 +3,6 @@
 const crypto = require("node:crypto");
 const META_PREFIX = "circulo:documents:meta:";
 const INDEX_KEY = "circulo:documents:index";
-const RETENTION_SECONDS = 60 * 60 * 24 * 365;
 
 function config() {
     const url = (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "").trim().replace(/\/+$/, "");
@@ -63,7 +62,7 @@ async function getPdf(pathname) {
     return Buffer.from(await new Response(result.stream).arrayBuffer());
 }
 async function saveMetadata(record) {
-    await command(["SET", META_PREFIX + record.id, JSON.stringify(record), "EX", String(RETENTION_SECONDS)]);
+    await command(["SET", META_PREFIX + record.id, JSON.stringify(record)]);
     await command(["ZADD", INDEX_KEY, String(Date.parse(record.createdAt) || Date.now()), record.id]);
     return record;
 }
