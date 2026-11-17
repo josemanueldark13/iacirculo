@@ -5,6 +5,7 @@ const chatRoutes = require("./routes/chat");
 const truthTableRoutes = require("./routes/truthtable");
 const messengerRoutes = require("./routes/messenger");
 const reviewInboxRoutes = require("./routes/reviewInbox");
+const documentRoutes = require("./routes/documents");
 const kernel = require("./Kernels/kernel");
 const circuloIA = require("./knowledge/agents/circuloIA");
 const { verifyMetaSignature } = require("./Kernels/metaWebhookSecurity");
@@ -17,6 +18,13 @@ app.use(cors());
 app.use((req,res,next) => {
  const metaPaths = ["/api/webhook/facebook","/webhook/messenger"];
  const isMetaWebhook = req.method === "POST" && metaPaths.includes(req.path);
+ const isDocumentUpload = req.method === "POST" && req.path === "/api/documents";
+ if (isDocumentUpload) {
+  return express.raw({type:"application/pdf",limit:"8mb"})(req,res,error => {
+   if (error) return res.status(error.status || 400).json({ok:false,error:"No se pudo recibir el PDF."});
+   return next();
+  });
+ }
  if (!isMetaWebhook) {
   return express.json({limit:"1mb"})(req,res,next);
  }
@@ -51,6 +59,7 @@ app.use(express.static(path.join(__dirname,"public")));
 app.use("/api/chat",chatRoutes);
 app.use("/api/truthtable",truthTableRoutes);
 app.use("/api/review",reviewInboxRoutes);
+app.use("/api/documents",documentRoutes);
 
 // Webhook unificado de Facebook Messenger.
 app.use("/webhook/messenger",messengerRoutes);
