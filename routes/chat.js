@@ -64,7 +64,10 @@ router.post("/", async (req, res) => {
             webLimit: 4,
             openWebLimit: 5,
             n3TimeoutMs: 3500,
-            n4TimeoutMs: 5000
+            n4TimeoutMs: 5000,
+            enablePdfRetrieval: true,
+            pdfMaxSources: 2,
+            pdfTimeoutMs: 2800
         });
         const state = composed.statuses.N4 === "retrieved"
             ? "respuesta_web_abierta"
