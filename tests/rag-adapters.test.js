@@ -1,12 +1,15 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const zlib = require("node:zlib");
 const hybrid = require("../knowledge/hybridRetriever");
 const bibliography = require("../knowledge/bibliografia");
 const documentRetriever = require("../knowledge/documentRetriever");
 const webRetriever = require("../knowledge/webRetriever");
 const openWebRetriever = require("../knowledge/openWebRetriever");
 const ragComposer = require("../knowledge/ragComposer");
+const pdfTextExtractor = require("../knowledge/pdfTextExtractor");
+const pdfBibliographyRetriever = require("../knowledge/pdfBibliographyRetriever");
 
 function fakeHtmlResponse(html) {
     return {
@@ -16,6 +19,16 @@ function fakeHtmlResponse(html) {
         body: null,
         text: async () => html
     };
+}
+
+function makePdf(text) {
+    const stream = Buffer.from("BT /F1 12 Tf (" + text.replace(/[()\\\\]/g, "\\\\async function run() {") + ") Tj ET", "latin1");
+    const compressed = zlib.deflateSync(stream);
+    return Buffer.concat([
+        Buffer.from("%PDF-1.4\\n1 0 obj << /Length " + compressed.length + " /Filter /FlateDecode >> stream\\n", "latin1"),
+        compressed,
+        Buffer.from("\\nendstream\\nendobj\\n%%EOF", "latin1")
+    ]);
 }
 
 async function run() {
@@ -54,6 +67,34 @@ async function run() {
     assert.equal(n2.engine, "BM25-fields-v1");
     assert.ok(n2.total > 0);
     assert.equal(n2.results[0].id, "lichtmajer-2017-politica-facciones-partidos");
+
+    // El extractor procesa texto PDF en streams Flate y rechaza archivos inválidos.
+    const pdfFixture = makePdf("Tucuman history and institutional reforms between 1820 and 1852. Legislative institutions and provincial political history.");
+    const extractedPdf = pdfTextExtractor.extractPdfText(pdfFixture);
+    assert.equal(extractedPdf.ok, true);
+    assert.match(extractedPdf.text, /institutional reforms/);
+    assert.equal(pdfTextExtractor.extractPdfText(Buffer.from("not a PDF")).status, "invalid_pdf");
+
+    // N1 permite incorporar un documento institucional PDF al índice en memoria.
+    const n1Pdf = documentRetriever.ingestPdf(pdfFixture, {
+        id: "test-official-pdf", title: "Documento oficial de prueba", category: "Legislación"
+    });
+    assert.equal(n1Pdf.ok, true);
+    assert.ok(documentRetriever.search("institutional reforms 1820 1852", 5).results.some(item => item.id === "test-official-pdf"));
+
+    // N2 descarga únicamente PDFs declarados en el catálogo activo y recupera texto completo.
+    const n2PdfRecord = pdfBibliographyRetriever.eligibleRecords().find(item => item.id === "nanni-wilde-2021-reformas-tucumanas");
+    assert.ok(n2PdfRecord);
+    const mockPdfFetch = async () => ({
+        ok: true, status: 200,
+        headers: { get: name => name.toLowerCase() === "content-type" ? "application/pdf" : null },
+        arrayBuffer: async () => pdfFixture.buffer.slice(pdfFixture.byteOffset, pdfFixture.byteOffset + pdfFixture.byteLength)
+    });
+    const n2FullText = await pdfBibliographyRetriever.search("reformas institucionales de Tucumán 1820 1852", {
+        maxSources: 2, fetchImpl: mockPdfFetch, timeoutMs: 1000
+    });
+    assert.ok(n2FullText.retrieved > 0);
+    assert.ok(n2FullText.results.length > 0);
 
     // N3 solo solicita URLs exactas del catálogo. El contenido falso simula páginas HTML.
     assert.equal(webRetriever.sourceAllowed("https://example.invalid/not-allowlisted"), false);
