@@ -22,7 +22,7 @@ function fakeHtmlResponse(html) {
 }
 
 function makePdf(text) {
-    const stream = Buffer.from("BT /F1 12 Tf (" + text.replace(/[()\\\\]/g, "\\\\async function run() {") + ") Tj ET", "latin1");
+    const stream = Buffer.from("BT /F1 12 Tf (" + text.replace(/[()\\\\]/g, "\\\\$&") + ") Tj ET", "latin1");
     const compressed = zlib.deflateSync(stream);
     return Buffer.concat([
         Buffer.from("%PDF-1.4\\n1 0 obj << /Length " + compressed.length + " /Filter /FlateDecode >> stream\\n", "latin1"),
