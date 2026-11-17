@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const crypto = require("crypto");
 const chatRoutes = require("./routes/chat");
 const truthTableRoutes = require("./routes/truthtable");
 const messengerRoutes = require("./routes/messenger");
@@ -20,6 +21,14 @@ app.use((req,res,next) => {
  const isMetaWebhook = req.method === "POST" && metaPaths.includes(req.path);
  const isDocumentUpload = req.method === "POST" && req.path === "/api/documents";
  if (isDocumentUpload) {
+  const expected = (process.env.REVIEW_API_TOKEN || "").trim();
+  const supplied = (req.get("authorization") || "").replace(/^Bearer\\s+/i, "").trim();
+  const expectedBytes = Buffer.from(expected, "utf8");
+  const suppliedBytes = Buffer.from(supplied, "utf8");
+  if (!expected) return res.status(503).json({ok:false,error:"Falta configurar REVIEW_API_TOKEN."});
+  if (expectedBytes.length !== suppliedBytes.length || !crypto.timingSafeEqual(expectedBytes, suppliedBytes)) {
+   return res.status(401).json({ok:false,error:"No autorizado."});
+  }
   return express.raw({type:"application/pdf",limit:"8mb"})(req,res,error => {
    if (error) return res.status(error.status || 400).json({ok:false,error:"No se pudo recibir el PDF."});
    return next();
