@@ -80,16 +80,16 @@ router.post("/:id/approve", async (req, res) => {
         const pdf = await store.getPdf(current.pathname);
         const extracted = extractor.extractPdfText(pdf, { maxBytes: 8 * 1024 * 1024 });
         if (!extracted.ok) return res.status(422).json({ ok: false, error: "No se pudo validar nuevamente el texto del PDF." });
+        const approved = await store.updateMetadata(current.id, {
+            status: "approved", approvedAt: new Date().toISOString(),
+            approvedBy: "operator", extractedCharacters: extracted.characters
+        });
         const ingested = documentRetriever.ingestPdf(pdf, {
             id: current.id, title: current.title, category: current.category,
             subjects: current.category, keywords: current.keywords,
             sourceName: current.issuingBody
         });
-        if (!ingested.ok) return res.status(422).json({ ok: false, error: "No se pudo incorporar el documento al índice N1." });
-        const approved = await store.updateMetadata(current.id, {
-            status: "approved", approvedAt: new Date().toISOString(),
-            approvedBy: "operator", extractedCharacters: extracted.characters
-        });
+        if (!ingested.ok) return res.status(422).json({ ok: false, error: "El documento quedó aprobado pero no se pudo indexar en esta instancia; se reintentará al reconstruir el índice." });
         return res.json({ ok: true, item: { id: approved.id, title: approved.title, status: approved.status, indexedInThisInstance: true } });
     } catch (error) {
         console.error("[Documents] Error aprobando PDF:", error.code || error.name || "APPROVAL_ERROR");
