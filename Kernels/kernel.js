@@ -44,7 +44,7 @@ function process(input) {
     // acción explícitamente registrada. Nunca se interpretan como lenguaje libre.
     // Los quick replies pueden contener texto humano o un código ACTION_.
     const isActionPayload = type === "postback" ||
-        (type === "quick_reply" && Object.prototype.hasOwnProperty.call(DIRECT_ACTIONS, question));
+        (type === "quick_reply" && /^ACTION_[A-Z0-9_]+$/.test(question));
 
     if (isActionPayload) {
         const action = DIRECT_ACTIONS[question];
