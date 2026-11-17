@@ -17,6 +17,7 @@ const reformulator = require("./reformulator");
 const ragRouter = require("./ragRouter");
 const responsePolicy = require("./responsePolicy");
 const intentRouter = require("./intentRouter");
+const actionRouter = require("./actionRouter");
 
 const DIRECT_ACTIONS = {
     ACTION_QUERY_PATRIMONY: {
@@ -27,7 +28,7 @@ const DIRECT_ACTIONS = {
 
 function process(input) {
     const structured = input && typeof input === "object" && !Array.isArray(input);
-    const question = structured ? String(input.pregunta || "").trim() : String(input || "").trim();
+    let question = structured ? String(input.pregunta || "").trim() : String(input || "").trim();
     const type = structured ? input.type : "text";
     const senderId = structured ? input.senderId || null : null;
 
@@ -40,15 +41,16 @@ function process(input) {
         };
     }
 
-    // Los postbacks son comandos: solo se ejecutan si coinciden con una
-    // acción explícitamente registrada. Nunca se interpretan como lenguaje libre.
-    // Los quick replies pueden contener texto humano o un código ACTION_.
+    // Los payloads deterministas se resuelven antes del análisis semántico.
+    // Solo la pregunta canónica registrada puede continuar hacia el pipeline RAG.
+    let directAction = null;
     const isActionPayload = type === "postback" ||
         (type === "quick_reply" && /^ACTION_[A-Z0-9_]+$/.test(question));
 
     if (isActionPayload) {
-        const action = DIRECT_ACTIONS[question];
-        if (!action) {
+        directAction = actionRouter.routeAction(question, type);
+
+        if (!directAction || !directAction.recognized) {
             return {
                 estado: "accion_no_reconocida",
                 pregunta: question,
@@ -60,17 +62,7 @@ function process(input) {
             };
         }
 
-        return {
-            estado: "aceptada",
-            dominio: "institucional",
-            pregunta: action.pregunta,
-            payload: question,
-            tipo_evento: type,
-            accion_directa: true,
-            intencion: action.tipo,
-            agente: "institucional",
-            senderId
-        };
+        question = directAction.pregunta;
     }
 
     // Compatibilidad: las llamadas históricas kernel.process("texto")
@@ -110,6 +102,11 @@ function process(input) {
 
     return {
         estado: "aceptada",
+        ...(directAction ? {
+            accion_directa: true,
+            payload: directAction.payload,
+            tipo_evento: directAction.tipo_evento
+        } : {}),
         dominio: "institucional",
         intencion: intent.tipo,
         agente: intent.agente,
