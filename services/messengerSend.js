@@ -1,5 +1,7 @@
 'use strict';
 
+const { recordRateLimitTelemetry } = require('./messengerTelemetry');
+
 const PAGE_ACCESS_TOKEN = () =>
     process.env.FACEBOOK_PAGE_ACCESS_TOKEN?.trim() ||
     process.env.META_PAGE_ACCESS_TOKEN?.trim() ||
@@ -7,7 +9,7 @@ const PAGE_ACCESS_TOKEN = () =>
 
 const GRAPH_VERSION = () => {
     const configured = process.env.META_GRAPH_VERSION?.trim() || 'v23.0';
-    if (!/^v\\d+\\.\\d+$/.test(configured)) {
+    if (!/^v\d+\.\d+$/.test(configured)) {
         throw new Error('META_GRAPH_VERSION tiene un formato inválido.');
     }
     return configured;
@@ -123,6 +125,9 @@ async function sendMessage(recipientId, messageContent, maxRetries = 3, initialD
             const detail = data?.error?.message || data?.message || `HTTP ${response.status}`;
             throw new Error(`Messenger Send API rechazó el envío (HTTP ${response.status}): ${detail}`);
         }
+
+        // Telemetría auxiliar: nunca bloquea el envío ni altera el ciclo de reintentos.
+        recordRateLimitTelemetry(response.status, recipientId, attempt, maxRetries);
 
         const delay = backoffDelay(attempt, initialDelayMs, retryAfterMs(response));
         console.warn('[MESSENGER SEND] Error temporal de Meta; se reintentará.', {
