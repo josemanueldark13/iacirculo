@@ -9,6 +9,7 @@ const ragComposer = require("../knowledge/ragComposer");
 const openWebRetriever = require("../knowledge/openWebRetriever");
 const ragRouter = require("../Kernels/ragRouter");
 const documentRetriever = require("../knowledge/documentRetriever");
+const documentStore = require("../knowledge/documentStore");
 const bibliography = require("../knowledge/bibliografia");
 const reviewInboxStore = require("../Kernels/reviewInboxStore");
 const messengerSender = require("../Kernels/messengerSender");
@@ -59,6 +60,7 @@ router.get("/status", (req, res) => res.json({
     outlook_notificaciones_configuradas: outlookNotifier.isConfigured(),
     rag_arquitectura: ragRouter.getArchitecture().id,
     n1_documentos: documentRetriever.count,
+    n1_persistencia_configurada: documentStore.isConfigured(),
     n2_catalogo: bibliography.getCatalogInfo(),
     n3_fuentes_seleccionadas: ragRouter.getArchitecture().curatedSourceCount,
     n4_proveedor_configurado: openWebRetriever.isConfigured(),
