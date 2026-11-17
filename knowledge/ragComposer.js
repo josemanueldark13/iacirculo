@@ -5,6 +5,7 @@ const bibliography = require("./bibliografia");
 const documentRetriever = require("./documentRetriever");
 const webRetriever = require("./webRetriever");
 const openWebRetriever = require("./openWebRetriever");
+const pdfBibliographyRetriever = require("./pdfBibliographyRetriever");
 
 function formatN3(result, limit = 3) {
     const sources = (result?.results || []).slice(0, limit);
@@ -59,6 +60,23 @@ async function compose(question, decision, options = {}) {
             abstractLength: options.abstractLength || 420
         }));
         statuses.N2 = evidence.N2?.total ? "retrieved" : "no_catalog_match";
+        if (options.enablePdfRetrieval === true) {
+            evidence.N2_FULLTEXT = await pdfBibliographyRetriever.search(question, {
+                maxSources: options.pdfMaxSources || 2,
+                limit: options.pdfLimit || 3,
+                timeoutMs: options.pdfTimeoutMs || 2800,
+                fetchImpl: options.fetchImpl
+            });
+            statuses.N2_FULLTEXT = evidence.N2_FULLTEXT.retrieved > 0
+                ? "retrieved" : evidence.N2_FULLTEXT.errors.length ? "partial" : "no_pdf_match";
+            if (evidence.N2_FULLTEXT.results.length) {
+                sections.push("Texto completo recuperado de documentos PDF de acceso abierto (N2):\n" +
+                    evidence.N2_FULLTEXT.results.map((item, index) =>
+                        (index + 1) + ". " + item.title + "\n" + item.snippet +
+                        "\nFuente: " + item.url
+                    ).join("\n\n"));
+            }
+        }
     }
 
     const explicitlyOpen = decision?.plan_rag?.open_web?.status === "solicitada_expresamente"
