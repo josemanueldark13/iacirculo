@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CÍRCULO IA | Bandeja de revisión</title>
+<style>
+:root{color-scheme:dark;--bg:#101319;--panel:#191f29;--line:#303947;--text:#edf1f6;--muted:#9da9b8;--accent:#c5a46d;--danger:#b96b6b;--good:#79a58c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1080px;margin:auto;padding:32px 18px 60px}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px}
+h1{font-size:22px;letter-spacing:.04em;margin:0}h2{font-size:17px;margin:0 0 12px}
+p{margin:8px 0}.muted{color:var(--muted)}.notice{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:16px 0}
+form,.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input,select,textarea{background:#0d1117;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:11px;font:inherit}
+input[type=password]{min-width:min(420px,100%);flex:1}
+button{border:1px solid var(--line);border-radius:8px;background:#252e3b;color:var(--text);padding:10px 14px;font:inherit;cursor:pointer}
+button.primary{background:#725c3d;border-color:#96784e}button.reject{border-color:#704545;color:#e9b5b5}
+button:disabled{opacity:.5;cursor:not-allowed}
+#auth{max-width:620px}#auth input{flex:1}
+#authState,#message{min-height:24px;margin-top:10px;color:var(--muted)}
+#inbox{display:none}.toolbar{justify-content:space-between;margin:22px 0}
+#items{display:grid;gap:14px}
+.case{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:17px}
+.casehead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.meta{font-size:13px;color:var(--muted)}
+.pill{font-size:12px;border:1px solid var(--line);border-radius:30px;padding:3px 9px;color:var(--muted)}
+.pill.high{border-color:#836b47;color:#e4c58d}.pill.critical{border-color:#8b4b4b;color:#edaaaa}
+.message{white-space:pre-wrap;overflow-wrap:anywhere;background:#0d1117;border-radius:8px;padding:12px}
+textarea{display:block;width:100%;min-height:86px;resize:vertical;margin:8px 0 12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+details{margin:12px 0;color:var(--muted)}pre{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:600px){header{align-items:flex-start;flex-direction:column}main{padding-top:20px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+ <div><h1>CÍRCULO IA</h1><div class="muted">Bandeja de revisión humana</div></div>
+ <span class="pill">Aprobación manual</span>
+</header>
+<section id="auth" class="notice">
+ <h2>Acceso del operador</h2>
+ <p class="muted">Ingresá el token REVIEW_API_TOKEN configurado en Vercel. No uses tu contraseña de Outlook.</p>
+ <form id="loginForm">
+  <input id="token" type="password" autocomplete="off" placeholder="Token de operador" required>
+  <button class="primary" type="submit">Entrar</button>
+ </form>
+ <div id="authState" role="status"></div>
+</section>
+<section id="inbox">
+ <div class="notice">Los mensajes entrantes se guardan como pendientes. Ninguna respuesta sale hacia Facebook hasta que un operador la apruebe.</div>
+ <div class="toolbar">
+  <div><strong id="count">0 casos</strong><div class="muted">Últimos registros recibidos</div></div>
+  <div class="actions">
+   <select id="statusFilter" aria-label="Filtrar por estado">
+    <option value="">Todos los estados</option><option value="pending">Pendientes</option>
+    <option value="send_failed">Envío fallido</option><option value="sent">Enviados</option>
+    <option value="rejected">Rechazados</option><option value="archived">Archivados</option>
+   </select>
+   <button id="refresh">Actualizar</button><button id="logout">Salir</button>
+  </div>
+ </div>
+ <div id="message" role="status"></div>
+ <div id="items"></div>
+</section>
+</main>
+<script>
+let operatorToken = "";
+const auth = document.getElementById("auth");
+const inbox = document.getElementById("inbox");
+const authState = document.getElementById("authState");
+const message = document.getElementById("message");
+const itemsNode = document.getElementById("items");
+
+async function api(path, options = {}) {
+ const response = await fetch(path,{
+  ...options,
+  headers:{
+   Authorization:"Bearer " + operatorToken,
+   "Content-Type":"application/json",
+   ...(options.headers || {})
+  }
+ });
+ const payload = await response.json().catch(() => ({}));
+ if (!response.ok) throw new Error(payload.error || "No se pudo completar la operación.");
+ return payload;
+}
+function el(tag,className,text) {
+ const node = document.createElement(tag);
+ if (className) node.className = className;
+ if (text !== undefined) node.textContent = text;
+ return node;
+}
+function actionButton(label,className,callback) {
+ const button = el("button",className,label);
+ button.addEventListener("click",callback);
+ return button;
+}
+function renderCase(item) {
+ const card = el("article","case");
+ const head = el("div","casehead");
+ const title = el("strong","",item.semanticAnalysis?.domain === "institucional" ? "Consulta institucional" : "Mensaje para evaluación");
+ const priority = el("span","pill " + (item.priority === "critica" ? "critical" : item.priority === "alta" ? "high" : ""), "Prioridad " + (item.priority || "normal"));
+ head.append(title,priority);
+ card.append(head);
+ card.append(el("div","meta",new Date(item.createdAt).toLocaleString("es-AR") + " · Estado: " + item.status));
+ card.append(el("h2","", "Mensaje recibido"));
+ card.append(el("div","message",item.messageText || ""));
+ const dec = item.kernelDecision || {};
+ const analysis = item.semanticAnalysis || {};
+ const concepts = Array.isArray(analysis.concepts) ? analysis.concepts.join(", ") : "";
+ card.append(el("p","meta","Intención: " + (dec.intencion || "no determinada") + " · Confianza: " + (analysis.confidence ?? "s/d") + " · Dominio: " + (analysis.domain || "s/d")));
+ if (concepts) card.append(el("p","meta","Conceptos: " + concepts));
+ card.append(el("h2","","Borrador de respuesta"));
+ const draft = el("textarea");
+ draft.maxLength = 2000;
+ draft.value = item.proposedResponse || "";
+ card.append(draft);
+ const details = el("details");
+ const summary = el("summary","","Ver diagnóstico semántico");
+ details.append(summary);
+ const pre = el("pre");
+ pre.textContent = JSON.stringify(analysis,null,2);
+ details.append(pre);
+ card.append(details);
+ const actions = el("div","actions");
+ if (item.status === "pending" || item.status === "send_failed") {
+  const approve = actionButton("Aprobar y enviar","primary",() => act(item.id,"approve",draft.value));
+  approve.disabled = !draft.value.trim();
+  draft.addEventListener("input",() => { approve.disabled = !draft.value.trim(); });
+  actions.append(approve);
+ }
+ if (item.status === "pending") actions.append(actionButton("Rechazar","reject",() => act(item.id,"reject")));
+ if (!["archived","sending"].includes(item.status)) actions.append(actionButton("Archivar","",() => act(item.id,"archive")));
+ card.append(actions);
+ return card;
+}
+async function refresh() {
+ message.textContent = "Actualizando bandeja…";
+ try {
+  const status = document.getElementById("statusFilter").value;
+  const path = "/api/review?limit=100" + (status ? "&status=" + encodeURIComponent(status) : "");
+  const data = await api(path);
+  itemsNode.replaceChildren();
+  document.getElementById("count").textContent = data.items.length + (data.items.length === 1 ? " caso" : " casos");
+  if (!data.items.length) itemsNode.append(el("div","notice muted","No hay casos para mostrar."));
+  data.items.forEach(item => itemsNode.append(renderCase(item)));
+  message.textContent = "";
+ } catch(error) {
+  message.textContent = error.message;
+ }
+}
+async function act(id,action,draft) {
+ if (action === "approve" && !window.confirm("¿Enviar este borrador al usuario de Facebook?")) return;
+ try {
+  await api("/api/review/" + encodeURIComponent(id) + "/" + action,{method:"POST",body:JSON.stringify(action === "approve" ? {proposedResponse:draft} : {})});
+  const confirmation = action === "approve" ? "Envío aprobado y registrado." : action === "reject" ? "Caso rechazado." : "Caso archivado.";
+  await refresh();
+  message.textContent = confirmation;
+ } catch(error) {
+  await refresh();
+  message.textContent = error.message;
+ }
+}
+document.getElementById("loginForm").addEventListener("submit",async event => {
+ event.preventDefault();
+ operatorToken = document.getElementById("token").value.trim();
+ authState.textContent = "Verificando acceso…";
+ try {
+  await api("/api/review?limit=1");
+  auth.style.display = "none";
+  inbox.style.display = "block";
+  await refresh();
+ } catch(error) {
+  operatorToken = "";
+  authState.textContent = error.message;
+ }
+});
+document.getElementById("refresh").addEventListener("click",refresh);
+document.getElementById("statusFilter").addEventListener("change",refresh);
+document.getElementById("logout").addEventListener("click",() => {
+ operatorToken = "";
+ document.getElementById("token").value = "";
+ inbox.style.display = "none";
+ auth.style.display = "block";
+ authState.textContent = "Sesión cerrada.";
+});
+</script>
+</body>
+</html>

@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/run30.js && node tests/run-natural.js && node tests/axial-truthtable.test.js",
-    "test:truthtable": "node tests/axial-truthtable.test.js"
+    "test": "node tests/run30.js && node tests/run-natural.js && node tests/axial-truthtable.test.js && node tests/messenger-security.test.js && node tests/messenger-preview-simulation.test.js && node tests/messenger-concurrency.test.js && node tests/messaging-integration.test.js && node tests/semantic-frame-integration.test.js",
+    "test:truthtable": "node tests/axial-truthtable.test.js",
+    "test:messaging": "node tests/messaging-integration.test.js && node tests/semantic-frame-integration.test.js"
   },
   "keywords": [],
   "author": "",
