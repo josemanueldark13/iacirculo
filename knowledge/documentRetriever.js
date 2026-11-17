@@ -2,8 +2,9 @@
 
 const source = require("./documentos.json");
 const hybridRetriever = require("./hybridRetriever");
+const pdfTextExtractor = require("./pdfTextExtractor");
 
-const records = (Array.isArray(source.documentos) ? source.documentos : []).map((record, index) => ({
+let records = (Array.isArray(source.documentos) ? source.documentos : []).map((record, index) => ({
     id: record.id || "n1-doc-" + String(index + 1).padStart(3, "0"),
     title: record.titulo || "Documento institucional sin título",
     category: record.categoria || "Sin categoría",
@@ -15,7 +16,7 @@ const records = (Array.isArray(source.documentos) ? source.documentos : []).map(
     source_type: "documentacion_institucional"
 }));
 
-const index = hybridRetriever.buildIndex(records, {
+const indexOptions = {
     maxTokens: 180,
     overlap: 25,
     fieldWeights: {
@@ -28,7 +29,8 @@ const index = hybridRetriever.buildIndex(records, {
         abstract: 1.8,
         content: 1.2
     }
-});
+};
+let index = hybridRetriever.buildIndex(records, indexOptions);
 
 function search(query, limit = 5) {
     const recovered = hybridRetriever.search(index, query, { limit: Math.min(10, Math.max(1, Number(limit) || 5)) });
@@ -61,6 +63,28 @@ function search(query, limit = 5) {
     };
 }
 
+function ingestPdf(buffer, metadata = {}) {
+    const title = String(metadata.title || "").trim();
+    const category = String(metadata.category || "Documento institucional").trim();
+    if (!title) return { ok: false, status: "metadata_required", error: "DOCUMENT_TITLE_REQUIRED" };
+    const extracted = pdfTextExtractor.extractPdfText(buffer, { maxBytes: metadata.maxBytes || 8 * 1024 * 1024 });
+    if (!extracted.ok) return extracted;
+    const id = String(metadata.id || "n1-pdf-" + Date.now()).replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 100);
+    const record = {
+        id, title, category, subjects: String(metadata.subjects || category),
+        keywords: String(metadata.keywords || ""),
+        abstract: String(metadata.abstract || extracted.text.slice(0, 500)),
+        content: extracted.text, source_level: "N1",
+        source_type: "documentacion_institucional_pdf",
+        source_name: String(metadata.sourceName || ""),
+        ingested_at: new Date().toISOString(),
+        extraction: extracted.diagnostics
+    };
+    records = records.filter(item => item.id !== id).concat(record);
+    index = hybridRetriever.buildIndex(records, indexOptions);
+    return { ok: true, status: "ingested_in_memory", id, title, characters: extracted.characters, count: records.length };
+}
+
 function formatResults(result, options = {}) {
     const results = Array.isArray(result?.results) ? result.results : [];
     const limit = Math.max(1, Math.min(Number(options.limit) || 3, 5));
@@ -69,4 +93,4 @@ function formatResults(result, options = {}) {
     ).join("\n\n");
 }
 
-module.exports = { search, formatResults, get count() { return records.length; } };
+module.exports = { search, formatResults, ingestPdf, get count() { return records.length; } };
