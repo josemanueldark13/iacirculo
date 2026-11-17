@@ -212,6 +212,50 @@ async function sendMessage(recipientId, text) {
     });
 }
 
+function parseAndNormalizeEvent(event) {
+    if (!event || event.message?.is_echo) return null;
+
+    const senderId = event.sender?.id;
+    if (!senderId) return null;
+
+    // Meta puede enviar el payload de un botón junto con el objeto message.
+    // El payload de quick reply tiene prioridad sobre el texto visible.
+    if (typeof event.message?.quick_reply?.payload === "string" &&
+        event.message.quick_reply.payload.trim()) {
+        return {
+            senderId,
+            type: "quick_reply",
+            pregunta: event.message.quick_reply.payload.trim()
+        };
+    }
+
+    if (typeof event.message?.text === "string" && event.message.text.trim()) {
+        return {
+            senderId,
+            type: "text",
+            pregunta: event.message.text.trim()
+        };
+    }
+
+    if (Array.isArray(event.message?.attachments) && event.message.attachments.length) {
+        return {
+            senderId,
+            type: "attachment",
+            pregunta: event.message.attachments
+        };
+    }
+
+    if (typeof event.postback?.payload === "string" && event.postback.payload.trim()) {
+        return {
+            senderId,
+            type: "postback",
+            pregunta: event.postback.payload.trim()
+        };
+    }
+
+    return null;
+}
+
 router.post("/", async (req, res) => {
     if (!verifySignature(req)) {
         console.warn("[Messenger] Firma inválida o ausente; evento rechazado.");
@@ -239,14 +283,12 @@ router.post("/", async (req, res) => {
         // Procesamiento secuencial para conservar el orden de los mensajes
         // dentro de un mismo evento de webhook.
         for (const event of events) {
-            const senderId = event.sender?.id;
-            if (!senderId || event.message?.is_echo) continue;
+            const normalized = parseAndNormalizeEvent(event);
+            if (!normalized) continue;
 
-            const pregunta = typeof event.message?.text === "string"
-                ? event.message.text.trim()
-                : "";
+            const { senderId, type, pregunta } = normalized;
 
-            if (!pregunta && event.message?.attachments?.length) {
+            if (type === "attachment") {
                 await sendMessage(
                     senderId,
                     "Recibí el archivo o la imagen. Contame qué necesitás consultar sobre ese material y te ayudo."
@@ -257,8 +299,6 @@ router.post("/", async (req, res) => {
             // El saludo inicial/Get Started de la Página sigue a cargo de la
             // configuración de bienvenida de Meta; no enviamos otro saludo
             // desde el webhook para evitar duplicarlo.
-            if (!pregunta) continue;
-
             const decision = kernel.process(pregunta);
             const respuesta = buildResponse(pregunta, decision);
 
@@ -274,4 +314,4 @@ router.post("/", async (req, res) => {
 });
 
 module.exports = router;
-module.exports.buildResponse = buildResponse;
+module.exports.buildResponse = buildResponse;\nmodule.exports.parseAndNormalizeEvent = parseAndNormalizeEvent;
