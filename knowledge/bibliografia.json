@@ -1,0 +1,692 @@
+{
+  "version": "1.0.0",
+  "level": "N2",
+  "name": "Núcleo bibliográfico",
+  "description": "Catálogo de bibliografía académica, historiográfica y de consulta. No reemplaza la documentación oficial N1.",
+  "records": [
+    {
+      "id": "nanni-wilde-2021-reformas-tucumanas",
+      "record_type": "articulo_academico",
+      "title": "El ideal y lo posible. Las reformas tucumanas en la construcción del estado provincial (1820-1852)",
+      "authors": [
+        "Facundo Nanni",
+        "Ana Cristina Wilde"
+      ],
+      "year": 2021,
+      "publication": "Trabajos y Comunicaciones, núm. 54, artículo e155 (2021)",
+      "publisher": "Facultad de Humanidades y Ciencias de la Educación, Universidad Nacional de La Plata",
+      "doi": "10.24215/23468971e155",
+      "url": "https://www.memoria.fahce.unlp.edu.ar/art_revistas/pr.12804/pr.12804.pdf",
+      "access": "acceso_abierto",
+      "subjects": [
+        "historia de Tucumán",
+        "historia política",
+        "instituciones provinciales",
+        "legislatura",
+        "justicia",
+        "siglo XIX",
+        "construcción del Estado"
+      ],
+      "keywords": [
+        "reformas",
+        "orden republicano",
+        "herencia colonial",
+        "gobernabilidad",
+        "Sala de Representantes"
+      ],
+      "abstract": "Estudia la creación y reforma de instituciones y prácticas políticas en Tucumán entre 1820 y 1852, incluyendo la gobernación, la emergencia de la legislatura, la justicia y la politización del espacio público.",
+      "source_metadata_url": "https://www.trabajosycomunicaciones.fahce.unlp.edu.ar/article/view/tyce155",
+      "metadata_status": "verificado_en_ficha_editorial",
+      "record_status": "active"
+    },
+    {
+      "id": "nanni-2017-grupos-politicos",
+      "record_type": "articulo_academico",
+      "title": "Grupos políticos y facciones en la construcción de la provincia de Tucumán. 1814-1841",
+      "authors": [
+        "Facundo Nanni"
+      ],
+      "year": 2017,
+      "publication": "PolHis. Revista Bibliográfica del Programa Interuniversitario de Historia Política, núm. 19, pp. 4-49",
+      "publisher": "Programa Interuniversitario de Historia Política",
+      "url": "https://www.polhis.com.ar/index.php/polhis/article/view/251",
+      "access": "acceso_abierto",
+      "subjects": [
+        "historia de Tucumán",
+        "historia política",
+        "facciones",
+        "gobernación",
+        "siglo XIX"
+      ],
+      "keywords": [
+        "orden provincial",
+        "caudillismo",
+        "grupos políticos",
+        "construcción provincial"
+      ],
+      "abstract": "Analiza la disputa por la gobernación y la formación de grupos y facciones en el proceso de construcción política de la provincia de Tucumán durante la primera mitad del siglo XIX.",
+      "source_metadata_url": "https://www.polhis.com.ar/index.php/polhis/article/view/251",
+      "metadata_status": "verificado_en_ficha_editorial",
+      "record_status": "active"
+    },
+    {
+      "id": "navajas-2017-politica-tucumana",
+      "record_type": "articulo_academico",
+      "title": "La política tucumana entre 1867 y 1893. ¿Oligarquías provinciales y orden conservador?",
+      "authors": [
+        "María José Navajas"
+      ],
+      "year": 2017,
+      "publication": "Investigaciones y Ensayos, núm. 65, pp. 51–72 (2017)",
+      "publisher": "Academia Nacional de la Historia de la República Argentina",
+      "url": "https://iye.anh.org.ar/index.php/iye/article/view/188",
+      "access": "acceso_abierto",
+      "subjects": [
+        "historia de Tucumán",
+        "historia política",
+        "élites",
+        "participación política",
+        "siglo XIX"
+      ],
+      "keywords": [
+        "oligarquía",
+        "dirigencia",
+        "conflicto político",
+        "orden conservador"
+      ],
+      "abstract": "Revisa interpretaciones sobre la vida política tucumana entre 1867 y 1893 y discute las categorías usadas para analizar las dirigencias, los conflictos y la participación política.",
+      "source_metadata_url": "https://iye.anh.org.ar/index.php/iye/article/view/188",
+      "metadata_status": "verificado_en_ficha_editorial",
+      "record_status": "active"
+    },
+    {
+      "id": "paolazzo-2023-poblacion-territorio",
+      "record_type": "articulo_academico",
+      "title": "La población y el territorio en Tucumán durante el siglo XIX",
+      "authors": [
+        "Pablo Paolazzo"
+      ],
+      "year": 2023,
+      "publication": "Boletín de Estudios Geográficos, núm. 120, pp. 193-236",
+      "publisher": "Universidad Nacional de Cuyo",
+      "doi": "10.48162/rev.40.036",
+      "url": "https://revistas.uncu.edu.ar/ojs3/index.php/beg/article/view/6766",
+      "access": "acceso_abierto",
+      "subjects": [
+        "historia de Tucumán",
+        "geografía histórica",
+        "demografía",
+        "territorio",
+        "economía",
+        "industria azucarera"
+      ],
+      "keywords": [
+        "población",
+        "territorio",
+        "siglo XIX",
+        "agroindustria azucarera"
+      ],
+      "abstract": "Examina las transformaciones demográficas, territoriales y económicas de Tucumán durante el siglo XIX, con atención a la redistribución espacial y al desarrollo de la agroindustria azucarera.",
+      "source_metadata_url": "https://revistas.uncu.edu.ar/ojs3/index.php/beg/article/view/6766",
+      "metadata_status": "verificado_en_ficha_editorial",
+      "record_status": "active"
+    },
+    {
+      "id": "leoni-pinto-historiografia-tucumana",
+      "record_type": "libro",
+      "title": "Historia, historiador, historiografía en Tucumán (1850-1950)",
+      "authors": [
+        "Ramón A. Leoni Pinto"
+      ],
+      "year": null,
+      "year_note": "Año de edición no consignado en la ficha editorial consultada.",
+      "publication": "1.ª edición, 618 páginas",
+      "publisher": "EDUNT, Editorial de la Universidad Nacional de Tucumán",
+      "isbn": "978-631-91053-9-1",
+      "url": "https://www.edunt.unt.edu.ar/publicaciones/historia-historiador-historiografia-en-tucuman-1850-1950/",
+      "access": "ficha_editorial",
+      "subjects": [
+        "historia de Tucumán",
+        "historiografía",
+        "historiadores",
+        "historia intelectual",
+        "siglos XIX y XX"
+      ],
+      "keywords": [
+        "historiografía tucumana",
+        "historia regional",
+        "historiadores"
+      ],
+      "abstract": "Obra historiográfica que examina autores y tradiciones de escritura sobre la historia de Tucumán y la región, con especial atención a las primeras contribuciones historiográficas.",
+      "source_metadata_url": "https://www.edunt.unt.edu.ar/publicaciones/historia-historiador-historiografia-en-tucuman-1850-1950/",
+      "metadata_status": "verificado_en_ficha_editorial",
+      "record_status": "active"
+    },
+    {
+      "id": "tio-vallejo-2011-republica-extraordinaria",
+      "record_type": "libro_colectivo",
+      "title": "La república extraordinaria. Tucumán en la primera mitad del siglo XIX",
+      "authors": [
+        "Gabriela Tío Vallejo (coordinadora)"
+      ],
+      "year": 2011,
+      "publication": "Obra colectiva",
+      "publisher": "Prohistoria Ediciones",
+      "url": null,
+      "subjects": [
+        "historia de Tucumán",
+        "historia política",
+        "instituciones",
+        "siglo XIX"
+      ],
+      "keywords": [
+        "república",
+        "política provincial",
+        "instituciones tucumanas"
+      ],
+      "abstract": "Obra colectiva citada en bibliografía académica sobre las instituciones, los actores y las prácticas políticas de Tucumán durante la primera mitad del siglo XIX.",
+      "source_metadata_url": "https://www.trabajosycomunicaciones.fahce.unlp.edu.ar/article/view/tyce155",
+      "metadata_status": "referencia_citada_en_bibliografia_academica",
+      "verification_note": "Referencia localizada en la bibliografía del artículo de Nanni y Wilde (2021). Completar URL, ISBN y ficha editorial antes de catalogar ejemplares.",
+      "record_status": "active"
+    },
+    {
+      "id": "davio-2018-morir-por-la-patria",
+      "record_type": "libro",
+      "title": "Morir por la Patria. Participación y militarización de los sectores populares en Tucumán, 1812-1854",
+      "authors": [
+        "María Celeste Davio"
+      ],
+      "year": 2018,
+      "publication": "Monografía",
+      "publisher": "Prohistoria Ediciones",
+      "url": null,
+      "subjects": [
+        "historia de Tucumán",
+        "historia social",
+        "historia militar",
+        "participación popular",
+        "siglo XIX"
+      ],
+      "keywords": [
+        "independencia",
+        "militarización",
+        "sectores populares",
+        "patria"
+      ],
+      "abstract": "Estudio sobre la participación y la militarización de sectores populares en Tucumán entre las guerras de independencia y la organización provincial.",
+      "source_metadata_url": "https://www.trabajosycomunicaciones.fahce.unlp.edu.ar/article/view/tyce155",
+      "metadata_status": "cita_secundaria_pendiente_de_verificacion",
+      "verification_note": "Referencia preliminar localizada en bibliografía de investigación académica. No usar como referencia confirmada hasta verificar la ficha editorial y el ISBN.",
+      "record_status": "candidate"
+    },
+    {
+      "id": "jaimes-freyre-2003-republica-tucuman",
+      "record_type": "libro",
+      "title": "Historia de la República de Tucumán",
+      "authors": [
+        "Ricardo Jaimes Freyre"
+      ],
+      "year": 2003,
+      "publication": "Edición de la Universidad Nacional de Tucumán",
+      "publisher": "Universidad Nacional de Tucumán",
+      "url": null,
+      "subjects": [
+        "historia de Tucumán",
+        "República de Tucumán",
+        "historia política",
+        "siglo XIX"
+      ],
+      "keywords": [
+        "República de Tucumán",
+        "autonomía provincial",
+        "historia política"
+      ],
+      "abstract": "Referencia bibliográfica de interés para el estudio de la experiencia de la República de Tucumán y sus antecedentes institucionales.",
+      "source_metadata_url": "https://www.trabajosycomunicaciones.fahce.unlp.edu.ar/article/view/tyce155",
+      "metadata_status": "cita_secundaria_pendiente_de_verificacion",
+      "verification_note": "Referencia preliminar localizada en bibliografía académica. Año y datos de la edición no confirmados; no usar como referencia confirmada.",
+      "record_status": "candidate"
+    },
+    {
+      "id": "teran-1910-tucuman-norte",
+      "record_type": "libro",
+      "title": "Tucumán y el Norte Argentino (1820–1840). Con documentos comprobatorios",
+      "authors": [
+        "Juan B. Terán"
+      ],
+      "year": 1910,
+      "publication": "252 páginas",
+      "publisher": "Imprenta de Coni Hermanos",
+      "url": "https://biblioteca.cuenca.gob.ec/opac_css/index.php?lvl=notice_display&id=72307",
+      "subjects": [
+        "historia de Tucumán",
+        "historia regional",
+        "Norte argentino",
+        "siglo XIX"
+      ],
+      "keywords": [
+        "Tucumán",
+        "Norte argentino",
+        "1820-1840"
+      ],
+      "abstract": "Referencia historiográfica clásica citada en estudios recientes sobre las reformas institucionales y la construcción política de Tucumán en el siglo XIX.",
+      "source_metadata_url": "https://www.trabajosycomunicaciones.fahce.unlp.edu.ar/article/view/tyce155",
+      "metadata_status": "referencia_citada_en_bibliografia_academica",
+      "verification_note": "Referencia localizada en la bibliografía del artículo de Nanni y Wilde (2021). Confirmar datos de edición y disponibilidad en catálogo.",
+      "record_status": "active"
+    },
+    {
+      "id": "coleccion-historia-tematica-tucuman",
+      "record_type": "coleccion_bibliografica",
+      "title": "Historia temática de Tucumán, siglos XIX y XX",
+      "authors": [
+        "María Celia Bravo (directora)"
+      ],
+      "year": null,
+      "publication": "Colección dentro de un conjunto de 30 tomos de historia de Tucumán",
+      "publisher": "Colección disponible para consulta en la Biblioteca Central del Rectorado de la UNT, según noticia institucional de 2019",
+      "url": "https://medios.unt.edu.ar/2019/09/09/se-encuentran-disponibles-dos-colecciones-libros-sobre-historia-tucuman/",
+      "access": "consulta_en_biblioteca",
+      "subjects": [
+        "historia de Tucumán",
+        "historia temática",
+        "siglos XIX y XX",
+        "historia social",
+        "historia económica"
+      ],
+      "keywords": [
+        "colección",
+        "historia provincial",
+        "investigación histórica"
+      ],
+      "abstract": "Colección temática de historia provincial dirigida por María Celia Bravo. La UNT informó que integra, junto con la colección de historias municipales, un conjunto de treinta tomos.",
+      "source_metadata_url": "https://medios.unt.edu.ar/2019/09/09/se-encuentran-disponibles-dos-colecciones-libros-sobre-historia-tucuman/",
+      "metadata_status": "verificado_en_fuente_institucional",
+      "verification_note": "La noticia institucional informa disponibilidad en la Biblioteca Central del Rectorado; no individualiza aquí los títulos de cada tomo.",
+      "record_status": "active"
+    },
+    {
+      "id": "coleccion-historia-municipios-tucuman",
+      "record_type": "coleccion_bibliografica",
+      "title": "Historia de los Municipios de Tucumán, siglos XIX y XX",
+      "authors": [
+        "Gabriela Tío Vallejo (directora)"
+      ],
+      "year": null,
+      "publication": "Colección dentro de un conjunto de 30 tomos de historia de Tucumán",
+      "publisher": "Colección disponible para consulta en la Biblioteca Central del Rectorado de la UNT, según noticia institucional de 2019",
+      "url": "https://medios.unt.edu.ar/2019/09/09/se-encuentran-disponibles-dos-colecciones-libros-sobre-historia-tucuman/",
+      "access": "consulta_en_biblioteca",
+      "subjects": [
+        "historia de Tucumán",
+        "historia municipal",
+        "historia local",
+        "siglos XIX y XX"
+      ],
+      "keywords": [
+        "municipios",
+        "historia local",
+        "territorio",
+        "instituciones municipales"
+      ],
+      "abstract": "Colección sobre las historias de los municipios tucumanos dirigida por Gabriela Tío Vallejo. La UNT informó que forma parte de un conjunto de treinta tomos consultables en la Biblioteca Central del Rectorado.",
+      "source_metadata_url": "https://medios.unt.edu.ar/2019/09/09/se-encuentran-disponibles-dos-colecciones-libros-sobre-historia-tucuman/",
+      "metadata_status": "verificado_en_fuente_institucional",
+      "verification_note": "La noticia institucional no individualiza aquí los títulos de cada tomo.",
+      "record_status": "active"
+    },
+    {
+      "id": "biblioteca-tucumana-casa-historica",
+      "record_type": "coleccion_bibliografica",
+      "title": "Biblioteca Tucumana - Casa Histórica, Museo Nacional de la Independencia",
+      "authors": [],
+      "year": null,
+      "publication": "Fondo bibliográfico de 551 volúmenes, según descripción institucional",
+      "publisher": "Casa Histórica, Museo Nacional de la Independencia",
+      "url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
+      "access": "consulta_en_institucion",
+      "subjects": [
+        "historia de Tucumán",
+        "historia eclesiástica",
+        "guerras de independencia",
+        "guerras civiles",
+        "industria azucarera",
+        "viajeros",
+        "crónicas"
+      ],
+      "keywords": [
+        "biblioteca tucumana",
+        "fuentes históricas",
+        "siglos XVIII y XIX"
+      ],
+      "abstract": "Colección bibliográfica cuyo eje es la provincia de Tucumán e incluye materiales sobre historia eclesiástica, guerras de independencia y civiles, arte, literatura, industria azucarera, economía, viajeros y crónicas.",
+      "source_metadata_url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
+      "metadata_status": "verificado_en_fuente_institucional",
+      "verification_note": "La ficha institucional informa 551 volúmenes y una donación de Miguel Alfredo Nougués en 1984. No es un registro de 551 ejemplares individuales.",
+      "record_status": "active"
+    },
+    {
+      "id": "alberdi-1834-memoria-descriptiva-tucuman",
+      "record_type": "fuente_historica",
+      "title": "Memoria descriptiva sobre Tucumán",
+      "authors": [
+        "Juan Bautista Alberdi"
+      ],
+      "year": 1834,
+      "publication": "Manuscrito/obra histórica registrada en la bibliografía de la Biblioteca Tucumana",
+      "publisher": "Biblioteca Tucumana, Casa Histórica - Museo Nacional de la Independencia (fondo bibliográfico)",
+      "url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
+      "access": "consulta_en_institucion",
+      "subjects": [
+        "historia de Tucumán",
+        "descripción provincial",
+        "fuentes históricas",
+        "siglo XIX"
+      ],
+      "keywords": [
+        "Tucumán",
+        "Alberdi",
+        "memoria descriptiva",
+        "historia regional"
+      ],
+      "abstract": "Obra de Juan Bautista Alberdi de 1834 incluida en la lista institucional de bibliografía conservada por la Biblioteca Tucumana de la Casa Histórica.",
+      "source_metadata_url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
+      "metadata_status": "verificado_en_catalogo_institucional",
+      "verification_note": "La institución identifica autor y año, pero este registro no reemplaza la consulta del ejemplar ni una descripción catalográfica completa.",
+      "record_status": "active"
+    },
+    {
+      "id": "alberdi-1852-bases-organizacion-politica",
+      "record_type": "libro",
+      "title": "Bases y puntos de partida para la organización política de la República Argentina",
+      "authors": [
+        "Juan Bautista Alberdi"
+      ],
+      "year": 1852,
+      "publication": "Obra histórica; ejemplar citado en la bibliografía institucional",
+      "publisher": "Biblioteca Tucumana, Casa Histórica - Museo Nacional de la Independencia (fondo bibliográfico)",
+      "url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
+      "access": "consulta_en_institucion",
+      "subjects": [
+        "historia política argentina",
+        "constitucionalismo",
+        "organización nacional",
+        "Tucumán",
+        "siglo XIX"
+      ],
+      "keywords": [
+        "Alberdi",
+        "Bases",
+        "organización política",
+        "constitución"
+      ],
+      "abstract": "Obra de Juan Bautista Alberdi publicada en 1852 y señalada entre los ejemplares destacados de la Biblioteca Tucumana.",
+      "source_metadata_url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
+      "metadata_status": "verificado_en_catalogo_institucional",
+      "verification_note": "La página institucional identifica autor, título y año; consultar el catálogo o ejemplar para completar datos de edición.",
+      "record_status": "active"
+    },
+    {
+      "id": "frias-trabajos-legislativos-primeras-asambleas",
+      "record_type": "coleccion_documental",
+      "title": "Trabajos legislativos de las primeras Asambleas argentinas desde la Junta de 1811 hasta la disolución del Congreso en 1827",
+      "authors": [
+        "Uladislao S. Frías (compilador)"
+      ],
+      "year": null,
+      "year_note": "La ficha institucional consultada no informa año de edición.",
+      "publication": "Tres tomos: actas y trabajos legislativos de 1811–1827",
+      "publisher": "Biblioteca Tucumana, Casa Histórica - Museo Nacional de la Independencia (fondo bibliográfico)",
+      "url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
+      "access": "consulta_en_institucion",
+      "subjects": [
+        "historia parlamentaria",
+        "historia legislativa",
+        "asambleas argentinas",
+        "Congreso de Tucumán",
+        "fuentes primarias"
+      ],
+      "keywords": [
+        "trabajos legislativos",
+        "Junta de 1811",
+        "Congreso",
+        "actas",
+        "asambleas"
+      ],
+      "abstract": "Colección en tres tomos que reúne trabajos legislativos desde la Junta de 1811 hasta la disolución del Congreso en 1827, registrada entre los fondos bibliográficos de la Casa Histórica.",
+      "source_metadata_url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
+      "metadata_status": "verificado_en_catalogo_institucional",
+      "verification_note": "La página institucional informa título, compilador y estructura en tres tomos; faltan editorial y año de edición.",
+      "record_status": "active"
+    },
+    {
+      "id": "actas-secretas-congreso-1816-1819",
+      "record_type": "fuente_documental_editada",
+      "title": "Actas secretas del Congreso General Constituyente de las Provincias Unidas del Río de la Plata instalado en Tucumán el 24 de marzo de 1816 (6 de julio de 1816–10 de diciembre de 1819)",
+      "authors": [
+        "Congreso General Constituyente de las Provincias Unidas del Río de la Plata"
+      ],
+      "year": 1926,
+      "publication": "Reimpresión facsimilar",
+      "publisher": "Guillermo Kraft, según referencia institucional",
+      "url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
+      "access": "consulta_en_institucion",
+      "subjects": [
+        "Congreso de Tucumán",
+        "historia parlamentaria",
+        "independencia argentina",
+        "fuentes primarias",
+        "1816–1819"
+      ],
+      "keywords": [
+        "actas secretas",
+        "Congreso General Constituyente",
+        "Tucumán",
+        "1816"
+      ],
+      "abstract": "Reimpresión facsimilar de las actas secretas del Congreso General Constituyente instalado en Tucumán, incluida entre las referencias bibliográficas de la Casa Histórica.",
+      "source_metadata_url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
+      "metadata_status": "verificado_en_catalogo_institucional",
+      "verification_note": "La página institucional consigna título, fechas, carácter facsimilar y año 1926. Verificar datos editoriales en el ejemplar.",
+      "record_status": "active"
+    },
+    {
+      "id": "levene-1947-documentos-congreso-tucuman",
+      "record_type": "coleccion_documental",
+      "title": "Documentos del Congreso de Tucumán (oficios de los directores, apuntes de correspondencia, notas de oficios y órdenes del Congreso, asuntos pendientes ante el mismo y borradores de sesiones del Congreso de Tucumán 1816–1820)",
+      "authors": [
+        "Ricardo Levene"
+      ],
+      "year": 1947,
+      "publication": "Colección de documentos históricos",
+      "publisher": "Archivo Histórico, La Plata, según referencia institucional",
+      "url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
+      "access": "consulta_en_institucion",
+      "subjects": [
+        "Congreso de Tucumán",
+        "historia parlamentaria",
+        "documentos históricos",
+        "fuentes primarias",
+        "1816–1820"
+      ],
+      "keywords": [
+        "Ricardo Levene",
+        "correspondencia",
+        "oficios",
+        "borradores de sesiones",
+        "Congreso"
+      ],
+      "abstract": "Compilación de documentación del Congreso de Tucumán incluida en la bibliografía de consulta publicada por la Casa Histórica.",
+      "source_metadata_url": "https://casadelaindependencia.cultura.gob.ar/info/biblioteca/",
+      "metadata_status": "verificado_en_catalogo_institucional",
+      "verification_note": "La página institucional identifica autor, título, lugar/editorial y año; se requiere consulta del ejemplar para completar descripción y volumen.",
+      "record_status": "active"
+    },
+    {
+      "id": "lichtmajer-2017-politica-facciones-partidos",
+      "record_type": "libro_colectivo",
+      "title": "La política: de las facciones a los partidos",
+      "authors": [
+        "Leandro Lichtmajer (coordinador)"
+      ],
+      "year": 2017,
+      "publication": "Colección Historias Temáticas de Tucumán, 304 páginas",
+      "publisher": "Ediciones Imago Mundi",
+      "isbn": "978-950-793-268-7",
+      "url": "https://ri.conicet.gov.ar/bitstream/handle/11336/114885/CONICET_Digital_Nro.5010e872-659b-4ea3-914a-0c49460a7b8e_B.pdf?sequence=5",
+      "access": "acceso_abierto",
+      "subjects": [
+        "historia de Tucumán",
+        "historia política",
+        "partidos políticos",
+        "facciones",
+        "participación política",
+        "siglos XIX y XX"
+      ],
+      "keywords": [
+        "identidades políticas",
+        "Estado provincial",
+        "partidos",
+        "facciones",
+        "sistema electoral",
+        "sociabilidad política"
+      ],
+      "abstract": "Obra colectiva que estudia la política tucumana desde las facciones del siglo XIX hasta la formación y consolidación de partidos políticos en el siglo XX. Incluye capítulos sobre identidades políticas, clubes, partidos conservadores y hegemonía radical.",
+      "source_metadata_url": "https://ri.conicet.gov.ar/bitstream/handle/11336/114885/CONICET_Digital_Nro.5010e872-659b-4ea3-914a-0c49460a7b8e_B.pdf?sequence=5",
+      "metadata_status": "verificado_en_repositorio_academico",
+      "verification_note": "Ficha catalográfica del volumen, coordinador, editorial, año, extensión e ISBN visibles en el PDF depositado en CONICET Digital.",
+      "record_status": "active"
+    },
+    {
+      "id": "tio-vallejo-nanni-2016-dificil-centralidad",
+      "record_type": "articulo_academico",
+      "title": "Una difícil centralidad. El clima político en Tucumán en tiempos del Congreso",
+      "authors": [
+        "Gabriela Tío Vallejo",
+        "Facundo Nanni"
+      ],
+      "year": 2016,
+      "publication": "Anuario del Instituto de Historia Argentina, vol. 16, núm. 1",
+      "publisher": "Facultad de Humanidades y Ciencias de la Educación, Universidad Nacional de La Plata",
+      "url": "https://www.anuarioiha.fahce.unlp.edu.ar/article/view/IHAv16n1a02",
+      "access": "acceso_abierto",
+      "subjects": [
+        "Congreso de Tucumán",
+        "historia política",
+        "independencia",
+        "Tucumán",
+        "1814-1816",
+        "historiografía"
+      ],
+      "keywords": [
+        "clima político",
+        "sesiones secretas",
+        "gobernabilidad",
+        "legitimidad",
+        "Congreso de la Independencia"
+      ],
+      "abstract": "Analiza el clima político tucumano en la coyuntura de 1814-1816 y la actividad del Congreso de Tucumán, atendiendo a la legitimidad, la gobernabilidad y el valor de las sesiones secretas como fuente para estudiar sus intervenciones.",
+      "source_metadata_url": "https://www.anuarioiha.fahce.unlp.edu.ar/article/view/IHAv16n1a02",
+      "metadata_status": "verificado_en_ficha_editorial",
+      "verification_note": "La ficha de la revista consigna título, autoría, fecha de publicación, volumen, número y resumen.",
+      "record_status": "active"
+    },
+    {
+      "id": "fundacion-miguel-lillo-2016-sesiones-congreso",
+      "record_type": "fuente_historica_editada",
+      "title": "Sesiones del Congreso de Tucumán, 1816 y en Buenos Aires 1817-1820",
+      "authors": [
+        "Autores varios"
+      ],
+      "year": 2016,
+      "publication": "Colección del Bicentenario",
+      "publisher": "Fundación Miguel Lillo",
+      "url": "https://www.lillo.org.ar/editorial/index.php/publicaciones/catalog/book/323",
+      "access": "ficha_editorial",
+      "subjects": [
+        "Congreso de Tucumán",
+        "historia parlamentaria",
+        "independencia argentina",
+        "fuentes primarias",
+        "1816-1820"
+      ],
+      "keywords": [
+        "actas",
+        "El Redactor del Congreso Nacional",
+        "sesiones secretas",
+        "historia legislativa"
+      ],
+      "abstract": "Volumen que reúne El Redactor del Congreso Nacional, las actas secretas de 1816 y las actas de la etapa porteña de 1817-1820, compilando la documentación existente sobre las sesiones del Congreso.",
+      "source_metadata_url": "https://www.lillo.org.ar/editorial/index.php/publicaciones/catalog/book/323",
+      "metadata_status": "verificado_en_ficha_editorial",
+      "verification_note": "La ficha editorial informa título, fecha de publicación (10 de junio de 2016), colección, autoría colectiva y descripción del contenido.",
+      "record_status": "active"
+    },
+    {
+      "id": "lizondo-borda-1956-derecho-patrio-tucuman",
+      "record_type": "libro",
+      "title": "Nuestro Derecho Patrio en la Legislación de Tucumán (1810-1870)",
+      "authors": [
+        "Manuel Lizondo Borda"
+      ],
+      "year": 1956,
+      "publication": "Colección de Estudios para la Historia del Derecho Patrio en las Provincias, vol. II",
+      "publisher": "Editorial Perrot; Instituto de Historia del Derecho, Facultad de Derecho y Ciencias Sociales, Universidad de Buenos Aires",
+      "url": "https://www.derecho.uba.ar/investigacion/pdf/2018-borda-manuel-lizondo-nuestro-derecho-patrio-en-la-legislacion-de-tucuman.pdf",
+      "access": "acceso_abierto",
+      "subjects": [
+        "historia del derecho",
+        "legislación de Tucumán",
+        "historia institucional",
+        "derecho patrio",
+        "1810-1870"
+      ],
+      "keywords": [
+        "legislación provincial",
+        "leyes",
+        "decretos",
+        "derecho tucumano",
+        "historia jurídica"
+      ],
+      "abstract": "Estudio de la legislación tucumana entre 1810 y 1870, útil para investigar la formación del derecho provincial y sus antecedentes normativos.",
+      "source_metadata_url": "https://www.derecho.uba.ar/investigacion/pdf/2018-borda-manuel-lizondo-nuestro-derecho-patrio-en-la-legislacion-de-tucuman.pdf",
+      "metadata_status": "verificado_en_documento_digital_universitario",
+      "verification_note": "La portada y los datos editoriales reproducidos en el documento digital identifican autor, título, período, editorial, colección y año 1956.",
+      "record_status": "active"
+    },
+    {
+      "id": "agn-2017-guia-documentos-congreso-tucuman",
+      "record_type": "instrumento_descripcion_archivistica",
+      "title": "Documentos relativos al Congreso de Tucumán existentes en el Archivo General de la Nación",
+      "authors": [
+        "Archivo General de la Nación"
+      ],
+      "year": 2017,
+      "publication": "Legado, núm. 2",
+      "publisher": "Ministerio del Interior de la República Argentina",
+      "url": "https://www.mininterior.gob.ar/agn/pdf/Legado2.pdf",
+      "access": "acceso_abierto",
+      "subjects": [
+        "Congreso de Tucumán",
+        "fuentes primarias",
+        "archivo histórico",
+        "historia parlamentaria",
+        "1816-1820"
+      ],
+      "keywords": [
+        "Fondo Congreso General Constituyente",
+        "Sala VII",
+        "legajos",
+        "actas",
+        "correspondencia",
+        "Redactor del Congreso"
+      ],
+      "abstract": "Guía de localización de documentos originales o copias de época relativos al Congreso, con referencias a legajos, actas, correspondencia, órdenes, votos, borradores de sesiones y ejemplares de El Redactor del Congreso.",
+      "source_metadata_url": "https://www.mininterior.gob.ar/agn/pdf/Legado2.pdf",
+      "metadata_status": "verificado_en_publicacion_institucional",
+      "verification_note": "La publicación identifica el fondo documental, la sala, los legajos y los tipos de documentos. Se cataloga como instrumento de descripción archivística, no como monografía.",
+      "record_status": "active"
+    }
+  ]
+}

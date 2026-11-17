@@ -11,6 +11,11 @@ const reformulator = require("./reformulator");
 const ragRouter = require("./ragRouter");
 const responsePolicy = require("./responsePolicy");
 const intentRouter = require("./intentRouter");
+const conversationBase = require("./conversationBase");
+const bibliographyRetriever = require("../knowledge/bibliografia");
+const documentRetriever = require("../knowledge/documentRetriever");
+
+const PRIORITY_RANK = { baja: 1, normal: 2, alta: 3, critica: 4 };
 
 function process(question, context = {}) {
     const analysis = semanticAnalyzer.analyze(question);
@@ -22,14 +27,25 @@ function process(question, context = {}) {
         hasPreviousMessage: semanticFrame.context.supplied,
         previousDomain: semanticFrame.domain
     });
-    const messagingDecision = messagingRouter.route(messageAnalysis, context.mode, semanticFrame);
-    const domainDecision = domainRouter.route(analysis);
     const intent = intentRouter.classify(question);
 
-    const humanRequired = messageAnalysis.requires_human;
-    const agent = humanRequired ? "atencion_humana" : intent.agente;
-    const intentType = humanRequired ? messageAnalysis.intent : intent.tipo;
-    const priority = messageAnalysis.priority || "normal";
+    // La derivación humana es una política transversal: ningún modo puede
+    // anular una solicitud explícita de contacto ni una derivación del analizador.
+    const humanRequired = Boolean(messageAnalysis.requires_human || intent.requiere_humano);
+    const priority = (PRIORITY_RANK[intent.prioridad] || 0) > (PRIORITY_RANK[messageAnalysis.priority] || 0)
+        ? intent.prioridad
+        : (messageAnalysis.priority || intent.prioridad || "normal");
+    const routingAnalysis = {
+        ...messageAnalysis,
+        requires_human: humanRequired,
+        priority
+    };
+    const messagingDecision = messagingRouter.route(routingAnalysis, context.mode, semanticFrame);
+    const conversationalMatch = humanRequired ? null : conversationBase.match(question);
+    const domainDecision = domainRouter.route(analysis);
+
+    const agent = humanRequired ? "atencion_humana" : (conversationalMatch?.intent || intent.agente);
+    const intentType = humanRequired ? (messageAnalysis.intent === "contacto" ? "contacto" : messageAnalysis.intent) : (conversationalMatch?.intent || intent.tipo);
     const base = {
         pregunta: question,
         intencion: intentType,
@@ -48,6 +64,23 @@ function process(question, context = {}) {
     if (humanRequired) {
         return { ...base, estado: "requiere_atencion_humana", accion: "derivar_a_revision" };
     }
+    if (conversationalMatch) {
+        const delivery = messagingDecision.auto_reply ? "auto"
+            : messagingDecision.draft_response ? "borrador_para_revision" : "manual";
+        return {
+            ...base,
+            estado: "respuesta_conversacional_disponible",
+            respuesta_conversacional: {
+                id: conversationalMatch.id,
+                intent: conversationalMatch.intent,
+                version: conversationalMatch.version,
+                reviewed_at: conversationalMatch.reviewed_at,
+                status: conversationalMatch.status,
+                delivery,
+                content: delivery === "manual" ? null : conversationalMatch.answer
+            }
+        };
+    }
     if (domainDecision.estado === "requiere_reformulacion") {
         return { ...base, estado: "requiere_reformulacion", sugerencias: reformulator.suggest(question) };
     }
@@ -55,16 +88,30 @@ function process(question, context = {}) {
         return { ...base, estado: "fuera_de_dominio", accion: "flujo_externo" };
     }
 
-    const ragDecision = ragRouter.route(question, analysis);
+    const ragOptions = {
+        n3Insufficient: context.rag?.n3Insufficient === true,
+        forceOpenWeb: context.rag?.forceOpenWeb === true,
+        maxSelectedSources: context.rag?.maxSelectedSources
+    };
+    const ragDecision = ragRouter.route(question, analysis, ragOptions);
+    const officialRecovery = ragDecision.modules.includes("oficial")
+        ? documentRetriever.search(question, 5)
+        : { level: "N1", query: question, total: 0, results: [] };
+    const bibliographyRecovery = ragDecision.modules.includes("bibliografico")
+        ? bibliographyRetriever.search(question, 5)
+        : { catalogVersion: null, query: question, total: 0, results: [] };
     return {
         ...base,
         estado: "aceptada",
         dominio: "institucional",
         modulos_rag: ragDecision.modules,
         modulo_prioritario: ragDecision.priority,
+        plan_rag: ragDecision,
+        recuperacion_oficial: officialRecovery,
+        recuperacion_bibliografica: bibliographyRecovery,
         tipo_respuesta: responsePolicy.determine(question),
-        requiere_fuente_externa: Boolean(ragDecision.requiere_fuente_externa),
-        internet: Boolean(ragDecision.requiere_fuente_externa)
+        requiere_fuente_externa: Boolean(ragDecision.requires_external_source),
+        internet: ragDecision.modules.includes("web_seleccionada") || ragDecision.modules.includes("web_abierta")
     };
 }
 

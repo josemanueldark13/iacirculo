@@ -1,10 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const crypto = require("crypto");
 const chatRoutes = require("./routes/chat");
 const truthTableRoutes = require("./routes/truthtable");
 const messengerRoutes = require("./routes/messenger");
 const reviewInboxRoutes = require("./routes/reviewInbox");
+const documentRoutes = require("./routes/documents");
 const kernel = require("./Kernels/kernel");
 const circuloIA = require("./knowledge/agents/circuloIA");
 const { verifyMetaSignature } = require("./Kernels/metaWebhookSecurity");
@@ -17,6 +19,21 @@ app.use(cors());
 app.use((req,res,next) => {
  const metaPaths = ["/api/webhook/facebook","/webhook/messenger"];
  const isMetaWebhook = req.method === "POST" && metaPaths.includes(req.path);
+ const isDocumentUpload = req.method === "POST" && /^\/api\/documents\/?$/.test(req.path);
+ if (isDocumentUpload) {
+  const expected = (process.env.REVIEW_API_TOKEN || "").trim();
+  const supplied = (req.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  const expectedBytes = Buffer.from(expected, "utf8");
+  const suppliedBytes = Buffer.from(supplied, "utf8");
+  if (!expected) return res.status(503).json({ok:false,error:"Falta configurar REVIEW_API_TOKEN."});
+  if (expectedBytes.length !== suppliedBytes.length || !crypto.timingSafeEqual(expectedBytes, suppliedBytes)) {
+   return res.status(401).json({ok:false,error:"No autorizado."});
+  }
+  return express.raw({type:"application/pdf",limit:"4mb"})(req,res,error => {
+   if (error) return res.status(error.status || 400).json({ok:false,error:"No se pudo recibir el PDF."});
+   return next();
+  });
+ }
  if (!isMetaWebhook) {
   return express.json({limit:"1mb"})(req,res,next);
  }
@@ -51,6 +68,7 @@ app.use(express.static(path.join(__dirname,"public")));
 app.use("/api/chat",chatRoutes);
 app.use("/api/truthtable",truthTableRoutes);
 app.use("/api/review",reviewInboxRoutes);
+app.use("/api/documents",documentRoutes);
 
 // Webhook unificado de Facebook Messenger.
 app.use("/webhook/messenger",messengerRoutes);

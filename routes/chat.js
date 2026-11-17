@@ -3,8 +3,10 @@ const router = express.Router();
 
 const kernel = require("../Kernels/kernel");
 const circuloIA = require("../knowledge/agents/circuloIA");
+const ragComposer = require("../knowledge/ragComposer");
+const documentRetriever = require("../knowledge/documentRetriever");
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
     const pregunta = req.body.message;
 
     if (!pregunta) {
@@ -15,6 +17,24 @@ router.post("/", (req, res) => {
     }
 
     const decision = kernel.process(pregunta);
+
+    if (decision.estado === "requiere_atencion_humana") {
+        return res.json({
+            agente: "atencion_humana",
+            estado: decision.estado,
+            respuesta: "Esta solicitud requiere atención de una persona del equipo. No voy a responderla automáticamente por este canal.",
+            decision
+        });
+    }
+
+    if (decision.respuesta_conversacional?.content) {
+        return res.json({
+            agente: "CÍRCULO IA",
+            estado: decision.estado,
+            respuesta: decision.respuesta_conversacional.content,
+            decision
+        });
+    }
 
     if (decision.estado === "requiere_reformulacion") {
         return res.json({
@@ -35,11 +55,36 @@ router.post("/", (req, res) => {
         });
     }
 
-    if (decision.requiere_fuente_externa) {
+    if (decision.plan_rag?.modules?.some(level =>
+        ["oficial", "bibliografico", "web_seleccionada", "web_abierta"].includes(level)
+    )) {
+        await documentRetriever.ensureLoaded();
+        const composed = await ragComposer.compose(pregunta, decision, {
+            bibliographyLimit: 5,
+            abstractLength: 520,
+            maxSources: 3,
+            webLimit: 4,
+            openWebLimit: 5,
+            n3TimeoutMs: 3500,
+            n4TimeoutMs: 5000,
+            enablePdfRetrieval: true,
+            pdfMaxSources: 2,
+            pdfTimeoutMs: 2800
+        });
+        const state = composed.statuses.N4 === "retrieved"
+            ? "respuesta_web_abierta"
+            : composed.statuses.N3 === "retrieved" || composed.statuses.N3 === "partial"
+                ? "respuesta_web_seleccionada"
+                : decision.modulos_rag?.includes("bibliografico")
+                    ? "respuesta_bibliografica"
+                    : "respuesta_institucional";
         return res.json({
             agente: "CÍRCULO IA",
-            estado: "requiere_fuente_externa",
-            respuesta: "La consulta requiere información de fuentes externas al corpus institucional local.",
+            estado: state,
+            respuesta: composed.answer,
+            evidencia: composed.evidence,
+            niveles_consultados: composed.used_levels,
+            estados_nucleos: composed.statuses,
             decision
         });
     }
