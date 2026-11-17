@@ -95,6 +95,17 @@ async function run() {
     });
     assert.ok(n2FullText.retrieved > 0);
     assert.ok(n2FullText.results.length > 0);
+    const composedN2Pdf = await ragComposer.compose(
+        "reformas institucionales de Tucumán 1820 1852",
+        {
+            modulos_rag: ["bibliografico"],
+            recuperacion_bibliografica: bibliography.search("reformas institucionales de Tucumán 1820 1852", 4),
+            plan_rag: { modules: ["bibliografico"], open_web: { enabled: false, eligible: false } }
+        },
+        { enablePdfRetrieval: true, fetchImpl: mockPdfFetch, pdfTimeoutMs: 1000 }
+    );
+    assert.equal(composedN2Pdf.statuses.N2_FULLTEXT, "retrieved");
+    assert.match(composedN2Pdf.answer, /Texto completo recuperado de documentos PDF/);
 
     // N3 solo solicita URLs exactas del catálogo. El contenido falso simula páginas HTML.
     assert.equal(webRetriever.sourceAllowed("https://example.invalid/not-allowlisted"), false);
