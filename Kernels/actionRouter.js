@@ -1,29 +1,43 @@
 'use strict';
 
 /**
- * Resuelve payloads de interfaz conocidos a consultas canónicas.
- * El payload nunca se entrega al analizador semántico: solo la pregunta
- * institucional registrada puede continuar por el pipeline documental.
+ * Registro de acciones deterministas de Messenger.
+ * Las acciones de respuesta inmediata devuelven responseMessage.
+ * Las acciones documentales devuelven una pregunta canónica para el RAG.
  */
 const ACTIONS = Object.freeze({
     ACTION_QUERY_PATRIMONY: Object.freeze({
         tipo: "consulta_patrimonio",
         pregunta: "¿Qué patrimonio documental conserva el Círculo de Legisladores de Tucumán?"
+    }),
+    SHOW_MAIN_MENU: Object.freeze({
+        responseMessage: "Menú principal de CÍRCULO IA:\n1. Consultar patrimonio\n2. Historia institucional\n3. Legislación y documentación\n4. Contacto"
+    }),
+    HELP_INFO: Object.freeze({
+        responseMessage: "Este es el canal institucional automatizado del Círculo de Legisladores de Tucumán. Podés consultar patrimonio, historia, legislación, autoridades, actividades y vías de contacto."
     })
 });
 
+/**
+ * Devuelve null cuando un quick reply contiene texto libre.
+ * Un postback desconocido o un quick reply con prefijo ACTION_ se considera
+ * comando determinista no registrado y no debe caer al analizador NLP.
+ */
 function routeAction(payload, type) {
     if (typeof payload !== "string") return null;
 
     const normalized = payload.trim();
-    const isDeterministicEvent =
-        type === "postback" ||
-        (type === "quick_reply" && /^ACTION_[A-Z0-9_]+$/.test(normalized));
+    const knownAction = ACTIONS[normalized];
+    const isExplicitActionCode = /^ACTION_[A-Z0-9_]+$/.test(normalized);
 
-    if (!isDeterministicEvent) return null;
+    if (type === "quick_reply" && !knownAction && !isExplicitActionCode) {
+        return null;
+    }
+    if (type !== "postback" && type !== "quick_reply") {
+        return null;
+    }
 
-    const action = ACTIONS[normalized];
-    if (!action) {
+    if (!knownAction) {
         return {
             recognized: false,
             payload: normalized,
@@ -35,8 +49,9 @@ function routeAction(payload, type) {
         recognized: true,
         payload: normalized,
         tipo_evento: type,
-        tipo: action.tipo,
-        pregunta: action.pregunta
+        tipo: knownAction.tipo || "respuesta_estatica",
+        pregunta: knownAction.pregunta || null,
+        responseMessage: knownAction.responseMessage || null
     };
 }
 
