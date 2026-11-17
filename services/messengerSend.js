@@ -7,7 +7,7 @@ const PAGE_ACCESS_TOKEN = () =>
 
 const GRAPH_VERSION = () => {
     const configured = process.env.META_GRAPH_VERSION?.trim() || 'v23.0';
-    if (!/^v\\d+\\.\\d+$/.test(configured)) {
+    if (!/^v\d+\.\d+$/.test(configured)) {
         throw new Error('META_GRAPH_VERSION tiene un formato inválido.');
     }
     return configured;
