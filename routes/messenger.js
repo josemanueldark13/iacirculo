@@ -265,4 +265,5 @@ router.post("/", async (req, res) => {
 });
 
 module.exports = router;
-module.exports.buildResponse = buildResponse;\nmodule.exports.parseAndNormalizeEvent = parseAndNormalizeEvent;
+module.exports.buildResponse = buildResponse;
+module.exports.parseAndNormalizeEvent = parseAndNormalizeEvent;
