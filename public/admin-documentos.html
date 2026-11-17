@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Administración documental — CÍRCULO IA</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#111318;color:#e8e9ed}
+body{max-width:920px;margin:32px auto;padding:0 18px}h1{font-size:1.6rem}
+p{color:#aeb3bf}section{background:#1b1f27;border:1px solid #343a46;border-radius:12px;padding:18px;margin:18px 0}
+label{display:block;margin:12px 0 6px;color:#cbd0da}input,button{font:inherit;border-radius:7px;padding:10px;border:1px solid #495160;background:#101319;color:#f2f3f6;width:100%;box-sizing:border-box}
+button{cursor:pointer;background:#303b50;margin-top:12px}.secondary{width:auto;margin:4px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.item{border-top:1px solid #3b414d;padding:14px 0}.status{font-size:.85rem;color:#aab7ca}
+#message{white-space:pre-wrap;color:#c8d5e8}@media(max-width:600px){.grid{grid-template-columns:1fr}}
+</style></head>
+<body>
+<h1>Repositorio documental N1</h1>
+<p>Ingreso controlado de PDF institucionales. Cada archivo queda pendiente de revisión y solo se incorpora al núcleo oficial después de una aprobación explícita.</p>
+<section><label for="token">Token de operador</label><input id="token" type="password" autocomplete="off" placeholder="Token de operador"><button id="load">Consultar documentos</button></section>
+<section><h2>Cargar documento PDF</h2>
+<div class="grid">
+<div><label for="title">Título *</label><input id="title" required maxlength="240"></div>
+<div><label for="category">Categoría</label><input id="category" value="Documento institucional"></div>
+<div><label for="issuing">Organismo emisor</label><input id="issuing"></div>
+<div><label for="date">Fecha del documento</label><input id="date" placeholder="AAAA-MM-DD"></div>
+<div><label for="type">Tipo documental</label><input id="type" placeholder="Ley, decreto, acta, resolución..."></div>
+<div><label for="keywords">Palabras clave</label><input id="keywords"></div>
+</div>
+<label for="pdf">Archivo PDF (máximo 8 MB)</label><input id="pdf" type="file" accept="application/pdf,.pdf"><button id="upload">Subir para revisión</button></section>
+<section><h2>Documentos registrados</h2><div id="items">Todavía no se consultó el repositorio.</div></section>
+<p id="message" role="status"></p>
+<script>
+const $=id=>document.getElementById(id), token=()=>$('token').value.trim();
+const headers=()=>({Authorization:'Bearer '+token()});
+function say(text){$('message').textContent=text}
+async function request(path,options={}){const r=await fetch('/api/documents'+path,{...options,headers:{...headers(),...(options.headers||{})}});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Error HTTP '+r.status);return data}
+async function load(){try{const data=await request('/');$('items').replaceChildren();for(const item of data.items){const div=document.createElement('div');div.className='item';const title=document.createElement('strong');title.textContent=item.title;const status=document.createElement('div');status.className='status';status.textContent=item.status+' · '+item.category+' · '+item.characters+' caracteres';div.append(title,status);if(item.status==='pending_review'){for(const action of ['approve','reject']){const b=document.createElement('button');b.className='secondary';b.textContent=action==='approve'?'Aprobar e indexar en N1':'Rechazar';b.onclick=async()=>{try{await request('/'+encodeURIComponent(item.id)+'/'+action,{method:'POST'});say('Estado actualizado.');await load()}catch(e){say(e.message)}};div.append(b)}}$('items').append(div)}if(!data.items.length)$('items').textContent='No hay documentos.';say('Repositorio actualizado.')}catch(e){say(e.message)}}
+$('load').onclick=load;
+$('upload').onclick=async()=>{try{const file=$('pdf').files[0];if(!file)throw new Error('Seleccioná un PDF.');if(!$('title').value.trim())throw new Error('El título es obligatorio.');const q=new URLSearchParams({title:$('title').value,category:$('category').value,issuingBody:$('issuing').value,documentDate:$('date').value,documentType:$('type').value,keywords:$('keywords').value});const result=await request('/?'+q.toString(),{method:'POST',headers:{...headers(),'Content-Type':'application/pdf'},body:file});say('PDF almacenado y enviado a revisión: '+result.item.title);$('pdf').value='';await load()}catch(e){say(e.message)}};
+</script></body></html>
