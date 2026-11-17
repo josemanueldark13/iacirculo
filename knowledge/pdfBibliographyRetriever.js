@@ -57,7 +57,7 @@ async function search(query, options = {}) {
     }))), query, { limit: Math.max(1, Math.min(Number(options.maxSources) || 2, 4)) });
     const selectedIds = new Set(rankedMetadata.results.map(hit => hit.document.id));
     const selected = records.filter(record => selectedIds.has(record.id));
-    const fetched = await Promise.all(selected.map(record => fetchPdf(record, options)));
+    const fetched = await Promise.all(selected.map(async record => ({ ...await fetchPdf(record, options), record })));
     const documents = fetched.filter(item => item.ok).map(item => ({
         id: item.record.id, title: item.record.title,
         authors: (item.record.authors || []).join(", "),
@@ -77,7 +77,7 @@ async function search(query, options = {}) {
             relevance: { score: hit.score, matchedTerms: hit.matchedTerms, coverage: hit.coverage }
         })),
         errors: fetched.filter(item => !item.ok).map(item => ({
-            id: selected.find(record => record.url === record.url)?.id || null,
+            id: item.record.id, title: item.record.title,
             status: item.status, reason: item.error
         }))
     };
