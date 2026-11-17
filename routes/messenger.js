@@ -102,60 +102,32 @@ router.get("/status", (req, res) => {
     });
 });
 
-// Diagnóstico real de Graph API + suscripción de la Página.
-// No expone tokens ni app secret. Puede requerir permisos adicionales de Meta.
-router.get("/diagnose", async (req, res) => {
+// Diagnóstico local de configuración. No consulta Graph API ni requiere
+// pages_read_engagement. No certifica la validez del token ni la suscripción
+// remota: esas condiciones se comprueban mediante pruebas funcionales autorizadas.
+router.get("/diagnose", (req, res) => {
+    const appSecretConfigured = Boolean(envFirst("FACEBOOK_APP_SECRET", "META_APP_SECRET"));
+    const pageTokenConfigured = Boolean(envFirst("FACEBOOK_PAGE_ACCESS_TOKEN", "META_PAGE_ACCESS_TOKEN"));
+    const verifyTokenConfigured = Boolean(envFirst("FACEBOOK_VERIFY_TOKEN", "META_VERIFY_TOKEN"));
+
     const result = {
-        ok: false,
-        graph_api: "unknown",
-        page_token_valid: false,
-        page_id: null,
-        page_name: null,
-        subscription_query: "not_run",
+        ok: appSecretConfigured && pageTokenConfigured && verifyTokenConfigured,
+        diagnostic_mode: "local",
+        servicio: "CÍRCULO IA — Facebook Messenger",
+        graph_api: "not_checked",
+        page_token_configured: pageTokenConfigured,
+        page_token_valid: null,
+        app_secret_configured: appSecretConfigured,
+        verify_token_configured: verifyTokenConfigured,
+        webhook_signature_verification: appSecretConfigured ? "configured" : "missing_app_secret",
+        subscription_query: "not_checked",
         messages_subscribed: null,
-        subscribed_apps_count: null,
         appsecret_proof_valid: null,
-        appsecret_proof_error: null,
-        graph_version: envFirst("META_GRAPH_VERSION") || "v23.0"
+        graph_version: envFirst("META_GRAPH_VERSION") || "v23.0",
+        note: "Diagnóstico local: no verifica la validez del token ni la suscripción de la Página en Meta."
     };
 
-    try {
-        const page = await graphRequest("/me?fields=id,name");
-        result.graph_api = "ok";
-        result.page_token_valid = true;
-        result.page_id = page.id || null;
-        result.page_name = page.name || null;
-    } catch (error) {
-        result.graph_api = "error";
-        result.page_token_error = error.message;
-        return res.status(502).json(result);
-    }
-
-    try {
-        const subscriptions = await graphRequest("/me/subscribed_apps");
-        const apps = Array.isArray(subscriptions?.data) ? subscriptions.data : [];
-
-        result.subscription_query = "ok";
-        result.subscribed_apps_count = apps.length;
-        result.messages_subscribed = apps.some(app =>
-            Array.isArray(app.subscribed_fields) &&
-            app.subscribed_fields.includes("messages")
-        );
-    } catch (error) {
-        result.subscription_query = "error";
-        result.subscription_error = error.message;
-    }
-
-    try {
-        await graphRequest("/me?fields=id", {}, true);
-        result.appsecret_proof_valid = true;
-    } catch (error) {
-        result.appsecret_proof_valid = false;
-        result.appsecret_proof_error = error.message;
-    }
-
-    result.ok = result.page_token_valid && result.subscription_query === "ok";
-    return res.status(result.ok ? 200 : 502).json(result);
+    return res.status(result.ok ? 200 : 503).json(result);
 });
 
 router.get("/", (req, res) => {
