@@ -22,7 +22,7 @@ app.use((req,res,next) => {
  const isDocumentUpload = req.method === "POST" && req.path === "/api/documents";
  if (isDocumentUpload) {
   const expected = (process.env.REVIEW_API_TOKEN || "").trim();
-  const supplied = (req.get("authorization") || "").replace(/^Bearer\\s+/i, "").trim();
+  const supplied = (req.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
   const expectedBytes = Buffer.from(expected, "utf8");
   const suppliedBytes = Buffer.from(supplied, "utf8");
   if (!expected) return res.status(503).json({ok:false,error:"Falta configurar REVIEW_API_TOKEN."});
