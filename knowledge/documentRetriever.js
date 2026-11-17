@@ -85,6 +85,36 @@ function ingestPdf(buffer, metadata = {}) {
     return { ok: true, status: "ingested_in_memory", id, title, characters: extracted.characters, count: records.length };
 }
 
+let persistentLoadPromise = null;
+async function ensureLoaded() {
+    if (persistentLoadPromise) return persistentLoadPromise;
+    persistentLoadPromise = (async () => {
+        const store = require("./documentStore");
+        if (!store.isConfigured()) return { status: "storage_not_configured", loaded: 0 };
+        const approved = (await store.listMetadata(200)).filter(item => item.status === "approved");
+        let loaded = 0;
+        for (const item of approved) {
+            if (records.some(record => record.id === item.id)) continue;
+            try {
+                const pdf = await store.getPdf(item.pathname);
+                const result = ingestPdf(pdf, {
+                    id: item.id, title: item.title, category: item.category,
+                    subjects: item.category, keywords: item.keywords,
+                    sourceName: item.issuingBody
+                });
+                if (result.ok) loaded++;
+            } catch (error) {
+                console.error("[Documents] No se pudo reconstruir N1 para", item.id, error.code || "LOAD_ERROR");
+            }
+        }
+        return { status: "loaded", loaded, approved: approved.length };
+    })().catch(error => {
+        persistentLoadPromise = null;
+        throw error;
+    });
+    return persistentLoadPromise;
+}
+
 function formatResults(result, options = {}) {
     const results = Array.isArray(result?.results) ? result.results : [];
     const limit = Math.max(1, Math.min(Number(options.limit) || 3, 5));
@@ -93,4 +123,4 @@ function formatResults(result, options = {}) {
     ).join("\n\n");
 }
 
-module.exports = { search, formatResults, ingestPdf, get count() { return records.length; } };
+module.exports = { search, formatResults, ingestPdf, ensureLoaded, get count() { return records.length; } };
