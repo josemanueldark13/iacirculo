@@ -15,7 +15,8 @@
   "type": "commonjs",
   "dependencies": {
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "@vercel/blob": "^2.0.0"
   },
   "devDependencies": {}
 }
