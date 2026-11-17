@@ -130,7 +130,7 @@ async function fetchSelectedSource(source, options = {}) {
             redirect: "manual",
             signal: AbortSignal.timeout(timeoutMs),
             headers: {
-                "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9",
+                "Accept": "text/html,application/xhtml+xml,application/pdf,text/plain;q=0.9",
                 "User-Agent": "CirculoIA-RAG/1.0 (+https://iacirculo.vercel.app/)"
             }
         });
