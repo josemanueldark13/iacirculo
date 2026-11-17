@@ -4,6 +4,7 @@ const router = express.Router();
 
 const kernel = require("../Kernels/kernel");
 const circuloIA = require("../knowledge/agents/circuloIA");
+const messengerSend = require("../services/messengerSend");
 
 function envFirst(...names) {
     for (const name of names) {
@@ -21,16 +22,6 @@ function normalizeText(value) {
         .replace(/[^a-z0-9\s]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
-}
-
-function appSecretProof(token) {
-    const appSecret = envFirst("FACEBOOK_APP_SECRET", "META_APP_SECRET");
-    if (!appSecret) return null;
-
-    return crypto
-        .createHmac("sha256", appSecret)
-        .update(token)
-        .digest("hex");
 }
 
 function verifySignature(req) {
@@ -52,43 +43,6 @@ function verifySignature(req) {
 
     return received.length === calculated.length &&
         crypto.timingSafeEqual(received, calculated);
-}
-
-async function graphRequest(path, options = {}, useProof = false) {
-    const token = envFirst("FACEBOOK_PAGE_ACCESS_TOKEN", "META_PAGE_ACCESS_TOKEN");
-    if (!token) throw new Error("Falta FACEBOOK_PAGE_ACCESS_TOKEN / META_PAGE_ACCESS_TOKEN");
-
-    const version = envFirst("META_GRAPH_VERSION") || "v23.0";
-    const proof = useProof ? appSecretProof(token) : null;
-    const separator = path.includes("?") ? "&" : "?";
-    const url = proof
-        ? "https://graph.facebook.com/" + version + path + separator + "appsecret_proof=" + encodeURIComponent(proof)
-        : "https://graph.facebook.com/" + version + path;
-
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + token,
-            ...(options.headers || {})
-        }
-    });
-
-    const bodyText = await response.text();
-
-    let body;
-    try {
-        body = JSON.parse(bodyText);
-    } catch {
-        body = { raw: bodyText };
-    }
-
-    if (!response.ok) {
-        const message = body?.error?.message || bodyText || "Respuesta desconocida de Graph API";
-        throw new Error("Graph API " + response.status + ": " + message);
-    }
-
-    return body;
 }
 
 router.get("/status", (req, res) => {
@@ -195,23 +149,6 @@ function buildResponse(pregunta, decision) {
     return circuloIA.responder(pregunta);
 }
 
-async function sendMessage(recipientId, text) {
-    const version = envFirst("META_GRAPH_VERSION") || "v23.0";
-    const response = await graphRequest("/me/messages", {
-        method: "POST",
-        body: JSON.stringify({
-            recipient: { id: recipientId },
-            messaging_type: "RESPONSE",
-            message: { text }
-        })
-    });
-
-    console.log("[Messenger] Respuesta enviada correctamente.", {
-        recipient_present: Boolean(recipientId),
-        message_id: response?.message_id || null
-    });
-}
-
 function parseAndNormalizeEvent(event) {
     if (!event || event.message?.is_echo) return null;
 
@@ -289,7 +226,7 @@ router.post("/", async (req, res) => {
             const { senderId, type, pregunta } = normalized;
 
             if (type === "attachment") {
-                await sendMessage(
+                await messengerSend.sendMessage(
                     senderId,
                     "Recibí el archivo o la imagen. Contame qué necesitás consultar sobre ese material y te ayudo."
                 );
