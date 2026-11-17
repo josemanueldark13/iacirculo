@@ -299,8 +299,22 @@ router.post("/", async (req, res) => {
             // El saludo inicial/Get Started de la Página sigue a cargo de la
             // configuración de bienvenida de Meta; no enviamos otro saludo
             // desde el webhook para evitar duplicarlo.
-            const decision = kernel.process(pregunta);
-            const respuesta = buildResponse(pregunta, decision);
+            const decision = kernel.process({
+                pregunta,
+                type,
+                senderId
+            });
+
+            if (decision?.estado === "accion_no_reconocida") {
+                await sendMessage(
+                    senderId,
+                    "Ese botón no está disponible en este momento. Podés escribir tu consulta y te ayudo."
+                );
+                continue;
+            }
+
+            const preguntaParaResponder = decision?.pregunta || pregunta;
+            const respuesta = buildResponse(preguntaParaResponder, decision);
 
             await sendMessage(senderId, respuesta);
         }
