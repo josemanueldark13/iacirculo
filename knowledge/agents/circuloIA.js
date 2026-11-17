@@ -21,22 +21,36 @@ const circuloIA = {
         const buscar = (...titulos) => docs.find(d => titulos.includes(d.titulo));
         const salida = (doc, extra) => {
             if (!doc) {
-                return `${this.nombre}\n\nNo encontré información específica sobre esa consulta en la base documental disponible.`;
+                return this.nombre + "\n\nNo encontré información específica sobre esa consulta en la base documental disponible.";
             }
-            return `${this.nombre}\n\n${extra || doc.contenido}\n\nFuente documental:\n${doc.titulo}`;
+            return this.nombre + "\n\n" + (extra || doc.contenido) + "\n\nFuente documental:\n" + doc.titulo;
         };
 
-        // Consultas institucionales principales: respuestas deterministas.
+        // Consultas institucionales principales: respuestas documentales.
         if (/(^|\s)(quienes somos|quien es el circulo)(\s|$)/.test(q)) {
             return salida(buscar("Quiénes somos"));
         }
 
         if (q.includes("autoridades") || q.includes("presidente") || q.includes("vicepresidente") || q.includes("secretario") || q.includes("tesorero")) {
             const doc = buscar("Autoridades");
-            return salida(doc, `Según la documentación institucional disponible:\n\n${doc ? doc.contenido : ""}`);
+            return salida(doc, "Según la documentación institucional disponible:\n\n" + (doc ? doc.contenido : ""));
         }
 
-        if (q.includes("donde esta ubicado") || q.includes("donde esta ubicada") || q.includes("ubicacion") || q.includes("direccion") || q.includes("donde queda") || q.includes("sede") || q.includes("contacto") || q.includes("mail") || q.includes("correo")) {
+        if (
+            q.includes("donde esta ubicado") ||
+            q.includes("donde esta ubicada") ||
+            q.includes("ubicacion") ||
+            q.includes("direccion") ||
+            q.includes("donde queda") ||
+            q.includes("sede") ||
+            q.includes("contacto") ||
+            q.includes("mail") ||
+            q.includes("correo") ||
+            q.includes("email") ||
+            q.includes("telefono") ||
+            q.includes("whatsapp") ||
+            q.includes("numero de contacto")
+        ) {
             return salida(buscar("Ubicación y contacto institucional"));
         }
 
@@ -48,13 +62,13 @@ const circuloIA = {
             return salida(buscar("Actividades institucionales"));
         }
 
-        // La Ley 6333 debe reconocerse siempre, incluso con variantes de escritura.
-        if (/ley\s*(provincial\s*)?6333/.test(q) || q.includes("ley 6 333")) {
+        // La Ley 6333 se reconoce con y sin separadores de miles.
+        if (/ley\s*(provincial\s*)?6333/.test(q) || q.includes("ley 6 333") || q.includes("ley n 6 333")) {
             const doc = buscar(
                 "Ley Provincial Nº 6.333 — Creación del Círculo de Legisladores de la Provincia de Tucumán",
                 "Ley Provincial Nº 6.333"
             );
-            return salida(doc, `La Ley Provincial Nº 6.333 corresponde a la creación del Círculo de Legisladores de la Provincia de Tucumán. Es la norma de referencia para la constitución del Círculo.\n\nCuando se solicite el texto literal o el articulado completo, debe consultarse la fuente oficial de la Honorable Legislatura de Tucumán para evitar atribuir contenido no verificado.`);
+            return salida(doc, "La Ley Provincial Nº 6.333 corresponde a la creación del Círculo de Legisladores de la Provincia de Tucumán. Es la norma de referencia para la constitución del Círculo.\n\nCuando se solicite el texto literal o el articulado completo, debe consultarse la fuente oficial de la Honorable Legislatura de Tucumán para evitar atribuir contenido no verificado.");
         }
 
         if (q.includes("cual es la historia") || q === "historia" || q.includes("historia del circulo") || q.includes("historia institucional")) {
@@ -62,7 +76,7 @@ const circuloIA = {
         }
 
         if (q.includes("como funciona circulo ia") || q.includes("como funciona el circulo ia") || q === "desarrollo" || q.includes("como funciona")) {
-            return `${this.nombre}\n\nCÍRCULO IA es el asistente institucional del Círculo de Legisladores de Tucumán. Su función es orientar sobre historia, legislación, autoridades, actividades y patrimonio documental a partir de la documentación institucional disponible.`;
+            return this.nombre + "\n\nCÍRCULO IA es el asistente institucional del Círculo de Legisladores de Tucumán. Su función es orientar sobre historia, legislación, autoridades, actividades y patrimonio documental a partir de la documentación institucional disponible.";
         }
 
         if (q.includes("cuando se creo") || q.includes("cuando fue creado") || q.includes("fecha de creacion") || q.includes("como se fundo") || q.includes("fundacion") || q.includes("origen institucional") || q.includes("que decreto reconoce")) {
@@ -74,7 +88,7 @@ const circuloIA = {
         const ignoradas = new Set(["que", "cual", "quienes", "como", "donde", "cuando", "tiene", "tienen", "hay", "del", "los", "las", "una", "uno", "unos", "unas", "el", "la", "de", "en", "sobre", "para", "por", "con", "informacion", "es", "son"]);
         const palabras = q.split(/\s+/).filter(p => p.length > 2 && !ignoradas.has(p));
         const resultados = docs.map(doc => {
-            const texto = normalizar(`${doc.titulo} ${doc.categoria} ${doc.contenido}`);
+            const texto = normalizar(doc.titulo + " " + doc.categoria + " " + doc.contenido);
             let puntuacion = 0;
             for (const p of palabras) {
                 if (normalizar(doc.titulo).includes(p)) puntuacion += 10;
@@ -84,10 +98,10 @@ const circuloIA = {
         }).filter(r => r.puntuacion > 0).sort((a, b) => b.puntuacion - a.puntuacion);
 
         if (!resultados.length) {
-            return `${this.nombre}\n\nNo encontré información específica sobre esa consulta en la base documental disponible.\n\nTemas disponibles:\nHistoria, Ley 6333, Misión, Actividades, Ubicación, Contacto y Autoridades.`;
+            return this.nombre + "\n\nNo encontré información específica sobre esa consulta en la base documental disponible.\n\nTemas disponibles:\nHistoria, Ley 6333, Misión, Actividades, Ubicación, Contacto y Autoridades.";
         }
 
-        return salida(resultados[0].doc, `Según la documentación institucional disponible:\n\n${resultados[0].doc.contenido}`);
+        return salida(resultados[0].doc, "Según la documentación institucional disponible:\n\n" + resultados[0].doc.contenido);
     }
 };
 
