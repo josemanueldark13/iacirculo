@@ -3,6 +3,7 @@
 const curatedCatalog = require("./fuentesWebSeleccionadas.json");
 const ragRouter = require("../Kernels/ragRouter");
 const hybridRetriever = require("./hybridRetriever");
+const pdfTextExtractor = require("./pdfTextExtractor");
 
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const MAX_HTML_BYTES = 1_500_000;
@@ -35,6 +36,28 @@ function extractHtml(html) {
 
 function sourceAllowed(url) {
     return curatedCatalog.sources.some(source => source.selection_status === "active" && source.url === url);
+}
+
+async function readBufferLimited(response, maxBytes) {
+    const reader = response.body?.getReader?.();
+    if (!reader) {
+        const buffer = Buffer.from(await response.arrayBuffer());
+        if (buffer.length > maxBytes) throw new Error("SOURCE_TOO_LARGE");
+        return buffer;
+    }
+    const chunks = [];
+    let totalBytes = 0;
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        totalBytes += value.byteLength;
+        if (totalBytes > maxBytes) {
+            await reader.cancel().catch(() => {});
+            throw new Error("SOURCE_TOO_LARGE");
+        }
+        chunks.push(Buffer.from(value));
+    }
+    return Buffer.concat(chunks, totalBytes);
 }
 
 async function readTextLimited(response, maxBytes) {
@@ -120,8 +143,19 @@ async function fetchSelectedSource(source, options = {}) {
         }
 
         const contentType = String(response.headers?.get?.("content-type") || "").toLowerCase();
-        if (contentType.includes("application/pdf")) {
-            return { ok: false, source, status: "pdf_ingestion_required", error: "PDF_ADAPTER_NOT_CONFIGURED" };
+        if (contentType.includes("application/pdf") || /\.pdf(?:$|[?#])/i.test(source.url)) {
+            const pdfBuffer = await readBufferLimited(response, options.maxBytes || MAX_HTML_BYTES);
+            const extracted = pdfTextExtractor.extractPdfText(pdfBuffer, { maxBytes: options.maxBytes || MAX_HTML_BYTES });
+            if (!extracted.ok) {
+                return { ok: false, source, status: extracted.status, error: extracted.error, extraction: extracted.diagnostics || null };
+            }
+            const result = {
+                ok: true, source, status: "retrieved", content: extracted.text.slice(0, 120000),
+                content_length: extracted.text.length, document_type: "pdf",
+                extraction: extracted.diagnostics, retrieved_at: new Date().toISOString(), cached: false
+            };
+            storeCache(source.url, result);
+            return result;
         }
         if (contentType && !contentType.includes("text/html") && !contentType.includes("application/xhtml") && !contentType.includes("text/plain")) {
             return { ok: false, source, status: "unsupported_content_type", error: "UNSUPPORTED_CONTENT_TYPE" };
