@@ -18,6 +18,30 @@ function eligibleRecords() {
     );
 }
 
+async function readPdfBuffer(response, maxBytes) {
+    const declaredLength = Number(response.headers?.get?.("content-length"));
+    if (Number.isFinite(declaredLength) && declaredLength > maxBytes) throw new Error("PDF_TOO_LARGE");
+    const reader = response.body?.getReader?.();
+    if (!reader) {
+        const buffer = Buffer.from(await response.arrayBuffer());
+        if (buffer.length > maxBytes) throw new Error("PDF_TOO_LARGE");
+        return buffer;
+    }
+    const chunks = [];
+    let total = 0;
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > maxBytes) {
+            await reader.cancel().catch(() => {});
+            throw new Error("PDF_TOO_LARGE");
+        }
+        chunks.push(Buffer.from(value));
+    }
+    return Buffer.concat(chunks, total);
+}
+
 async function fetchPdf(record, options = {}) {
     const cached = cache.get(record.id);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) return { ...cached.value, cached: true };
@@ -36,15 +60,16 @@ async function fetchPdf(record, options = {}) {
         if (!type.includes("application/pdf") && !/\.pdf(?:$|[?#])/i.test(record.url)) {
             return { ok: false, status: "unsupported_content_type", error: "PDF_CONTENT_TYPE_REQUIRED" };
         }
-        const bytes = Buffer.from(await response.arrayBuffer());
-        if (bytes.length > (options.maxBytes || MAX_PDF_BYTES)) return { ok: false, status: "too_large", error: "PDF_TOO_LARGE" };
+        const bytes = await readPdfBuffer(response, options.maxBytes || MAX_PDF_BYTES);
         const extracted = pdfTextExtractor.extractPdfText(bytes, { maxBytes: options.maxBytes || MAX_PDF_BYTES });
         if (!extracted.ok) return { ok: false, status: extracted.status, error: extracted.error, extraction: extracted.diagnostics };
         const value = { ok: true, record, text: extracted.text, characters: extracted.characters, extraction: extracted.diagnostics };
         cache.set(record.id, { timestamp: Date.now(), value });
         return { ...value, cached: false };
     } catch (error) {
-        return { ok: false, status: "fetch_error", error: error?.name === "TimeoutError" || error?.name === "AbortError" ? "FETCH_TIMEOUT" : "FETCH_FAILED" };
+        const reason = error?.name === "TimeoutError" || error?.name === "AbortError" ? "FETCH_TIMEOUT"
+            : error?.message === "PDF_TOO_LARGE" ? "PDF_TOO_LARGE" : "FETCH_FAILED";
+        return { ok: false, status: reason === "PDF_TOO_LARGE" ? "too_large" : "fetch_error", error: reason };
     }
 }
 
