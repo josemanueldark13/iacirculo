@@ -79,13 +79,64 @@ async function graphRequest(path, options = {}, useProof = false) {
     return body;
 }
 
+const CONVERSATION_KEY = "axial:messenger:conversations";
+
+function redisConfig() {
+    const url = envFirst("UPSTASH_REDIS_REST_URL", "REDIS_REST_URL");
+    const token = envFirst("UPSTASH_REDIS_REST_TOKEN", "REDIS_REST_TOKEN");
+    return url && token ? { url: url.replace(/\/$/, ""), token } : null;
+}
+
+async function redisCommand(command) {
+    const config = redisConfig();
+    if (!config) throw new Error("Redis no está configurado. Definí UPSTASH_REDIS_REST_URL y UPSTASH_REDIS_REST_TOKEN.");
+    const response = await fetch(config.url, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${config.token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(command)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.error) throw new Error(data.error || `Redis REST ${response.status}`);
+    return data.result;
+}
+
+function requireAdmin(req, res, next) {
+    const expected = envFirst("MESSENGER_ADMIN_TOKEN");
+    const received = req.get("x-messenger-admin-token");
+    if (!expected) return res.status(503).json({ ok: false, error: "Falta configurar MESSENGER_ADMIN_TOKEN en Vercel." });
+    if (!received || received.length !== expected.length ||
+        !crypto.timingSafeEqual(Buffer.from(received), Buffer.from(expected))) {
+        return res.status(401).json({ ok: false, error: "Clave administrativa incorrecta." });
+    }
+    next();
+}
+
+async function saveConversation(record) {
+    await redisCommand(["LPUSH", CONVERSATION_KEY, JSON.stringify(record)]);
+    await redisCommand(["LTRIM", CONVERSATION_KEY, "0", "499"]);
+}
+
+router.get("/admin/conversations", requireAdmin, async (req, res) => {
+    try {
+        const rows = await redisCommand(["LRANGE", CONVERSATION_KEY, "0", "199"]);
+        const conversations = (Array.isArray(rows) ? rows : []).map(row => {
+            try { return typeof row === "string" ? JSON.parse(row) : row; }
+            catch { return null; }
+        }).filter(Boolean);
+        return res.json({ ok: true, conversations, storage: "redis" });
+    } catch (error) {
+        console.error("[Messenger Admin] Error consultando conversaciones:", error.message);
+        return res.status(503).json({ ok: false, error: error.message });
+    }
+});
+
 router.get("/status", (req, res) => {
     res.json({
         ok: true,
         servicio: "CÍRCULO IA — Facebook Messenger",
         verify_token_configurado: Boolean(envFirst("FACEBOOK_VERIFY_TOKEN", "META_VERIFY_TOKEN")),
         page_access_token_configurado: Boolean(envFirst("FACEBOOK_PAGE_ACCESS_TOKEN", "META_PAGE_ACCESS_TOKEN")),
-        app_secret_configurado: Boolean(envFirst("FACEBOOK_APP_SECRET", "META_APP_SECRET")),
+        app_secret_configurado: Boolean(envFirst("FACEBOOK_APP_SECRET", "META_APP_SECRET")),\n        redis_configurado: Boolean(redisConfig()),\n        admin_token_configurado: Boolean(envFirst("MESSENGER_ADMIN_TOKEN")),
         site_url: envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/"
     });
 });
@@ -255,6 +306,37 @@ router.post("/", async (req, res) => {
 
             const decision = kernel.process(pregunta);
             const respuesta = buildResponse(pregunta, decision);
+            const record = {
+                id: crypto.randomUUID(),
+                channel: "facebook_messenger",
+                sender_id: senderId,
+                message: pregunta,
+                received_at: new Date().toISOString(),
+                analysis: {
+                    estado: decision.estado || "sin_estado",
+                    dominio: decision.dominio || null,
+                    intencion: decision.intencion || null,
+                    agente: decision.agente || null,
+                    confianza: decision.confianza ?? null,
+                    conceptos_detectados: decision.conceptos_detectados || [],
+                    requiere_fuente_externa: Boolean(decision.requiere_fuente_externa)
+                },
+                routing: {
+                    destination: decision.estado === "fuera_de_dominio"
+                        ? "flujo_externo"
+                        : (decision.modulo_prioritario || decision.agente || "agente_general"),
+                    modules: decision.modulos_rag || [],
+                    priority: decision.modulo_prioritario || null
+                }
+            };
+
+            // Persistimos el evento y su análisis antes de continuar el flujo.
+            try {
+                await saveConversation(record);
+            } catch (error) {
+                console.error("[Messenger] No se pudo registrar el mensaje en Redis:", error.message);
+                // El flujo actual de respuesta se conserva; el panel informará si el almacenamiento no está disponible.
+            }
 
             jobs.push(
                 sendMessage(senderId, respuesta).catch(error => {
