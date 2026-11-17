@@ -36,13 +36,13 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
     const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
     if (!buffer.length) return res.status(400).json({ ok: false, error: "El cuerpo debe contener el PDF." });
-    if (buffer.length > 8 * 1024 * 1024) return res.status(413).json({ ok: false, error: "El PDF supera el límite de 8 MB." });
+    if (buffer.length > 4 * 1024 * 1024) return res.status(413).json({ ok: false, error: "El PDF supera el límite de 4 MB." });
     if (!/^application\/pdf(?:\s*;|$)/i.test(req.get("content-type") || "")) {
         return res.status(415).json({ ok: false, error: "Content-Type debe ser application/pdf." });
     }
     const title = safeText(req.query.title, 240);
     if (!title) return res.status(400).json({ ok: false, error: "El título del documento es obligatorio." });
-    const extracted = extractor.extractPdfText(buffer, { maxBytes: 8 * 1024 * 1024 });
+    const extracted = extractor.extractPdfText(buffer, { maxBytes: 4 * 1024 * 1024 });
     if (!extracted.ok) return res.status(422).json({ ok: false, error: "El PDF no contiene una capa de texto compatible.", diagnostico: extracted.error });
     const id = store.createId();
     const now = new Date().toISOString();
@@ -72,13 +72,37 @@ router.post("/", async (req, res) => {
     }
 });
 
+router.get("/:id/file", async (req, res) => {
+    try {
+        const item = await store.getMetadata(req.params.id);
+        if (!item || !item.pathname) return res.status(404).json({ ok: false, error: "Documento inexistente." });
+        const pdf = await store.getPdf(item.pathname);
+        const checksum = crypto.createHash("sha256").update(pdf).digest("hex");
+        if (checksum !== item.checksum) return res.status(409).json({ ok: false, error: "La integridad del PDF no pudo verificarse." });
+        const safeName = String(item.title || "documento").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80);
+        res.set({
+            "Content-Type": "application/pdf",
+            "Content-Length": String(pdf.length),
+            "Content-Disposition": 'inline; filename="' + safeName + '.pdf"',
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff"
+        });
+        return res.status(200).send(pdf);
+    } catch (error) {
+        console.error("[Documents] Error leyendo PDF:", error.code || "READ_ERROR");
+        return res.status(503).json({ ok: false, error: "No se pudo leer el documento." });
+    }
+});
+
 router.post("/:id/approve", async (req, res) => {
     try {
         const current = await store.getMetadata(req.params.id);
         if (!current) return res.status(404).json({ ok: false, error: "Documento inexistente." });
         if (current.status !== "pending_review") return res.status(409).json({ ok: false, error: "Solo se pueden aprobar documentos pendientes de revisión." });
         const pdf = await store.getPdf(current.pathname);
-        const extracted = extractor.extractPdfText(pdf, { maxBytes: 8 * 1024 * 1024 });
+        const checksum = crypto.createHash("sha256").update(pdf).digest("hex");
+        if (checksum !== current.checksum) return res.status(409).json({ ok: false, error: "El PDF almacenado no coincide con su huella SHA-256." });
+        const extracted = extractor.extractPdfText(pdf, { maxBytes: 4 * 1024 * 1024 });
         if (!extracted.ok) return res.status(422).json({ ok: false, error: "No se pudo validar nuevamente el texto del PDF." });
         const approved = await store.updateMetadata(current.id, {
             status: "approved", approvedAt: new Date().toISOString(),
