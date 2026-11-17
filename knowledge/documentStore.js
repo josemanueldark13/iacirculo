@@ -61,6 +61,27 @@ async function getPdf(pathname) {
     }
     return Buffer.from(await new Response(result.stream).arrayBuffer());
 }
+
+async function putExtractedText(id, value) {
+    const { put } = blobSdk();
+    return put("n1-approved-text/" + id + ".txt", Buffer.from(String(value || ""), "utf8"), {
+        access: "private",
+        addRandomSuffix: true,
+        contentType: "text/plain; charset=utf-8",
+        token: config().blobToken
+    });
+}
+async function getExtractedText(pathname) {
+    const { get } = blobSdk();
+    const result = await get(pathname, { access: "private", token: config().blobToken });
+    if (!result || result.statusCode !== 200 || !result.stream) {
+        const error = new Error("No se pudo recuperar el texto extraído.");
+        error.code = "DOCUMENT_TEXT_NOT_FOUND";
+        throw error;
+    }
+    return await new Response(result.stream).text();
+}
+
 async function saveMetadata(record) {
     await command(["SET", META_PREFIX + record.id, JSON.stringify(record)]);
     await command(["ZADD", INDEX_KEY, String(Date.parse(record.createdAt) || Date.now()), record.id]);
@@ -90,4 +111,4 @@ async function updateMetadata(id, changes) {
 function createId() {
     return "doc-" + crypto.randomUUID();
 }
-module.exports = { isConfigured, putPdf, getPdf, saveMetadata, getMetadata, listMetadata, updateMetadata, createId };
+module.exports = { isConfigured, putPdf, getPdf, putExtractedText, getExtractedText, saveMetadata, getMetadata, listMetadata, updateMetadata, createId };
