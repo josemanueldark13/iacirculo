@@ -33,7 +33,7 @@ assert.equal(knownAction.estado, 'aceptada');
 assert.equal(knownAction.accion_directa, true);
 assert.equal(knownAction.intencion, 'consulta_patrimonio');
 assert.match(knownAction.pregunta, /patrimonio documental/i);
-assert.ok(Array.isArray(knownAction.modulos_rag));
+assert.equal(Object.hasOwn(knownAction, 'modulos_rag'), false);
 assert.notEqual(knownAction.pregunta, 'ACTION_QUERY_PATRIMONY');
 
 const freeTextQuickReply = kernel.process({
