@@ -110,7 +110,8 @@ async function ensureLoaded() {
         return { status: "loaded", loaded, approved: approved.length };
     })().catch(error => {
         persistentLoadPromise = null;
-        throw error;
+        console.error("[Documents] No se pudo reconstruir el índice N1 persistente:", error.code || "PERSISTENT_LOAD_ERROR");
+        return { status: "load_failed", loaded: 0 };
     });
     return persistentLoadPromise;
 }
