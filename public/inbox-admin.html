@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mensajería | CÍRCULO IA</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#131b2e;--line:#26334c;--text:#e8edf7;--muted:#9aa8bf;--accent:#b8a2ff;--good:#8ed8b2;--warn:#e6c27a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:22px 26px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;align-items:center}
+h1{font-size:19px;margin:0}small,.muted{color:var(--muted)}main{max-width:1400px;margin:auto;padding:22px}
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+input,select,textarea,button{font:inherit;border-radius:9px;border:1px solid var(--line);background:#0d1527;color:var(--text);padding:10px 12px}
+button{cursor:pointer;background:#252047;border-color:#51448a}button:hover{filter:brightness(1.2)}
+.layout{display:grid;grid-template-columns:minmax(280px,390px) 1fr;gap:16px;min-height:65vh}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.panel h2{font-size:14px;margin:0;padding:15px 17px;border-bottom:1px solid var(--line)}
+#list{max-height:70vh;overflow:auto}.item{padding:14px 16px;border-bottom:1px solid var(--line);cursor:pointer}.item:hover,.item.active{background:#202944}.item strong{display:block}.item p{margin:5px 0;color:var(--muted);font-size:13px}.tag{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
+#detail{padding:18px;min-height:420px}.messages{display:flex;flex-direction:column;gap:12px;max-height:52vh;overflow:auto;padding:4px}
+.message{max-width:82%;padding:11px 13px;border-radius:12px;background:#202b42;white-space:pre-wrap;overflow-wrap:anywhere}.message.user{align-self:flex-start}.message.operator,.message.assistant{align-self:flex-end;background:#30294e}
+.composer{display:flex;gap:8px;margin-top:16px}.composer textarea{flex:1;min-height:54px;resize:vertical}
+.stats{display:flex;gap:10px;flex-wrap:wrap}.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+#login{max-width:420px;margin:10vh auto;padding:24px}.hidden{display:none!important}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.messages{max-height:45vh}header{padding:16px}main{padding:12px}}
+</style>
+</head>
+<body>
+<header><div><h1>CÍRCULO IA · Gestor de mensajería</h1><small>AXIAL OS / Bandeja institucional</small></div><button id="refresh">Actualizar</button></header>
+<main>
+<section id="login" class="panel"><h2>Acceso administrativo</h2><div style="padding:18px"><p class="muted">Ingresá el token de administración configurado en el servidor.</p><input id="token" type="password" autocomplete="current-password" placeholder="Token de acceso" style="width:100%"><button id="loginBtn" style="margin-top:12px;width:100%">Ingresar</button><p id="loginError" class="muted"></p></div></section>
+<section id="app" class="hidden">
+<div class="toolbar"><div class="stats" id="stats"></div><label>Modo de respuesta <select id="mode"><option value="AUTO">AUTO · Respuesta automática</option><option value="GUARDAMETA">GUARDAMETA · Revisión previa</option><option value="MANUAL">MANUAL · Operador</option></select></label><button id="saveMode">Aplicar modo</button><span id="notice" class="muted"></span></div>
+<div class="layout"><section class="panel"><h2>Conversaciones recientes</h2><div id="list"></div></section><section class="panel"><h2 id="detailTitle">Seleccioná una conversación</h2><div id="detail"><p class="muted">Las consultas recibidas desde el portal aparecerán en esta bandeja.</p></div></section></div>
+</section>
+</main>
+<script>
+const API='/api/inbox';let auth=sessionStorage.getItem('axial_inbox_token')||'';let selected=null;let data=[];
+const $=id=>document.getElementById(id);
+function headers(){return {'Content-Type':'application/json','Authorization':'Bearer '+auth}}
+function notice(t){$('notice').textContent=t;setTimeout(()=>$('notice').textContent='',3500)}
+async function api(path,opts={}){const r=await fetch(API+path,{...opts,headers:{...headers(),...(opts.headers||{})}});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Error '+r.status);return j}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function statusLabel(s){return ({pending:'Pendiente',awaiting_approval:'Aprobación',awaiting_operator:'Operador',answered:'Respondida',closed:'Cerrada'}[s]||s)}
+async function load(){const j=await api('/admin/overview');data=j.conversations;$('mode').value=j.mode;$('stats').innerHTML='<div class="stat"><strong>'+j.total+'</strong><br><small>Conversaciones</small></div>'+Object.entries(j.counts).map(([k,v])=>'<div class="stat"><strong>'+v+'</strong><br><small>'+esc(statusLabel(k))+'</small></div>').join('');$('list').innerHTML=data.map(c=>'<div class="item '+(selected===c.id?'active':'')+'" data-id="'+esc(c.id)+'"><span class="tag">'+esc(c.source)+' · '+esc(statusLabel(c.status))+'</span><strong>'+esc(c.id.slice(0,8))+'</strong><p>'+esc(c.analysis?.intencion||'Consulta')+' · '+esc(new Date(c.lastMessageAt).toLocaleString())+'</p></div>').join('')||'<p class="muted" style="padding:16px">Todavía no hay conversaciones.</p>';document.querySelectorAll('.item').forEach(el=>el.onclick=()=>openConversation(el.dataset.id));if(selected)await openConversation(selected)}
+async function openConversation(id){selected=id;const j=await api('/admin/conversations/'+encodeURIComponent(id));$('detailTitle').textContent='Conversación '+id.slice(0,8)+' · '+statusLabel(j.conversation.status);$('detail').innerHTML='<div class="messages" id="messages">'+j.messages.map(m=>'<div class="message '+esc(m.role)+'"><small>'+esc(m.role)+' · '+esc(new Date(m.createdAt).toLocaleString())+'</small><br>'+esc(m.content)+'</div>').join('')+'</div>'+(j.conversation.draft?'<div style="padding:12px;margin-top:12px;border:1px solid var(--warn);border-radius:10px"><strong>Respuesta pendiente de aprobación</strong><p>'+esc(j.conversation.draft)+'</p><button id="approve">Aprobar respuesta</button></div>':'')+'<div class="composer"><textarea id="reply" placeholder="Escribí una respuesta como operador…"></textarea><button id="send">Enviar</button></div><div style="margin-top:10px"><button id="close">Cerrar conversación</button></div>';const m=$('messages');m.scrollTop=m.scrollHeight;if($('approve'))$('approve').onclick=async()=>{try{await api('/admin/conversations/'+id+'/approve',{method:'POST'});notice('Respuesta aprobada');await load()}catch(e){notice(e.message)}};$('send').onclick=async()=>{try{await api('/admin/conversations/'+id+'/reply',{method:'POST',body:JSON.stringify({message:$('reply').value})});notice('Respuesta guardada');await load()}catch(e){notice(e.message)}};$('close').onclick=async()=>{try{await api('/admin/conversations/'+id+'/close',{method:'POST'});selected=null;await load();$('detail').innerHTML='<p class="muted">Conversación cerrada.</p>'}catch(e){notice(e.message)}}}
+$('loginBtn').onclick=async()=>{auth=$('token').value.trim();try{await load();sessionStorage.setItem('axial_inbox_token',auth);$('login').classList.add('hidden');$('app').classList.remove('hidden')}catch(e){$('loginError').textContent=e.message;auth=''}};
+$('refresh').onclick=()=>load().catch(e=>notice(e.message));$('saveMode').onclick=async()=>{try{await api('/admin/mode',{method:'PATCH',body:JSON.stringify({mode:$('mode').value})});notice('Modo actualizado')}catch(e){notice(e.message)}};
+if(auth){$('token').value=auth;$('loginBtn').click()}
+</script>
+</body>
+</html>
