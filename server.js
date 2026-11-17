@@ -29,7 +29,7 @@ app.use((req,res,next) => {
   if (expectedBytes.length !== suppliedBytes.length || !crypto.timingSafeEqual(expectedBytes, suppliedBytes)) {
    return res.status(401).json({ok:false,error:"No autorizado."});
   }
-  return express.raw({type:"application/pdf",limit:"8mb"})(req,res,error => {
+  return express.raw({type:"application/pdf",limit:"4mb"})(req,res,error => {
    if (error) return res.status(error.status || 400).json({ok:false,error:"No se pudo recibir el PDF."});
    return next();
   });
