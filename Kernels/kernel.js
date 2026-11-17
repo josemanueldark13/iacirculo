@@ -62,7 +62,19 @@ function process(input) {
             };
         }
 
-        question = directAction.pregunta;
+        // La acción se resuelve aquí sin ejecutar semanticAnalyzer ni ragRouter.
+        // La pregunta canónica pasa a la capa documental de Messenger, nunca el payload.
+        return {
+            estado: "aceptada",
+            dominio: "institucional",
+            pregunta: directAction.pregunta,
+            payload: directAction.payload,
+            tipo_evento: directAction.tipo_evento,
+            accion_directa: true,
+            intencion: directAction.tipo,
+            agente: "institucional",
+            senderId
+        };
     }
 
     // Compatibilidad: las llamadas históricas kernel.process("texto")
