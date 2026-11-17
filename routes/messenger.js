@@ -103,6 +103,12 @@ function buildResponse(pregunta, decision) {
         return decision.responseMessage;
     }
 
+    // Los comandos documentales evitan NLP general y consultan directamente
+    // el agente institucional con la pregunta canónica del ActionRouter.
+    if (decision?.documentQuery) {
+        return circuloIA.responder(pregunta);
+    }
+
     const q = normalizeText(pregunta);
 
     // La bienvenida configurada en Meta se conserva. Estas respuestas se usan
