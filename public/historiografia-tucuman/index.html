@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Espacio de investigación y consulta bibliográfica sobre la historia y la historiografía de Tucumán.">
+<title>Historiografía Tucumana | Laboratorio de investigación</title>
+<style>
+:root{--ink:#1d2935;--navy:#102c49;--blue:#245b83;--gold:#b18b50;--paper:#f4f0e7;--white:#fffdf8;--muted:#66727c;--line:#ded7ca;--soft:#e9eef1}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 Georgia,"Times New Roman",serif}
+a{color:var(--blue)}button,input{font:inherit}.shell{max-width:1120px;margin:auto;background:var(--white);min-height:100vh;box-shadow:0 12px 45px #192b3b12}
+header{padding:42px clamp(20px,5vw,64px) 34px;background:linear-gradient(125deg,#102c49,#1c4869);color:#f8f3e9;border-bottom:4px solid var(--gold)}
+.kicker{font:700 11px/1.4 Arial,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#d9bd8c}
+h1{font-size:clamp(30px,5vw,48px);line-height:1.08;font-weight:500;margin:12px 0}
+.lead{max-width:760px;color:#e5e9eb;font-size:17px;margin:0}
+.header-meta{margin-top:22px;font:12px Arial,sans-serif;color:#d5dfe5;letter-spacing:.04em}
+main{padding:clamp(20px,4vw,48px)}
+.intro{display:grid;grid-template-columns:1.3fr .7fr;gap:26px;align-items:start;margin-bottom:30px}
+.intro h2,.section-title{font-size:23px;font-weight:500;color:var(--navy);margin:0 0 8px}
+.intro p{margin:0;color:#48535c}
+.principle{padding:17px 18px;background:#f2eee5;border-left:3px solid var(--gold);font-size:14px}
+.searchbox{padding:20px;background:#edf2f4;border:1px solid #d9e2e6;border-radius:12px;margin:26px 0}
+.searchbox label{display:block;font:700 12px Arial,sans-serif;color:var(--navy);letter-spacing:.08em;text-transform:uppercase;margin-bottom:9px}
+.searchrow{display:flex;gap:9px}.searchrow input{flex:1;min-width:0;padding:13px 15px;border:1px solid #c7d2d9;border-radius:8px;background:#fff;font:15px Arial,sans-serif}
+.searchrow button{border:0;border-radius:8px;background:var(--navy);color:white;padding:0 20px;font:700 13px Arial,sans-serif;cursor:pointer}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.filter{border:1px solid #cbd6dc;border-radius:99px;padding:6px 12px;background:#fff;color:#334b5d;font:12px Arial,sans-serif;cursor:pointer}.filter[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.section-head{display:flex;justify-content:space-between;align-items:end;gap:15px;margin:34px 0 14px}.section-head p{margin:0;color:var(--muted);font:12px Arial,sans-serif}
+.catalog{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.record{padding:17px;border:1px solid var(--line);border-radius:10px;background:#fffefa}
+.record-type{font:700 10px Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8b6b39}
+.record h3{font-size:18px;line-height:1.3;font-weight:500;color:var(--navy);margin:8px 0 6px}
+.record .byline{font:13px Arial,sans-serif;color:#4d5d69;margin:0 0 9px}
+.record p{font-size:14px;line-height:1.55;margin:0 0 12px;color:#45515b}
+.record a{font:700 12px Arial,sans-serif;text-decoration:none;border-bottom:1px solid #b8c8d1;padding-bottom:2px}
+.empty{display:none;padding:18px;color:var(--muted);border:1px dashed var(--line);border-radius:8px}
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+.panel{padding:19px;border:1px solid var(--line);border-radius:10px;background:#fffefa}
+.panel h3{margin:0 0 10px;color:var(--navy);font-size:18px;font-weight:500}
+.panel ul{padding-left:19px;margin:0}.panel li{margin:7px 0;font-size:14px}.panel p{margin:0 0 10px;font-size:14px;color:#4c5861}
+.method{margin-top:28px;padding:22px;background:#f5f1e8;border:1px solid #e3d8c5;border-radius:10px}
+.method h2{font-size:21px;font-weight:500;color:var(--navy);margin:0 0 10px}
+.method-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.method-item strong{display:block;font:700 12px Arial,sans-serif;color:#7c5b2d;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em}
+.method-item span{font-size:13px;color:#4d565e}
+.notice{margin-top:22px;padding:16px 18px;border:1px solid #d6dfe4;background:#f4f7f8;border-radius:9px;font:13px/1.55 Arial,sans-serif;color:#445563}
+.notice strong{color:var(--navy)}
+footer{padding:20px clamp(20px,4vw,48px);background:#102c49;color:#dce5e9;font:12px Arial,sans-serif}
+footer a{color:#f1d7a9}
+@media(max-width:720px){.intro,.columns{grid-template-columns:1fr}.catalog{grid-template-columns:1fr}.method-grid{grid-template-columns:1fr}.searchrow{flex-direction:column}.searchrow button{min-height:44px}.section-head{display:block}.section-head p{margin-top:4px}}
+</style>
+</head>
+<body><div class="shell">
+<header><div class="kicker">Proyecto de investigación · Tucumán · Argentina</div><h1>Historiografía<br>Tucumana</h1><p class="lead">Un espacio de trabajo para estudiar la historia provincial a partir de investigaciones académicas, archivos, bibliografía especializada y crítica de fuentes.</p><div class="header-meta">CATÁLOGO BIBLIOGRÁFICO INICIAL · PROTOTIPO DE INVESTIGACIÓN</div></header>
+<main>
+<section class="intro"><div><h2>Investigar antes que afirmar</h2><p>Esta herramienta organiza referencias y repositorios para construir respuestas históricas documentadas. No pretende reemplazar el trabajo historiográfico: permite localizar estudios, reconocer autores, comparar interpretaciones y rastrear las fuentes que sostienen cada argumento.</p></div><aside class="principle"><strong>Principio de trabajo</strong><br>Una afirmación histórica debe poder rastrearse hasta una fuente identificable. Cuando la evidencia sea insuficiente o existan debates, la respuesta debe decirlo.</aside></section>
+<section class="searchbox" aria-label="Buscar en el catálogo"><label for="q">Buscar autores, obras, temas o períodos</label><div class="searchrow"><input id="q" type="search" placeholder="Ej.: industria azucarera, Leoni Pinto, siglo XIX"><button id="clear" type="button">Limpiar búsqueda</button></div><div class="filters" aria-label="Filtrar por área"><button class="filter" data-filter="all" aria-pressed="true">Todos</button><button class="filter" data-filter="historiografia" aria-pressed="false">Historiografía</button><button class="filter" data-filter="politica" aria-pressed="false">Historia política</button><button class="filter" data-filter="economia" aria-pressed="false">Economía y sociedad</button><button class="filter" data-filter="instituciones" aria-pressed="false">Instituciones y archivos</button></div></section>
+<div class="section-head"><div><h2 class="section-title">Bibliografía y estudios académicos</h2><p>Referencias iniciales localizadas en editoriales universitarias, revistas académicas y organismos científicos.</p></div><p id="count" aria-live="polite"></p></div>
+<section class="catalog" id="catalog">
+<article class="record" data-tags="historiografia instituciones" data-search="ramon leoni pinto historia historiador historiografia tucuman 1850 1950 maria celia bravo edunt">
+<div class="record-type">Historiografía · Libro</div><h3>Historia, historiador, historiografía en Tucumán (1850–1950)</h3><p class="byline">Ramón A. Leoni Pinto · EDUNT · 618 páginas</p><p>Obra de referencia para estudiar la producción historiográfica tucumana y sus autores. El libro quedó inconcluso; esa condición debe conservarse al describir su alcance.</p><a href="https://www.edunt.unt.edu.ar/publicaciones/historia-historiador-historiografia-en-tucuman-1850-1950/" target="_blank" rel="noopener">Consultar ficha editorial ↗</a></article>
+<article class="record" data-tags="politica instituciones" data-search="facundo nanni ana cristina wilde reformas tucuman estado provincial 1820 1852 gobernabilidad legislatura justicia">
+<div class="record-type">Historia política · Artículo</div><h3>El ideal y lo posible. Las reformas tucumanas en la construcción del estado provincial (1820–1852)</h3><p class="byline">Facundo Nanni y Ana Cristina Wilde · 2021</p><p>Estudia la formación y reforma de instituciones, prácticas políticas, justicia, milicias y espacio público después de la caída del gobierno central en 1820.</p><a href="https://doi.org/10.24215/23468971e155" target="_blank" rel="noopener">Consultar artículo y DOI ↗</a></article>
+<article class="record" data-tags="politica economia" data-search="maria celia bravo daniel campi elite poder tucuman segunda mitad siglo xix industria azucarera">
+<div class="record-type">Historia social y política · Artículo</div><h3>Elite y poder en Tucumán, Argentina, segunda mitad del siglo XIX: problemas y propuestas</h3><p class="byline">María Celia Bravo y Daniel Campi · Secuencia · 2000</p><p>Propone analizar conjuntamente la formación social y las prácticas políticas de las élites, y su transformación en un empresariado azucarero de gravitación provincial y nacional.</p><a href="https://doi.org/10.18234/secuencia.v0i47.690" target="_blank" rel="noopener">Consultar artículo y DOI ↗</a></article>
+<article class="record" data-tags="politica" data-search="maria jose navajas politica tucumana 1867 1893 oligarquias provinciales orden conservador">
+<div class="record-type">Historia política · Artículo</div><h3>La política tucumana entre 1867 y 1893. ¿Oligarquías provinciales y orden conservador?</h3><p class="byline">María José Navajas · Investigaciones y Ensayos · 2017</p><p>Revisa interpretaciones historiográficas sobre dirigencias, participación política y funcionamiento de la vida política tucumana en el último tercio del siglo XIX.</p><a href="https://iye.anh.org.ar/index.php/iye/article/download/188/543?inline=1" target="_blank" rel="noopener">Consultar publicación ↗</a></article>
+<article class="record" data-tags="economia politica" data-search="pablo paolazzo poblacion territorio tucuman siglo xix demografia agroindustria azucarera">
+<div class="record-type">Historia territorial y demográfica · Artículo</div><h3>La población y el territorio en Tucumán durante el siglo XIX</h3><p class="byline">Pablo Paolazzo · 2023</p><p>Aborda transformaciones demográficas, redistribución espacial y cambios económicos vinculados al desarrollo de la agroindustria azucarera.</p><a href="https://doi.org/10.48162/rev.40.036" target="_blank" rel="noopener">Consultar artículo y DOI ↗</a></article>
+<article class="record" data-tags="historiografia politica economia" data-search="conicet dos siglos historia tucumana coleccion actores politica agricultura poblacion inmigrantes comunidades indigenas">
+<div class="record-type">Colección académica · CONICET</div><h3>Dos siglos de historia tucumana reunidos en una colección</h3><p class="byline">Investigadores y equipos del ISES-CONICET</p><p>Conjunto de trabajos sobre actores políticos, agricultura, población, asociacionismo empresario, inmigración y comunidades indígenas.</p><a href="https://www.conicet.gov.ar/dos-siglos-de-historia-tucumana-reunidos-en-una-coleccion/" target="_blank" rel="noopener">Consultar presentación de la colección ↗</a></article>
+</section><p class="empty" id="empty">No hay registros del catálogo inicial que coincidan con esa búsqueda. Esto no significa que no exista bibliografía sobre el tema.</p>
+<section class="columns">
+<article class="panel"><h3>Archivos y repositorios</h3><ul>
+<li><a href="https://archivo.unt.edu.ar/" target="_blank" rel="noopener">Archivo Histórico de la UNT</a> — fondos, colecciones, memorias y patrimonio universitario.</li>
+<li><a href="https://ridunt.unt.edu.ar/home" target="_blank" rel="noopener">RIDUNT</a> — tesis, libros, revistas e investigaciones de acceso abierto.</li>
+<li><a href="https://archivoh-beta.tucuman.gov.ar/Pi/index/67" target="_blank" rel="noopener">Archivo Histórico de la Provincia de Tucumán</a> — catálogo bibliográfico y fondos por explorar.</li>
+<li><a href="https://casadelaindependencia.cultura.gob.ar/info/biblioteca/" target="_blank" rel="noopener">Biblioteca de la Casa Histórica</a> — colección especializada en historia provincial y fuentes de los siglos XVIII y XIX.</li>
+</ul></article>
+<article class="panel"><h3>Líneas de investigación</h3><ul><li>Historiografía, autores y escuelas de interpretación.</li><li>Período colonial, revolución e independencia.</li><li>Formación del Estado provincial y cultura política.</li><li>Economía regional, azúcar, trabajo y conflictividad social.</li><li>Población, territorio, pueblos originarios y migraciones.</li><li>Universidad, cultura, patrimonio y memoria.</li></ul></article>
+</section>
+<section class="method"><h2>Protocolo historiográfico</h2><div class="method-grid">
+<div class="method-item"><strong>01 · Procedencia</strong><span>Identificar autoría, institución, fecha, género documental, archivo o repositorio y datos editoriales.</span></div>
+<div class="method-item"><strong>02 · Crítica de fuentes</strong><span>Distinguir fuente primaria, estudio secundario, testimonio, prensa, memoria institucional y obra de divulgación.</span></div>
+<div class="method-item"><strong>03 · Contraste</strong><span>Comparar perspectivas, contexto de producción, evidencia disponible y debates historiográficos.</span></div>
+</div></section>
+<div class="notice"><strong>Estado del proyecto:</strong> este prototipo ofrece búsqueda local sobre un catálogo bibliográfico inicial y enlaces a repositorios. Todavía no es un agente conversacional ni afirma haber revisado integralmente esos fondos. La próxima etapa será normalizar registros, incorporar fuentes primarias con metadatos y desarrollar el motor de respuestas con citas verificables.</div>
+</main><footer>Historiografía Tucumana · Proyecto de investigación en desarrollo · <a href="/">Volver a CÍRCULO IA</a></footer>
+</div>
+<script>
+const q=document.getElementById('q'),cards=[...document.querySelectorAll('.record')],filters=[...document.querySelectorAll('.filter')],count=document.getElementById('count'),empty=document.getElementById('empty');let active='all';
+function update(){const term=q.value.trim().toLocaleLowerCase('es');let n=0;cards.forEach(card=>{const tags=card.dataset.tags.split(' '),hay=card.dataset.search.toLocaleLowerCase('es')+' '+card.innerText.toLocaleLowerCase('es');const show=(active==='all'||tags.includes(active))&&(!term||hay.includes(term));card.hidden=!show;if(show)n++});count.textContent=n+' de '+cards.length+' registros';empty.style.display=n?'none':'block'}
+q.addEventListener('input',update);filters.forEach(b=>b.addEventListener('click',()=>{active=b.dataset.filter;filters.forEach(x=>x.setAttribute('aria-pressed',String(x===b)));update()}));document.getElementById('clear').addEventListener('click',()=>{q.value='';active='all';filters.forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.filter==='all')));update();q.focus()});update();
+</script>
+</body></html>
