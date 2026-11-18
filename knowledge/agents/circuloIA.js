@@ -23,7 +23,9 @@ const circuloIA = {
             if (!doc) {
                 return this.nombre + "\n\nNo encontré información específica sobre esa consulta en la base documental disponible.";
             }
-            return this.nombre + "\n\n" + (extra || doc.contenido) + "\n\nFuente documental:\n" + doc.titulo;
+            const estado = doc.estado_normativo ? "\nEstado normativo: " + doc.estado_normativo : "";
+            const fuente = doc.fuente_oficial ? "\nFuente oficial: " + doc.fuente_oficial : "";
+            return this.nombre + "\n\n" + (extra || doc.contenido) + "\n\nFuente documental:\n" + doc.titulo + estado + fuente;
         };
 
         // Consultas institucionales principales: respuestas documentales.
