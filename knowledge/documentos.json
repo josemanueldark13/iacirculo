@@ -63,6 +63,105 @@
       "titulo": "Ley Provincial Nº 6.333 — Creación del Círculo de Legisladores de la Provincia de Tucumán",
       "categoria": "Legislación",
       "contenido": "La Ley Provincial Nº 6.333 es la norma identificada por la Honorable Legislatura de Tucumán como 'Creación del Círculo de Legisladores de la Provincia de Tucumán'. La propia Legislatura registra proyectos posteriores destinados a modificar esta ley. Para evitar inventar o atribuir artículos no verificados, CÍRCULO IA debe identificar correctamente la norma, explicar que se trata de la ley de creación del Círculo y, cuando se requiera el articulado literal, remitir a la fuente oficial de la Legislatura. Fuente oficial de referencia: Diario de Sesiones de la Honorable Legislatura de Tucumán, donde se registra el Proyecto N° 247-PL-18 como modificación de la Ley N° 6333 — Creación del Círculo de Legisladores de la Provincia de Tucumán."
+    },
+    {
+      "titulo": "Constitución de Tucumán de 1990 — antecedente histórico del Poder Legislativo unicameral",
+      "categoria": "Bibliografía legislativa — Nivel 2",
+      "nivel_rag": 2,
+      "estado_normativo": "Antecedente histórico; texto constitucional sustituido por la reforma de 2006",
+      "uso_consulta": "historia",
+      "fecha_sancion": "1990-04-18",
+      "fecha_publicacion": "1991-01-22",
+      "contenido": "La Constitución provincial sancionada el 18 de abril de 1990 reorganizó el Poder Legislativo bajo un cuerpo unicameral denominado Honorable Legislatura. La reseña histórica oficial de la Honorable Legislatura señala que el cuerpo quedó integrado entonces por cuarenta legisladores con mandatos de cuatro años. Debe consultarse como antecedente histórico, no como texto constitucional vigente: la Constitución fue reformada en 2006.",
+      "fuente_oficial": "https://www.argentina.gob.ar/normativa/provincial/ley-0-123456789-0abc-defg-000-0001tvorpyel/actualizacion",
+      "fuente_complementaria": "https://app2.legislaturadetucuman.gob.ar/conoce_hist",
+      "relaciones": "Reformada/sustituida por la Constitución provincial sancionada el 06/06/2006."
+    },
+    {
+      "titulo": "Ley Provincial Nº 7469 — necesidad de reforma parcial de la Constitución",
+      "categoria": "Bibliografía legislativa — Nivel 2",
+      "nivel_rag": 2,
+      "estado_normativo": "VIGENTE",
+      "uso_consulta": "cuerpo_operativo",
+      "fecha_sancion": "2004-12-22",
+      "fecha_promulgacion": "2004-12-23",
+      "fecha_publicacion": "2004-12-28",
+      "contenido": "La Ley 7469 declaró la necesidad de la reforma parcial de la Constitución de la Provincia de Tucumán y estableció los temas y artículos susceptibles de modificación, supresión o incorporación. La ficha oficial de la Legislatura la registra como VIGENTE, con modificaciones y texto consolidado. Es una norma clave para estudiar el proceso constituyente que culminó en la reforma de 2006.",
+      "fuente_oficial": "https://app2.legislaturadetucuman.gob.ar/leyesydecretos/busquedasimple.php?ley=7469",
+      "relaciones": "Derogó las Leyes 7194 y 7259; modificada por Ley 7611; consolidada por Ley 8240."
+    },
+    {
+      "titulo": "Constitución de Tucumán de 2006 — texto constitucional vigente",
+      "categoria": "Bibliografía legislativa — Nivel 2",
+      "nivel_rag": 2,
+      "estado_normativo": "VIGENTE",
+      "uso_consulta": "cuerpo_operativo",
+      "fecha_sancion": "2006-06-06",
+      "fecha_publicacion": "2006-06-07",
+      "contenido": "Constitución de la Provincia de Tucumán sancionada el 6 de junio de 2006 y publicada el 7 de junio de 2006. Es el texto constitucional vigente consultado para la organización institucional provincial. Su artículo 44 dispone que el Poder Legislativo es ejercido por un cuerpo denominado Legislatura, compuesto por 49 ciudadanos elegidos directamente, distribuidos en tres secciones electorales. Para respuestas jurídicas debe consultarse el texto completo y sus reformas vigentes.",
+      "fuente_oficial": "https://leyesydecretostucuman.gob.ar/uploads/leyes_decretos/pdf_files/leyes/L-0-06062006.pdf",
+      "fuente_complementaria": "https://www4.hcdn.gob.ar/dependencias/dip/congreso/constitucionesprovinciales/ConsTucum%C3%A1n.pdf"
+    },
+    {
+      "titulo": "Ley Provincial Nº 989 — composición de la Junta de Escrutinio (1908)",
+      "categoria": "Bibliografía legislativa — Nivel 2",
+      "nivel_rag": 2,
+      "estado_normativo": "DEROGADA",
+      "uso_consulta": "historia",
+      "fecha_sancion": "1908-11-14",
+      "fecha_promulgacion": "1908-11-26",
+      "fecha_publicacion": "1908-12-01",
+      "contenido": "La Ley 989 reguló la composición y el funcionamiento de la Junta de Escrutinio prevista en el artículo 93 de la Constitución provincial de la época. Su artículo 1 establecía una junta integrada por los presidentes de la Corte Suprema, del Senado y de la Cámara de Diputados. La ficha oficial de la Legislatura indica que fue DEROGADA por la Ley 8153. Se conserva como antecedente histórico del sistema electoral e institucional, no como norma operativa vigente.",
+      "fuente_oficial": "https://app2.legislaturadetucuman.gob.ar/leyesydecretos/busquedasimple.php?ley=989",
+      "relaciones": "Derogada por Ley 8153."
+    },
+    {
+      "titulo": "Ley Provincial Nº 5529 — Ley Orgánica de Municipalidades",
+      "categoria": "Bibliografía legislativa — Nivel 2",
+      "nivel_rag": 2,
+      "estado_normativo": "VIGENTE",
+      "uso_consulta": "cuerpo_operativo",
+      "fecha_sancion": "1983-09-05",
+      "fecha_promulgacion": "1983-09-05",
+      "fecha_publicacion": "1983-09-14",
+      "contenido": "La Ley 5529 regula el régimen orgánico de las municipalidades de Tucumán. La ficha oficial de la Honorable Legislatura la registra como VIGENTE y ofrece texto consolidado. Debe utilizarse para consultas operativas junto con la Constitución provincial de 2006 y las modificaciones normativas posteriores; no debe presentarse como fuente única ni aislarse del marco constitucional actual.",
+      "fuente_oficial": "https://app2.legislaturadetucuman.gob.ar/leyesydecretos/busquedasimple.php?ley=5529"
+    },
+    {
+      "titulo": "Ley Provincial Nº 312 (1870) — declaración de necesidad de reforma constitucional",
+      "categoria": "Bibliografía legislativa — Nivel 2",
+      "nivel_rag": 2,
+      "estado_normativo": "CADUCA",
+      "uso_consulta": "historia",
+      "fecha_sancion": "1870-03-30",
+      "fecha_promulgacion": "1870-03-31",
+      "contenido": "La Ley 312 declaró necesaria la reforma de la Constitución provincial a los efectos del artículo 79 del texto constitucional entonces vigente. La ficha oficial de la Legislatura la clasifica como CADUCA. Es un antecedente del proceso histórico de reforma constitucional de Tucumán y debe presentarse con valor histórico, no como norma aplicable.",
+      "fuente_oficial": "https://app2.legislaturadetucuman.gob.ar/leyesydecretos/busquedasimple.php?ley=312",
+      "relaciones": "Caducada por Ley 8153."
+    },
+    {
+      "titulo": "Ley Provincial Nº 351 (1872) — convocatoria de Convención Constituyente",
+      "categoria": "Bibliografía legislativa — Nivel 2",
+      "nivel_rag": 2,
+      "estado_normativo": "CADUCA",
+      "uso_consulta": "historia",
+      "fecha_sancion": "1872-05-22",
+      "fecha_promulgacion": "1872-05-23",
+      "contenido": "La Ley 351 dispuso que la reforma de la Constitución provincial se practicara mediante una Convención Constituyente convocada al efecto y ordenó dictar una ley especial para reglamentar la elección, número y condiciones de los convencionales y la instalación de la Convención. La ficha oficial de la Legislatura la clasifica como CADUCA. Se incorpora como antecedente histórico del constitucionalismo provincial.",
+      "fuente_oficial": "https://app2.legislaturadetucuman.gob.ar/leyesydecretos/busquedasimple.php?ley=351",
+      "relaciones": "Caducada por Ley 8153."
+    },
+    {
+      "titulo": "Ley Provincial Nº 505 (1884) — cesación de la Convención de 1872 y nueva convocatoria",
+      "categoria": "Bibliografía legislativa — Nivel 2",
+      "nivel_rag": 2,
+      "estado_normativo": "CADUCA",
+      "uso_consulta": "historia",
+      "fecha_sancion": "1884-03-21",
+      "fecha_promulgacion": "1884-03-22",
+      "contenido": "La Ley 505 declaró cesante la Convención Constituyente nombrada en 1872 y convocó al pueblo de la provincia a elegir nuevos convencionales dentro de treinta días. La ficha oficial de la Legislatura la clasifica como CADUCA. Es un antecedente histórico del proceso de reforma constitucional provincial.",
+      "fuente_oficial": "https://app2.legislaturadetucuman.gob.ar/leyesydecretos/busquedasimple.php?ley=505",
+      "relaciones": "Caducada por Ley 8153."
     }
   ]
 }
