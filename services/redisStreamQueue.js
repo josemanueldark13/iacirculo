@@ -17,6 +17,7 @@ const DEFAULTS = Object.freeze({
 });
 
 const ENQUEUE_SCRIPT = `
+#!lua flags=allow-key-locking
 local existing = redis.call('GET', KEYS[1])
 if existing then
     return {0, existing}
@@ -34,6 +35,7 @@ return {1, streamId}
 `;
 
 const ACK_SCRIPT = `
+#!lua flags=allow-key-locking
 local acknowledged = redis.call('XACK', KEYS[1], ARGV[1], ARGV[2])
 redis.call('HDEL', KEYS[2], ARGV[2])
 redis.call('HDEL', KEYS[3], ARGV[2])
@@ -41,6 +43,7 @@ return acknowledged
 `;
 
 const FAILURE_SCRIPT = `
+#!lua flags=allow-key-locking
 local attempts = redis.call('HINCRBY', KEYS[3], ARGV[2], 1)
 local maxAttempts = tonumber(ARGV[5])
 
