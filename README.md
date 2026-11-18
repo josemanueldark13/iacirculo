@@ -4,6 +4,19 @@ Asistente Institucional del Círculo de Legisladores de Tucumán.
 
 El demo utiliza el emblema institucional real recortado de la pieza gráfica proporcionada.
 
+## IDENTIDAD GRÁFICA — LOGO OFICIAL: USAR SIEMPRE
+
+**MANDAMIENTO OBLIGATORIO:** ninguna historia gráfica, flyer, placa, banner, efeméride ni publicación visual institucional del Círculo se considera terminada ni se entrega sin incorporar el logo oficial aprobado.
+
+- Usar siempre el archivo original del logo oficial aprobado por el usuario.
+- No redibujarlo, recrearlo, reinterpretarlo, alterar sus colores, proporciones o tipografía, ni sustituirlo por versiones anteriores o aproximaciones.
+- No pedir nuevamente al usuario que adjunte el logo.
+- Comprobar antes de exportar o publicar que el logo esté efectivamente incorporado y sea legible.
+- Si el archivo original no está disponible en el entorno de producción, detener la entrega y recuperar el original desde la fuente institucional aprobada. No publicar una pieza incompleta.
+- Esta regla prevalece sobre cualquier plantilla, automatización o instrucción genérica de diseño.
+
+La referencia visual aprobada por el usuario es el emblema circular con aro celeste, arco superior dorado, laureles dorados y texto celeste «CÍRCULO DE LEGISLADORES DE TUCUMÁN» sobre fondo oscuro. La imagen original adjuntada el 18/11/2026 es la referencia que debe incorporarse al repositorio como recurso institucional canónico; no debe sustituirse por una recreación.
+
 ## Webhook de Facebook Messenger
 
 URL estable para configurar en Meta:
