@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enciclopedia-Agente de la Historia de Tucumán | Círculo IA</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Tipografías editoriales y modernas -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            sans: ['"Inter"', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            crema: {
+              50: '#FCFBF7',
+              100: '#F7F3E9',
+              200: '#EDE5D2',
+              300: '#DFD2B5',
+            },
+            tierra: {
+              600: '#7C583A',
+              700: '#5E412A',
+              800: '#422C1B',
+              900: '#2A1B10',
+            },
+            dorado: {
+              400: '#D4AF37',
+              500: '#B89028',
+              600: '#96721B',
+            },
+            yungas: {
+              500: '#3B6E52',
+              600: '#2B543E',
+              700: '#1E3D2D',
+              800: '#14291E',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Estilos museológicos personalizados y barras de desplazamiento sutiles */
+    body {
+      background-color: #F7F3E9;
+      color: #2A1B10;
+      background-image: radial-gradient(#DFD2B5 0.75px, transparent 0.75px);
+      background-size: 24px 24px;
+    }
+
+    .museo-card {
+      background: rgba(252, 251, 247, 0.96);
+      backdrop-filter: blur(8px);
+      border: 1px solid #DFD2B5;
+      box-shadow: 0 10px 30px -10px rgba(42, 27, 16, 0.12);
+    }
+
+    /* Ocultar scrollbar en línea de tiempo horizontal pero mantener funcionalidad */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Animación suave para ondas de audio */
+    @keyframes pulseWave {
+      0%, 100% { transform: scaleY(0.4); }
+      50% { transform: scaleY(1); }
+    }
+    .audio-bar {
+      animation: pulseWave 0.9s ease-in-out infinite;
+    }
+    .audio-bar:nth-child(2) { animation-delay: 0.2s; }
+    .audio-bar:nth-child(3) { animation-delay: 0.4s; }
+    .audio-bar:nth-child(4) { animation-delay: 0.15s; }
+
+    /* Transiciones de avatares */
+    .avatar-glow-taruca {
+      box-shadow: 0 0 0 3px #B89028, 0 8px 20px rgba(184, 144, 40, 0.25);
+    }
+    .avatar-glow-loro {
+      box-shadow: 0 0 0 3px #2B543E, 0 8px 20px rgba(43, 84, 62, 0.25);
+    }
+  </style>
+</head>
+<body class="font-sans antialiased selection:bg-dorado-500 selection:text-white min-h-screen flex flex-col">
+
+  <!-- Barra superior de Gadget Círculo IA -->
+  <header class="sticky top-0 z-40 bg-tierra-900 text-crema-50 border-b border-dorado-500/40 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <!-- Emblema Gadget Círculo IA -->
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-dorado-500 to-tierra-700 flex items-center justify-center border border-dorado-400/50 shadow-inner shrink-0">
+          <svg class="w-6 h-6 text-crema-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="9" stroke-dasharray="3 2" />
+            <path d="M12 6v6l4 2" stroke-linecap="round" />
+            <circle cx="12" cy="12" r="2" fill="currentColor" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] uppercase tracking-[0.2em] text-dorado-400 font-semibold">Gadget • Círculo IA</span>
+            <span class="hidden sm:inline-block px-2 py-0.5 text-[10px] rounded-full bg-yungas-700 text-crema-100 border border-yungas-500">Archivo Historiográfico</span>
+          </div>
+          <h1 class="font-serif text-xl sm:text-2xl font-bold tracking-tight text-crema-50 leading-tight">
+            Enciclopedia-Agente de la Historia de Tucumán
+          </h1>
+        </div>
+      </div>
+
+      <!-- Controles globales rápidos -->
+      <div class="flex items-center gap-2">
+        <button id="btn-toggle-consulta" type="button" class="px-3.5 py-2 rounded-xl bg-tierra-800 hover:bg-tierra-700 text-crema-100 border border-dorado-500/30 text-xs sm:text-sm font-medium flex items-center gap-2 transition active:scale-95">
+          <svg class="w-4 h-4 text-dorado-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <span>Consultar Archivo</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notificación Toast (Sin alert) -->
+  <div id="toast-notificacion" class="fixed bottom-5 right-5 z-50 hidden transform transition-all duration-300 translate-y-4 opacity-0">
+    <div class="bg-tierra-900 text-crema-50 px-4 py-3 rounded-xl shadow-xl border border-dorado-500/50 flex items-center gap-3 text-sm max-w-sm">
+      <span class="w-2.5 h-2.5 rounded-full bg-dorado-400 shrink-0"></span>
+      <p id="toast-mensaje">Mensaje del sistema</p>
+    </div>
+  </div>
+
+  <!-- Contenedor Principal -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Sección 1: Línea de Tiempo Interactiva -->
+    <section aria-label="Línea de tiempo historiográfica" class="museo-card rounded-2xl p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-widest text-yungas-600">Eje Cronológico & Estructural</span>
+          <h2 class="font-serif text-2xl font-bold text-tierra-900">Hitos Fundamentales de Tucumán (1565 – 1914)</h2>
+        </div>
+        <p class="text-xs text-tierra-600 italic">Seleccioná un hito para desplegar su ficha documental y activar a los guías</p>
+      </div>
+
+      <!-- Barra de navegación horizontal de hitos -->
+      <div class="relative">
+        <!-- Línea conectora de fondo -->
+        <div class="hidden md:block absolute top-7 left-8 right-8 h-0.5 bg-crema-300 z-0"></div>
+
+        <div id="timeline-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 relative z-10">
+          <!-- Se renderiza dinámicamente vía JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Sección 2: Cuerpo Principal (Ficha Enciclopédica + Panel Dual de Agentes Guías) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- Columna Izquierda (7 cols): Ficha Enciclopédica con Rigor Historiográfico -->
+      <article id="ficha-enciclopedica" class="lg:col-span-7 museo-card rounded-2xl p-5 sm:p-8 space-y-6 transition-all duration-300">
+        <!-- Cabecera del Hito -->
+        <div class="border-b border-crema-300 pb-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <span id="hito-badge-periodo" class="px-3 py-1 rounded-full text-xs font-semibold bg-dorado-500/15 text-tierra-800 border border-dorado-500/30">
+              1565 • Espacio Económico Peruano
+            </span>
+            <span id="hito-coordenada" class="text-xs font-mono text-tierra-600">
+              27°13'S 65°35'O • Ibatín
+            </span>
+          </div>
+          <h2 id="hito-titulo" class="font-serif text-3xl sm:text-4xl font-bold text-tierra-900 leading-tight">
+            El circuito mercantil con Potosí y la fundación en Ibatín (1565)
+          </h2>
+          <p id="hito-subtitulo" class="mt-2 text-sm sm:text-base text-tierra-700 font-medium">
+            La articulación del Tucumán colonial como nodo abastecedor del Cerro Rico de Potosí.
+          </p>
+        </div>
+
+        <!-- Desarrollo Historiográfico -->
+        <div class="space-y-4 text-tierra-800 leading-relaxed text-sm sm:text-base">
+          <div id="hito-cuerpo" class="space-y-3">
+            <!-- Párrafos dinámicos -->
+          </div>
+        </div>
+
+        <!-- Bloque Destacado: Matriz Económica y Productiva -->
+        <div class="rounded-xl bg-crema-100 border border-crema-300 p-4 sm:p-5">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5 text-dorado-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+            </svg>
+            <h3 class="font-serif text-lg font-bold text-tierra-900">Estructura Económica y Material</h3>
+          </div>
+          <p id="hito-economia" class="text-xs sm:text-sm text-tierra-700 leading-relaxed">
+            <!-- Texto económico dinámico -->
+          </p>
+        </div>
+
+        <!-- Aparato Crítico: Fuentes Primarias e Historiografía -->
+        <div class="pt-2 border-t border-crema-300">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-tierra-600 mb-3 flex items-center gap-2">
+            <svg class="w-4 h-4 text-yungas-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            Fuentes Documentales y Referencias Historiográficas
+          </h3>
+          <ul id="hito-fuentes" class="space-y-2 text-xs sm:text-sm text-tierra-700">
+            <!-- Lista de fuentes -->
+          </ul>
+        </div>
+      </article>
+
+      <!-- Columna Derecha (5 cols): Sistema Dual de Agentes Guías + Audio-Guía + Buscador -->
+      <aside class="lg:col-span-5 space-y-6">
+
+        <!-- Tarjeta de Agentes Guías Duales -->
+        <div class="museo-card rounded-2xl p-5 sm:p-6 border-t-4 border-t-yungas-600">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-widest text-yungas-600">Mediación Interactiva</span>
+              <h3 class="font-serif text-2xl font-bold text-tierra-900">Agentes Guías de Tucumán</h3>
+            </div>
+            <span class="px-2.5 py-1 rounded-lg bg-crema-200 text-tierra-800 text-xs font-medium">Perspectiva Dual</span>
+          </div>
+
+          <!-- Selector de Avatar Dual -->
+          <div class="grid grid-cols-2 gap-3 mb-5">
+            <!-- Botón Taruca -->
+            <button id="btn-agente-taruca" type="button" onclick="seleccionarAgente('taruca')" class="p-3 rounded-xl border-2 text-left transition-all flex flex-col items-center sm:items-start gap-2 bg-crema-50 border-dorado-500 avatar-glow-taruca">
+              <div class="flex items-center gap-2.5 w-full">
+                <!-- Ilustración SVG Taruca (Ciervo Andino de las Cumbres Calchaquíes) -->
+                <div class="w-12 h-12 rounded-full bg-gradient-to-b from-amber-100 to-amber-200 border border-dorado-500 flex items-center justify-center shrink-0 overflow-hidden p-1">
+                  <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- Fondo montañas -->
+                    <path d="M5 85 L35 45 L60 75 L80 50 L95 85 Z" fill="#D4AF37" opacity="0.25"/>
+                    <!-- Astas bifurcadas características de la Taruca -->
+                    <path d="M38 35 C32 22, 24 18, 22 10 M33 24 C28 24, 22 26, 18 22" stroke="#5E412A" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+                    <path d="M62 35 C68 22, 76 18, 78 10 M67 24 C72 24, 78 26, 82 22" stroke="#5E412A" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+                    <!-- Orejas grandes -->
+                    <ellipse cx="28" cy="42" rx="11" ry="5" transform="rotate(-25 28 42)" fill="#8C6239"/>
+                    <ellipse cx="72" cy="42" rx="11" ry="5" transform="rotate(25 72 42)" fill="#8C6239"/>
+                    <!-- Cabeza -->
+                    <path d="M34 40 C34 28, 66 28, 66 40 C68 56, 60 74, 50 78 C40 74, 32 56, 34 40 Z" fill="#A67B51"/>
+                    <!-- Mancha frontal negra en Y típica de Hippocamelus antisensis -->
+                    <path d="M43 44 L50 53 L57 44 M50 53 L50 64" stroke="#2A1B10" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                    <!-- Ojos sabios -->
+                    <circle cx="41" cy="48" r="3" fill="#2A1B10"/>
+                    <circle cx="59" cy="48" r="3" fill="#2A1B10"/>
+                    <circle cx="40" cy="47" r="1" fill="#FFF"/>
+                    <circle cx="58" cy="47" r="1" fill="#FFF"/>
+                    <!-- Hocico -->
+                    <ellipse cx="50" cy="70" rx="8" ry="5" fill="#EDE5D2"/>
+                    <ellipse cx="50" cy="68" rx="4" ry="2.5" fill="#2A1B10"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-serif font-bold text-base text-tierra-900 leading-none">La Taruca</div>
+                  <div class="text-[11px] text-dorado-600 font-medium mt-1">Cumbres • Rigor Crítico</div>
+                </div>
+              </div>
+            </button>
+
+            <!-- Botón Loro de las Yungas -->
+            <button id="btn-agente-loro" type="button" onclick="seleccionarAgente('loro')" class="p-3 rounded-xl border-2 text-left transition-all flex flex-col items-center sm:items-start gap-2 bg-crema-100/70 border-crema-300 hover:border-yungas-500 opacity-80 hover:opacity-100">
+              <div class="flex items-center gap-2.5 w-full">
+                <!-- Ilustración SVG Loro Alisero / Amazona tucumana -->
+                <div class="w-12 h-12 rounded-full bg-gradient-to-b from-emerald-100 to-emerald-200 border border-yungas-600 flex items-center justify-center shrink-0 overflow-hidden p-1">
+                  <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- Hojas de Yungas -->
+                    <path d="M10 85 Q30 60 15 35 Q40 50 45 85 Z" fill="#3B6E52" opacity="0.25"/>
+                    <!-- Cuerpo/Cabeza verde vibrante -->
+                    <path d="M30 85 C28 50, 34 22, 54 22 C72 22, 76 46, 72 85 Z" fill="#2B543E"/>
+                    <!-- Corona roja característica del Loro Alisero Tucumano -->
+                    <path d="M38 28 C44 16, 62 16, 66 28 C58 25, 46 25, 38 28 Z" fill="#C83E37"/>
+                    <!-- Anillo ocular blanco -->
+                    <circle cx="58" cy="40" r="8" fill="#FCFBF7"/>
+                    <circle cx="59" cy="40" r="4" fill="#2A1B10"/>
+                    <circle cx="60" cy="39" r="1.3" fill="#FFF"/>
+                    <!-- Pico curvo fuerte -->
+                    <path d="M68 42 C84 42, 86 58, 72 64 C74 55, 68 52, 65 52 Z" fill="#E6C27A" stroke="#5E412A" stroke-width="1.5"/>
+                    <path d="M65 53 C74 54, 76 62, 67 65 Z" fill="#B89028"/>
+                    <!-- Plumas mejilla -->
+                    <path d="M38 55 Q48 60 42 72" stroke="#4D8B68" stroke-width="3" stroke-linecap="round" fill="none"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-serif font-bold text-base text-tierra-900 leading-none">El Loro Alisero</div>
+                  <div class="text-[11px] text-yungas-600 font-medium mt-1">Yungas • Vida Cotidiana</div>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Globo de Diálogo del Agente Activo -->
+          <div id="agente-dialogo-box" class="relative rounded-2xl p-4 sm:p-5 bg-crema-100 border border-dorado-500/40 transition-all">
+            <div class="flex items-center justify-between gap-2 mb-2.5">
+              <span id="agente-rol-tag" class="text-xs font-bold uppercase tracking-wider text-dorado-600">
+                Mirada desde las Cumbres • Análisis Historiográfico
+              </span>
+              <span id="agente-estado-voz" class="hidden items-center gap-1 text-xs font-medium text-yungas-700 bg-yungas-500/15 px-2.5 py-0.5 rounded-full">
+                <span class="flex items-end gap-0.5 h-3">
+                  <span class="w-0.5 h-full bg-yungas-600 audio-bar"></span>
+                  <span class="w-0.5 h-full bg-yungas-600 audio-bar"></span>
+                  <span class="w-0.5 h-full bg-yungas-600 audio-bar"></span>
+                  <span class="w-0.5 h-full bg-yungas-600 audio-bar"></span>
+                </span>
+                Narrando...
+              </span>
+            </div>
+
+            <blockquote id="agente-relato-texto" class="text-sm sm:text-[15px] text-tierra-900 leading-relaxed italic">
+              <!-- Relato dinámico del agente -->
+            </blockquote>
+
+            <!-- Controles de Audio-Guía (SpeechSynthesis API) -->
+            <div class="mt-4 pt-3 border-t border-crema-300 flex flex-wrap items-center justify-between gap-2">
+              <button id="btn-audio-guia" type="button" onclick="alternarAudioGuia()" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-yungas-600 hover:bg-yungas-700 text-crema-50 font-medium text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition active:scale-95">
+                <svg id="icono-audio-play" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+                <svg id="icono-audio-stop" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" />
+                </svg>
+                <span id="texto-btn-audio">Escuchar Audio-Guía</span>
+              </button>
+
+              <button type="button" onclick="copiarCitaHito()" class="px-3 py-2.5 rounded-xl bg-crema-200 hover:bg-crema-300 text-tierra-800 text-xs font-medium flex items-center gap-1.5 transition" title="Copiar ficha historiográfica">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                <span>Citar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Módulo 5: Buscador / Chat Simulado de Consulta Historiográfica -->
+        <div id="panel-consulta-rapida" class="museo-card rounded-2xl p-5 sm:p-6 border-t-4 border-t-dorado-500">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-widest text-dorado-600">Motor de Búsqueda Historiográfica</span>
+              <h3 class="font-serif text-xl font-bold text-tierra-900">Consulta al Archivo Tucumano</h3>
+            </div>
+          </div>
+
+          <p class="text-xs text-tierra-700 mb-3">
+            Preguntá sobre Potosí, carretas, paludismo en Ibatín, Juan B. Terán, historiadores (Lizondo Borda, Assadourian, Páez de la Torre) o seleccioná un tema:
+          </p>
+
+          <!-- Chips de consultas sugeridas -->
+          <div class="flex flex-wrap gap-1.5 mb-3">
+            <button type="button" onclick="ejecutarConsultaRapida('¿Por qué el origen económico de Tucumán está en Potosí?')" class="px-2.5 py-1 rounded-lg bg-crema-200 hover:bg-dorado-500/20 text-tierra-800 text-[11px] font-medium transition">
+              ¿Vínculo con Potosí?
+            </button>
+            <button type="button" onclick="ejecutarConsultaRapida('¿Por qué se trasladó la ciudad desde Ibatín a La Toma?')" class="px-2.5 py-1 rounded-lg bg-crema-200 hover:bg-dorado-500/20 text-tierra-800 text-[11px] font-medium transition">
+              ¿Traslado de Ibatín?
+            </button>
+            <button type="button" onclick="ejecutarConsultaRapida('¿Qué historiadores y fuentes respaldan esta enciclopedia?')" class="px-2.5 py-1 rounded-lg bg-crema-200 hover:bg-dorado-500/20 text-tierra-800 text-[11px] font-medium transition">
+              Fuentes e historiadores
+            </button>
+            <button type="button" onclick="ejecutarConsultaRapida('¿Qué rol tuvo la Generación del Centenario y la UNT?')" class="px-2.5 py-1 rounded-lg bg-crema-200 hover:bg-dorado-500/20 text-tierra-800 text-[11px] font-medium transition">
+              Centenario y UNT
+            </button>
+          </div>
+
+          <!-- Formulario de búsqueda -->
+          <form id="form-consulta" onsubmit="manejarEnvioConsulta(event)" class="flex gap-2">
+            <input
+              id="input-consulta"
+              type="text"
+              placeholder="Ej: mulas, carretas, Lizondo Borda, 1816..."
+              class="flex-1 px-3.5 py-2.5 rounded-xl bg-crema-50 border border-crema-300 focus:outline-none focus:border-dorado-500 text-sm text-tierra-900 placeholder-tierra-600/60"
+            />
+            <button type="submit" class="px-4 py-2.5 rounded-xl bg-tierra-800 hover:bg-tierra-900 text-crema-50 font-medium text-sm transition shrink-0">
+              Consultar
+            </button>
+          </form>
+
+          <!-- Resultado del Agente-Enciclopedia -->
+          <div id="respuesta-consulta-box" class="mt-4 rounded-xl bg-crema-100 border border-crema-300 p-3.5 text-xs sm:text-sm text-tierra-800 space-y-2">
+            <div class="flex items-center justify-between text-[11px] font-semibold text-yungas-700">
+              <span>Síntesis Documental • Círculo IA</span>
+              <span id="consulta-tag-hito" class="px-2 py-0.5 rounded bg-crema-200 text-tierra-700">Listo para consultar</span>
+            </div>
+            <p id="respuesta-consulta-texto" class="leading-relaxed">
+              Bienvenido al archivo histórico de Tucumán. Podés navegar por los cinco hitos superiores o escribir una palabra clave (como <em>Potosí, Ibatín, carretas, Terán, 1816</em>) para cruzar fuentes historiográficas.
+            </p>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+  </main>
+
+  <!-- Pie de página institucional del Gadget -->
+  <footer class="mt-10 border-t border-crema-300 bg-crema-100/80 py-5 px-4 text-center text-xs text-tierra-700">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p class="font-medium">Enciclopedia-Agente de la Historia de Tucumán • Proyecto de Divulgación Historiográfica</p>
+      <p class="text-tierra-600">Diseñado como Gadget Interactivo para <strong class="text-tierra-900">Círculo IA</strong></p>
+    </div>
+  </footer>
+
+  <!-- Lógica de Datos Historiográficos, Agentes Guías, Síntesis de Voz y Buscador -->
+  <script>
+    /**
+     * Base de datos historiográfica de Tucumán (1565 - 1914)
+     * Enfocada en la especificidad histórica tucumana, el espacio económico peruano,
+     * las condiciones materiales y el aparato crítico de fuentes.
+     */
+    const HITOS_TUCUMAN = [
+      {
+        id: "ibatin-potosi",
+        anio: "1565",
+        tituloCorto: "Ibatín y Potosí",
+        periodo: "1565 • Espacio Económico Peruano",
+        coordenada: "27°13'S 65°35'O • Sitio de Ibatín (Monteros)",
+        titulo: "El circuito mercantil con Potosí y la fundación en Ibatín (1565)",
+        subtitulo: "La articulación temprana de San Miguel de Tucumán como nodo proveedor del Cerro Rico de Potosí.",
+        cuerpo: [
+          "El 31 de mayo de 1565, Diego de Villarroel fundó San Miguel de Tucumán en el sitio de Ibatín, cumpliendo órdenes de Francisco de Aguirre. Lejos de ser un enclave aislado, su razón de ser respondió a la geopolítica del Virreinato del Perú: asegurar las rutas de comunicación y abastecer el gigantesco polo minero de Potosí.",
+          "Como demostró Carlos Sempat Assadourian, la extracción de plata en el Cerro Rico generó una demanda masiva de insumos que vertebró todo el espacio económico surandino. Tucumán aprovechó su privilegiada posición ecogeográfica —entre las selvas de las Yungas y la llanura chacopampeana— para especializarse en la producción de maderas nobles, textiles de algodón (lienzo tucumano), invernada de mulas y fabricación de carretas.",
+          "Sin embargo, la vida cotidiana en Ibatín estuvo marcada por la dureza ambiental: el desborde recurrente del río Pueblo Viejo (Tejar), la humedad extrema, el paludismo ('chucho'), las plagas de insectos y la permanente tensión fronteriza con los pueblos diaguitas y calchaquíes."
+        ],
+        economia: "Producción de lienzos de algodón mediante encomiendas indígenas, extracción de maderas duras (cedro, nogal, quebracho) para los ingenios mineros de Potosí, invernada de tropas de mulas y carpintería de carretas de ejes gigantes.",
+        fuentes: [
+          "Acta de Fundación de San Miguel de Tucumán (31 de mayo de 1565) — Archivo Histórico de Tucumán (AHT).",
+          "Assadourian, Carlos Sempat (1982). El sistema de la economía colonial. Mercado interno, regiones y espacio económico.",
+          "Lizondo Borda, Manuel (1942). Historia de Tucumán (Siglo XVI). Universidad Nacional de Tucumán.",
+          "Sotelo Narváez, Pedro (1583). Relación de las Provincias de Tucumán."
+        ],
+        relatoTaruca: "Desde las cumbres del Aconquija se comprende la verdadera escala de 1565: Tucumán no nació mirando al puerto de Buenos Aires, sino articulado hacia el Alto Perú. Sin la plata de Potosí demandando mulas, maderas y textiles, la fundación de Diego de Villarroel en Ibatín habría carecido de sustento mercantil.",
+        relatoLoro: "¡Ay, lo que era vivir en Ibatín entre tanta selva cerrada y humedad! Apenas bajaba el calor, salían las nubes de mosquitos y el río se llevaba medio poblado cada verano. Pero entre el ruido de las hachas cortando cedro y los telares trabajando sin parar, ¡de acá salían las mejores carretas rumbo a Potosí!",
+        keywords: ["potosi", "potosí", "ibatin", "ibatín", "1565", "villarroel", "mulas", "carretas", "oro", "plata", "colonial", "origen", "assadourian", "textiles", "madera", "paludismo"]
+      },
+      {
+        id: "traslado-toma",
+        anio: "1685",
+        tituloCorto: "Traslado a La Toma",
+        periodo: "1685 • Refundación Urbana",
+        coordenada: "26°49'S 65°12'O • Sitio de La Toma (Plaza Independencia)",
+        titulo: "El traslado a La Toma (1685): reconfiguración urbana y ruta real",
+        subtitulo: "El abandono de Ibatín tras 120 años y el asentamiento definitivo en la traza actual.",
+        cuerpo: [
+          "Tras más de un siglo de padecer inundaciones endémicas, aguas insalubres que provocaban bocio ('coto') y fiebres palúdicas, sumado al desvío natural del Camino Real hacia el norte que dejaba a Ibatín marginada del tráfico comercial, el Cabildo solicitó formalmente la mudanza de la ciudad.",
+          "Autorizada por Real Cédula, la traslación se concretó en septiembre de 1685 bajo el gobierno de Fernando de Mendoza Mate de Luna. El nuevo emplazamiento, conocido como 'La Toma' por una acequia derivada del río Salí, ofrecía terrenos altos, ventilados y en contacto directo con la ruta troncal entre el Río de la Plata y el Alto Perú.",
+          "La mudanza implicó transportar materiales, campanas, archivos capitulares y el trazado en damero de nueve cuadras por lado alrededor de la actual Plaza Independencia, consolidando el poder de los vecinos feudatarios y comerciantes carreteros."
+        ],
+        economia: "Consolidación del transporte de larga distancia: Tucumán se convierte en la gran maestranza de carretas del virreinato y centro de engorde de ganado mular procedente de Córdoba y Santa Fe antes de subir la quebrada rumbo a Salta y Potosí.",
+        fuentes: [
+          "Actas Capitulares de San Miguel de Tucumán (1680-1688) — Publicación de la UNT.",
+          "Piossek Prebisch, Teresa (1985). La ciudad en Ibatín. La primera San Miguel de Tucumán.",
+          "López de Albornoz, Cristina (2003). Los dueños de la tierra. Economía, sociedad y poder en Tucumán (1770-1820).",
+          "Concolorcorvo (1773). El Lazarillo de ciegos caminantes (descripción de los bosques y carretas tucumanas)."
+        ],
+        relatoTaruca: "El traslado de 1685 fue una decisión de supervivencia geopolítica y sanitaria. Al ubicarse en La Toma, la ciudad recuperó el control sobre el Camino Real. Las Actas Capitulares registran minuciosamente el costo de trasladar cada teja y cada documento para no perder la continuidad jurídica.",
+        relatoLoro: "¡Qué mudanza histórica en septiembre de 1685! Cargaron las campanas, los libros del Cabildo y hasta las puertas en carretas tiradas por bueyes. En La Toma corría lindo el aire seco, había buena agua de acequia y volvieron a pasar todas las tropas de mulas por la puerta de la plaza.",
+        keywords: ["toma", "traslado", "1685", "mate de luna", "mudanza", "camino real", "coto", "cabildo", "actas", "plaza independencia", "carretas"]
+      },
+      {
+        id: "independencia-1816",
+        anio: "1816",
+        tituloCorto: "Independencia",
+        periodo: "1816 • Revolución y Soberanía",
+        coordenada: "26°50'S 65°12'O • Casa de Francisca Bazán de Laguna",
+        titulo: "La Declaración de la Independencia (1816): Tucumán, bastión del Norte",
+        subtitulo: "El esfuerzo material y humano de la sociedad tucumana como sede del Congreso Soberano.",
+        cuerpo: [
+          "En 1816, con Fernando VII restaurado en el trono español y los ejércitos patriotas derrotados en Sipe-Sipe, Tucumán fue elegida sede del Congreso General Constituyente por su equidistancia geográfica y su probada lealtad tras la Batalla de Tucumán de 1812.",
+          "Desde la perspectiva historiográfica local, la gesta de julio de 1816 no fue solo un acto jurídico abstracto: exigió una movilización económica extraordinaria de una provincia de apenas 45.000 habitantes que venía sosteniendo al Ejército del Norte mediante empréstitos forzosos, entrega de ganado, suelas y talleres de maestranza.",
+          "El 9 de julio de 1816, en la casa cedida por Francisca Bazán de Laguna —y con muebles prestados por las familias vecinas ante la austeridad de los fondos públicos—, los diputados proclamaron la ruptura definitiva con la monarquía española y toda otra dominación extranjera."
+        ],
+        economia: "Economía de guerra: reconversión de los talleres artesanales y curtiembres tucumanas para fabricar monturas, correajes, calzado y pólvora para el Ejército Auxiliar del Perú, sufriendo la pérdida temporal del mercado altoperuano.",
+        fuentes: [
+          "El Redactor del Congreso Nacional (1816) — Edición facsimilar de la Academia Nacional de la Historia.",
+          "Páez de la Torre, Carlos (h) (1987). Historia de Tucumán. Editorial Plus Ultra.",
+          "Ávila, Julio P. (1916). La Ciudad Arribeña. Tucumán 1810-1816.",
+          "Ravignani, Emilio (1937). Asambleas Constituyentes Argentinas."
+        ],
+        relatoTaruca: "Conviene analizar 1816 desde el esfuerzo tucumano: la provincia estaba exhausta tras cuatro años de acantonamiento militar. La participación de diputados como José Ignacio Thames y Pedro Miguel Aráoz expresó el peso de una élite ilustrada que sostuvo la revolución cuando el puerto dudaba.",
+        relatoLoro: "¡Tucumán era un hervidero en julio de 1816! Como no alcanzaban las sillas para tantos diputados en la casa de doña Francisca Bazán, los vecinos prestaron mesas, sillones y candelabros. En las pulperías y en la plaza se mezclaban gauchos de Aráoz, oficiales de Belgrano y congresales de poncho.",
+        keywords: ["1816", "independencia", "congreso", "9 de julio", "bazan", "bazán", "belgrano", "araoz", "aráoz", "thames", "paez de la torre", "ejercito del norte"]
+      },
+      {
+        id: "centenario-80",
+        anio: "1880-1910",
+        tituloCorto: "Generación del 80",
+        periodo: "1876 – 1910 • Modernización Azucarera",
+        coordenada: "San Miguel de Tucumán • Ingenios y Boulevares",
+        titulo: "El Primer Centenario y la Generación del 80: el auge azucarero",
+        subtitulo: "La llegada del ferrocarril, la revolución agroindustrial y el brillo cultural del Centenario.",
+        cuerpo: [
+          "La llegada del Ferrocarril Central Norte en 1876 marcó la bisagra hacia la modernidad tucumana. La posibilidad de transportar maquinaria pesada europea permitió transformar los antiguos trapiches artesanales en modernos ingenios azucareros a vapor, convirtiendo a Tucumán en el polo industrial más dinámico del interior argentino.",
+          "A la par de esta expansión económica —impulsada por figuras como Ernesto Tornquist, Guzmán, Nougués y Paz—, emergió una notable vanguardia intelectual conocida como la 'Generación del Centenario' (Juan B. Terán, Alberto Rougés, Ricardo Jaimes Freyre, Ernesto Padilla, Miguel Lillo).",
+          "En 1910 y 1916, Tucumán celebró los centenarios transformando su fisonomía urbana con arquitectura academicista francesa, el Parque 9 de Julio diseñado por Carlos Thays y una intensa vida periodística y literaria."
+        ],
+        economia: "Monocultivo agroindustrial de la caña de azúcar protegido por aranceles nacionales, articulado por una densa red ferroviaria interna y abastecido por migraciones estacionales de trabajadores del noroeste.",
+        fuentes: [
+          "Campi, Daniel (2002). Azúcar y trabajo. Coacción y mercado laboral en Tucumán, 1856-1896.",
+          "Bravo, María Celia (2008). Campesinos, azúcar y política: cañeros, acción corporativa y vida política en Tucumán.",
+          "Revista de Letras y Ciencias Sociales (1904-1907) — Dirigida por Ricardo Jaimes Freyre, Julio López Mañán y Juan B. Terán.",
+          "Censo Nacional de 1895 y 1914 (Sección Industrial de Tucumán)."
+        ],
+        relatoTaruca: "La historiografía moderna distingue dos caras en este periodo: por un lado, el salto tecnológico de los ingenios y la refinada densidad intelectual de la Generación del Centenario; por otro, las profundas asimetrías sociales de la zafra que motivarían las primeras leyes laborales y conflictos cañeros.",
+        relatoLoro: "¡Qué cambio de paisaje entre 1876 y 1910! El silbato del tren reemplazó al crujido de las carretas, las chimeneas de los ingenios humeaban día y noche en la zafra, y en el centro se levantaban palacetes, teatros y el Parque 9 de Julio lleno de lapachos en flor.",
+        keywords: ["80", "centenario", "1910", "azucar", "azúcar", "ingenios", "ferrocarril", "1876", "teran", "terán", "rouges", "rougés", "lillo", "padilla", "thays", "zafra"]
+      },
+      {
+        id: "creacion-unt",
+        anio: "1914",
+        tituloCorto: "Creación de la UNT",
+        periodo: "1914 • Emancipación Intelectual",
+        coordenada: "Ayacucho 482 • Rectorado UNT",
+        titulo: "La creación de la Universidad Nacional de Tucumán (1914)",
+        subtitulo: "El proyecto regionalista de Juan B. Terán: ciencia aplicada y humanismo para el Norte.",
+        cuerpo: [
+          "Impulsada por la visión de Juan B. Terán —quien presentó el proyecto de ley en 1908 junto a Guillermo Griet—, la Universidad de Tucumán fue creada por ley provincial en 1912 e inaugurada solemnemente el 25 de mayo de 1914, siendo nacionalizada posteriormente en 1921.",
+          "A diferencia de las universidades coloniales o estrictamente profesionalistas de abogados y médicos, Terán concibió una universidad moderna, regional y experimental: debía estudiar la flora, la fauna, el suelo, la química azucarera, la ingeniería y la historia del norte argentino.",
+          "La UNT integró instituciones científicas preexistentes —como el Museo de Ciencias Naturales dirigido por el sabio Miguel Lillo y la Estación Experimental Agrícola—, consolidando a Tucumán como el faro científico y cultural de todo el NOA."
+        ],
+        economia: "Vinculación directa entre ciencia y producción regional: formación de ingenieros químicos y agrónomos para optimizar la industria azucarera, investigar cultivos alternativos (cítricos, tabaco) y relevar los recursos naturales del noroeste.",
+        fuentes: [
+          "Terán, Juan B. (1914). Discurso inaugural de la Universidad de Tucumán (25 de mayo de 1914).",
+          "Archivo Histórico de la Universidad Nacional de Tucumán (AHUNT) — Actas del Consejo Superior (1914-1921).",
+          "Pucci, Roberto (2014). Historia de la Universidad Nacional de Tucumán (Edición del Centenario de la UNT).",
+          "Lillo, Miguel (1910). Contribución al conocimiento de los árboles de la Argentina."
+        ],
+        relatoTaruca: "La fundación de la UNT en 1914 representa la madurez institucional de Tucumán. Juan B. Terán formuló una pedagogía propia: en lugar de imitar modelos porteños o europeos sin crítica, propuso producir conocimiento situado sobre la naturaleza y la sociedad del Norte.",
+        relatoLoro: "¡El 25 de mayo de 1914 fue una fiesta del saber! Don Miguel Lillo clasificaba cada árbol y cada pájaro de nuestras Yungas mientras Juan B. Terán abría las aulas para que los jóvenes tucumanos no tuvieran que irse lejos a estudiar. ¡Acá nació el pensamiento propio del Norte!",
+        keywords: ["universidad", "unt", "1914", "teran", "terán", "lillo", "educacion", "educación", "ciencia", "noa", "pucci", "rectorado"]
+      }
+    ];
+
+    // Estado de la aplicación
+    let indiceHitoActual = 0;
+    let agenteActual = 'taruca'; // 'taruca' | 'loro'
+    let reproduciendoAudio = false;
+    let sintesisActual = null;
+
+    /**
+     * Inicialización al cargar la ventana
+     */
+    window.onload = function () {
+      renderizarLineaTiempo();
+      cargarHito(0);
+
+      // Precargar voces de SpeechSynthesis en navegadores que las cargan asíncronamente
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = () => {
+          window.speechSynthesis.getVoices();
+        };
+      }
+
+      // Scroll suave al panel de consulta desde el botón superior
+      document.getElementById('btn-toggle-consulta').addEventListener('click', () => {
+        const panel = document.getElementById('panel-consulta-rapida');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('input-consulta').focus();
+      });
+    };
+
+    /**
+     * Renderiza los botones de la línea de tiempo interactiva
+     */
+    function renderizarLineaTiempo() {
+      const container = document.getElementById('timeline-container');
+      container.innerHTML = '';
+
+      HITOS_TUCUMAN.forEach((hito, index) => {
+        const activo = index === indiceHitoActual;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.onclick = () => cargarHito(index);
+        btn.className = `group relative flex flex-col items-start md:items-center text-left md:text-center p-3.5 rounded-xl border transition-all duration-200 ${
+          activo
+            ? 'bg-tierra-900 text-crema-50 border-dorado-500 shadow-lg scale-[1.02]'
+            : 'bg-crema-50/90 hover:bg-crema-100 text-tierra-900 border-crema-300 hover:border-dorado-500/60'
+        }`;
+
+        btn.innerHTML = `
+          <div class="flex items-center gap-2 md:flex-col md:gap-1.5 w-full">
+            <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border transition-colors shrink-0 ${
+              activo
+                ? 'bg-dorado-500 text-tierra-900 border-dorado-400'
+                : 'bg-crema-200 text-tierra-800 border-crema-300 group-hover:bg-dorado-500/20'
+            }">
+              ${index + 1}
+            </span>
+            <span class="font-mono text-xs font-bold tracking-wider ${
+              activo ? 'text-dorado-400' : 'text-yungas-600'
+            }">
+              ${hito.anio}
+            </span>
+          </div>
+          <span class="font-serif font-bold text-base sm:text-lg mt-1.5 leading-snug">
+            ${hito.tituloCorto}
+          </span>
+        `;
+
+        container.appendChild(btn);
+      });
+    }
+
+    /**
+     * Carga el hito seleccionado en la ficha enciclopédica y actualiza el relato del agente
+     */
+    function cargarHito(index) {
+      detenerAudioGuia();
+      indiceHitoActual = index;
+      const hito = HITOS_TUCUMAN[index];
+
+      renderizarLineaTiempo();
+
+      // Actualizar metadatos y títulos
+      document.getElementById('hito-badge-periodo').textContent = hito.periodo;
+      document.getElementById('hito-coordenada').textContent = hito.coordenada;
+      document.getElementById('hito-titulo').textContent = hito.titulo;
+      document.getElementById('hito-subtitulo').textContent = hito.subtitulo;
+
+      // Actualizar cuerpo historiográfico
+      const cuerpoContainer = document.getElementById('hito-cuerpo');
+      cuerpoContainer.innerHTML = hito.cuerpo
+        .map((parrafo) => `<p class="text-justify">${parrafo}</p>`)
+        .join('');
+
+      // Actualizar economía
+      document.getElementById('hito-economia').textContent = hito.economia;
+
+      // Actualizar fuentes
+      const fuentesContainer = document.getElementById('hito-fuentes');
+      fuentesContainer.innerHTML = hito.fuentes
+        .map(
+          (fuente) => `
+          <li class="flex items-start gap-2">
+            <span class="text-dorado-600 font-bold mt-0.5">▪</span>
+            <span>${fuente}</span>
+          </li>`
+        )
+        .join('');
+
+      actualizarDialogoAgente();
+    }
+
+    /**
+     * Alterna entre la Taruca y el Loro Alisero
+     */
+    function seleccionarAgente(tipo) {
+      if (agenteActual === tipo) return;
+      detenerAudioGuia();
+      agenteActual = tipo;
+
+      const btnTaruca = document.getElementById('btn-agente-taruca');
+      const btnLoro = document.getElementById('btn-agente-loro');
+
+      if (tipo === 'taruca') {
+        btnTaruca.className =
+          'p-3 rounded-xl border-2 text-left transition-all flex flex-col items-center sm:items-start gap-2 bg-crema-50 border-dorado-500 avatar-glow-taruca';
+        btnLoro.className =
+          'p-3 rounded-xl border-2 text-left transition-all flex flex-col items-center sm:items-start gap-2 bg-crema-100/70 border-crema-300 hover:border-yungas-500 opacity-80 hover:opacity-100';
+      } else {
+        btnLoro.className =
+          'p-3 rounded-xl border-2 text-left transition-all flex flex-col items-center sm:items-start gap-2 bg-crema-50 border-yungas-600 avatar-glow-loro';
+        btnTaruca.className =
+          'p-3 rounded-xl border-2 text-left transition-all flex flex-col items-center sm:items-start gap-2 bg-crema-100/70 border-crema-300 hover:border-dorado-500 opacity-80 hover:opacity-100';
+      }
+
+      actualizarDialogoAgente();
+    }
+
+    /**
+     * Actualiza el texto y estilo del cuadro de diálogo según el agente y hito activos
+     */
+    function actualizarDialogoAgente() {
+      const hito = HITOS_TUCUMAN[indiceHitoActual];
+      const rolTag = document.getElementById('agente-rol-tag');
+      const relatoEl = document.getElementById('agente-relato-texto');
+      const boxEl = document.getElementById('agente-dialogo-box');
+
+      if (agenteActual === 'taruca') {
+        rolTag.textContent = 'La Taruca (Cumbres Calchaquíes) • Rigor Documental';
+        rolTag.className = 'text-xs font-bold uppercase tracking-wider text-dorado-600';
+        boxEl.className = 'relative rounded-2xl p-4 sm:p-5 bg-crema-100 border border-dorado-500/50 transition-all';
+        relatoEl.textContent = `“${hito.relatoTaruca}”`;
+      } else {
+        rolTag.textContent = 'El Loro Alisero (Selva de Yungas) • Vida Cotidiana';
+        rolTag.className = 'text-xs font-bold uppercase tracking-wider text-yungas-600';
+        boxEl.className = 'relative rounded-2xl p-4 sm:p-5 bg-emerald-50/50 border border-yungas-600/40 transition-all';
+        relatoEl.textContent = `“${hito.relatoLoro}”`;
+      }
+    }
+
+    /**
+     * Control de Audio-Guía utilizando la API nativa SpeechSynthesis en español
+     */
+    function alternarAudioGuia() {
+      if (reproduciendoAudio) {
+        detenerAudioGuia();
+      } else {
+        iniciarAudioGuia();
+      }
+    }
+
+    function iniciarAudioGuia() {
+      if (!('speechSynthesis' in window)) {
+        mostrarNotificacion('Tu navegador no soporta la síntesis de voz nativa (SpeechSynthesis).');
+        return;
+      }
+
+      try {
+        window.speechSynthesis.cancel();
+        const hito = HITOS_TUCUMAN[indiceHitoActual];
+        const textoNarracion =
+          agenteActual === 'taruca'
+            ? `${hito.titulo}. Perspectiva de la Taruca: ${hito.relatoTaruca}`
+            : `${hito.tituloCorto}. Relato del Loro Alisero: ${hito.relatoLoro}`;
+
+        const utterance = new SpeechSynthesisUtterance(textoNarracion);
+        utterance.lang = 'es-AR';
+
+        // Seleccionar voz en español si está disponible
+        const voces = window.speechSynthesis.getVoices();
+        const vozEs =
+          voces.find((v) => v.lang.includes('es-AR')) ||
+          voces.find((v) => v.lang.includes('es-ES')) ||
+          voces.find((v) => v.lang.startsWith('es'));
+        if (vozEs) {
+          utterance.voice = vozEs;
+        }
+
+        // Diferenciar levemente el tono y ritmo entre la Taruca (pausada/grave) y el Loro (ágil/agudo)
+        if (agenteActual === 'taruca') {
+          utterance.pitch = 0.92;
+          utterance.rate = 0.96;
+        } else {
+          utterance.pitch = 1.15;
+          utterance.rate = 1.06;
+        }
+
+        utterance.onstart = () => {
+          reproduciendoAudio = true;
+          actualizarUIEstadoAudio(true);
+        };
+
+        utterance.onend = () => {
+          reproduciendoAudio = false;
+          actualizarUIEstadoAudio(false);
+        };
+
+        utterance.onerror = () => {
+          reproduciendoAudio = false;
+          actualizarUIEstadoAudio(false);
+        };
+
+        sintesisActual = utterance;
+        window.speechSynthesis.speak(utterance);
+      } catch (error) {
+        reproduciendoAudio = false;
+        actualizarUIEstadoAudio(false);
+        mostrarNotificacion('No se pudo iniciar la audio-guía en este dispositivo.');
+      }
+    }
+
+    function detenerAudioGuia() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      reproduciendoAudio = false;
+      actualizarUIEstadoAudio(false);
+    }
+
+    function actualizarUIEstadoAudio(activo) {
+      const btn = document.getElementById('btn-audio-guia');
+      const iconPlay = document.getElementById('icono-audio-play');
+      const iconStop = document.getElementById('icono-audio-stop');
+      const textoBtn = document.getElementById('texto-btn-audio');
+      const badgeVoz = document.getElementById('agente-estado-voz');
+
+      if (activo) {
+        btn.classList.remove('bg-yungas-600', 'hover:bg-yungas-700');
+        btn.classList.add('bg-tierra-800', 'hover:bg-tierra-900');
+        iconPlay.classList.add('hidden');
+        iconStop.classList.remove('hidden');
+        textoBtn.textContent = 'Detener Relato';
+        badgeVoz.classList.remove('hidden');
+        badgeVoz.classList.add('inline-flex');
+      } else {
+        btn.classList.add('bg-yungas-600', 'hover:bg-yungas-700');
+        btn.classList.remove('bg-tierra-800', 'hover:bg-tierra-900');
+        iconPlay.classList.remove('hidden');
+        iconStop.classList.add('hidden');
+        textoBtn.textContent = 'Escuchar Audio-Guía';
+        badgeVoz.classList.add('hidden');
+        badgeVoz.classList.remove('inline-flex');
+      }
+    }
+
+    /**
+     * Buscador / Chat simulado sobre historiografía tucumana
+     */
+    function manejarEnvioConsulta(event) {
+      event.preventDefault();
+      const input = document.getElementById('input-consulta');
+      const query = input.value.trim();
+      if (!query) return;
+      ejecutarConsultaRapida(query);
+    }
+
+    async function ejecutarConsultaRapida(pregunta) {
+      document.getElementById('input-consulta').value = pregunta;
+      const qNorm = pregunta
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+      const tagEl = document.getElementById('consulta-tag-hito');
+      const respEl = document.getElementById('respuesta-consulta-texto');
+
+      // Caso especial: consulta sobre fuentes e historiadores
+      if (qNorm.includes('fuente') || qNorm.includes('historiador') || qNorm.includes('lizondo') || qNorm.includes('assadourian')) {
+        tagEl.textContent = 'Aparato Crítico Global';
+        respEl.innerHTML = `
+          La enciclopedia se sustenta en el <strong>Archivo Histórico de Tucumán (AHT)</strong>, las <em>Actas Capitulares</em> y la historiografía especializada: <strong>Carlos Sempat Assadourian</strong> (espacio económico potosino), <strong>Manuel Lizondo Borda</strong> (etapa colonial), <strong>Teresa Piossek Prebisch</strong> (Ibatín), <strong>Carlos Páez de la Torre (h)</strong> (síntesis provincial), <strong>Daniel Campi</strong> y <strong>María Celia Bravo</strong> (mundo azucarero) y <strong>Roberto Pucci</strong> (historia de la UNT).
+        `;
+        return;
+      }
+
+      // Buscar coincidencia en los hitos
+      let mejorIndice = -1;
+      let maxPuntaje = 0;
+
+      HITOS_TUCUMAN.forEach((hito, idx) => {
+        let puntaje = 0;
+        hito.keywords.forEach((kw) => {
+          const kwNorm = kw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (qNorm.includes(kwNorm)) puntaje += 2;
+        });
+        if (qNorm.includes(hito.anio.toLowerCase())) puntaje += 3;
+        if (puntaje > maxPuntaje) {
+          maxPuntaje = puntaje;
+          mejorIndice = idx;
+        }
+      });
+
+      if (mejorIndice !== -1) {
+        const hito = HITOS_TUCUMAN[mejorIndice];
+        cargarHito(mejorIndice);
+        tagEl.textContent = `Hito ${hito.anio}: ${hito.tituloCorto}`;
+        respEl.innerHTML = `
+          <strong>${hito.titulo}:</strong> ${hito.cuerpo[0]} <br/>
+          <span class="text-yungas-700 font-medium mt-1 inline-block">↳ Fuente clave: ${hito.fuentes[0]}</span>
+        `;
+      } else {
+        tagEl.textContent = 'Consulta a CÍRCULO IA';
+        respEl.textContent = 'Consultando el motor institucional…';
+        try {
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: pregunta })
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || 'No se pudo completar la consulta.');
+          respEl.textContent = data.respuesta || 'El motor no devolvió una respuesta.';
+        } catch (error) {
+          tagEl.textContent = 'Índice local';
+          respEl.textContent = 'No pude conectar con el motor institucional. Podés explorar los hitos disponibles: Potosí, Ibatín, La Toma, 1816, azúcar y Juan B. Terán.';
+        }
+      }
+    }
+
+    /**
+     * Copiar referencia historiográfica usando execCommand para compatibilidad en iframes
+     */
+    function copiarCitaHito() {
+      const hito = HITOS_TUCUMAN[indiceHitoActual];
+      const textoCita = `${hito.titulo} (${hito.periodo}). Fuente destacada: ${hito.fuentes[0]} — Enciclopedia-Agente de la Historia de Tucumán (Círculo IA).`;
+
+      const areaTemporal = document.createElement('textarea');
+      areaTemporal.value = textoCita;
+      areaTemporal.style.position = 'fixed';
+      areaTemporal.style.opacity = '0';
+      document.body.appendChild(areaTemporal);
+      areaTemporal.select();
+
+      try {
+        document.execCommand('copy');
+        mostrarNotificacion('Cita historiográfica copiada al portapapeles.');
+      } catch (err) {
+        mostrarNotificacion('No se pudo copiar la cita automáticamente.');
+      } finally {
+        document.body.removeChild(areaTemporal);
+      }
+    }
+
+    /**
+     * Muestra notificaciones visuales no intrusivas
+     */
+    let timeoutToast = null;
+    function mostrarNotificacion(mensaje) {
+      const toast = document.getElementById('toast-notificacion');
+      const msgEl = document.getElementById('toast-mensaje');
+      msgEl.textContent = mensaje;
+
+      toast.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      });
+
+      if (timeoutToast) clearTimeout(timeoutToast);
+      timeoutToast = setTimeout(() => {
+        toast.classList.add('translate-y-4', 'opacity-0');
+        setTimeout(() => toast.classList.add('hidden'), 300);
+      }, 3200);
+    }
+  </script>
+</body>
+</html>
