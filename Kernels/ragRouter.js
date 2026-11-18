@@ -32,7 +32,11 @@ function route(question, analysis = {}) {
     const bibliographyTerms = [
         "historia", "contexto historico", "historiografia", "investigacion",
         "libro", "bibliografia", "estudio", "autor", "analisis",
-        "documentacion historica", "historia legislativa", "investigador"
+        "documentacion historica", "historia legislativa", "investigador",
+        "constitucion de 1990", "constitucion de 2006",
+        "antecedentes constitucionales", "historia constitucional",
+        "ley 312", "ley 351", "ley 505", "ley 989",
+        "ley 7469", "ley 5529"
     ];
 
     // Solo expresiones que implican explícitamente información externa.
