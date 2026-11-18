@@ -136,6 +136,7 @@ function parseRetryMetadata(value) {
 function createRedisStreamQueue(options = {}) {
     const getRedis = options.getRedis || defaultGetRedis;
     const settings = { ...DEFAULTS, ...(options.config || {}) };
+    let groupReady = false;
 
     function redis() {
         return getRedis();
@@ -147,15 +148,20 @@ function createRedisStreamQueue(options = {}) {
     }
 
     async function ensureConsumerGroup() {
+        if (groupReady) return 'OK';
+
         try {
-            return await redis().xgroup(settings.streamKey, {
+            const result = await redis().xgroup(settings.streamKey, {
                 type: 'CREATE',
                 group: settings.consumerGroup,
                 id: '0-0',
                 MKSTREAM: true
             });
+            groupReady = true;
+            return result;
         } catch (error) {
             if (/BUSYGROUP/i.test(String(error?.message || error))) {
+                groupReady = true;
                 return 'OK';
             }
             throw error;
@@ -246,7 +252,10 @@ function createRedisStreamQueue(options = {}) {
 
     async function isRetryDue(streamId, now = Date.now()) {
         const metadata = await getRetryState(streamId);
-        return !metadata || Number(metadata.nextRetryAt) <= now;
+        if (!metadata) return true;
+
+        const nextRetryAt = Number(metadata.nextRetryAt);
+        return !Number.isFinite(nextRetryAt) || nextRetryAt <= now;
     }
 
     async function acknowledge(streamId) {
