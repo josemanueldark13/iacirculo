@@ -14,7 +14,16 @@
 const { Redis } = require('@upstash/redis');
 const { randomUUID } = require('crypto');
 
-function getRedis() { return Redis.fromEnv(); }
+function isConfigured() {
+    return Boolean(
+        process.env.UPSTASH_REDIS_REST_URL?.trim() &&
+        process.env.UPSTASH_REDIS_REST_TOKEN?.trim()
+    );
+}
+function getRedis() {
+    if (!isConfigured()) throw new Error('Faltan UPSTASH_REDIS_REST_URL y UPSTASH_REDIS_REST_TOKEN.');
+    return Redis.fromEnv();
+}
 const PREFIX = process.env.AXIAL_QUEUE_PREFIX || 'axial:messenger';
 const PENDING = `${PREFIX}:pending`;
 const PROCESSING = `${PREFIX}:processing`;
