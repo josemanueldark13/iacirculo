@@ -76,9 +76,9 @@ async function retry(payload, job, maxAttempts = 5) {
 
 async function lengths() {
     const [pending, processing, dead] = await Promise.all([
-        redis.llen(PENDING),
-        redis.llen(PROCESSING),
-        redis.llen(DEAD)
+        getRedis().llen(PENDING),
+        getRedis().llen(PROCESSING),
+        getRedis().llen(DEAD)
     ]);
     return { pending, processing, dead };
 }
