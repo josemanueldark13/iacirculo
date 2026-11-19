@@ -14,7 +14,7 @@
 const { Redis } = require('@upstash/redis');
 const { randomUUID } = require('crypto');
 
-const redis = Redis.fromEnv();
+function getRedis() { return Redis.fromEnv(); }
 const PREFIX = process.env.AXIAL_QUEUE_PREFIX || 'axial:messenger';
 const PENDING = `${PREFIX}:pending`;
 const PROCESSING = `${PREFIX}:processing`;
@@ -35,7 +35,7 @@ function serializeEvent(event) {
 
 async function enqueue(event) {
     const payload = serializeEvent(event);
-    await redis.lpush(PENDING, payload);
+    await getRedis().lpush(PENDING, payload);
     return JSON.parse(payload);
 }
 
@@ -44,20 +44,20 @@ async function enqueue(event) {
  * Devuelve null cuando la cola está vacía.
  */
 async function claim() {
-    const payload = await redis.rpoplpush(PENDING, PROCESSING);
+    const payload = await getRedis().rpoplpush(PENDING, PROCESSING);
     if (!payload) return null;
 
     try {
         return { payload, job: JSON.parse(payload) };
     } catch (error) {
-        await redis.lrem(PROCESSING, 1, payload);
+        await getRedis().lrem(PROCESSING, 1, payload);
         await redis.lpush(DEAD, payload);
         throw new Error(`Evento inválido movido a dead-letter: ${error.message}`);
     }
 }
 
 async function acknowledge(payload) {
-    return redis.lrem(PROCESSING, 1, payload);
+    return getRedis().lrem(PROCESSING, 1, payload);
 }
 
 async function retry(payload, job, maxAttempts = 5) {
