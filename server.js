@@ -5,6 +5,7 @@ const chatRoutes = require("./routes/chat");
 const truthTableRoutes = require("./routes/truthtable");
 const messengerRoutes = require("./routes/messenger");
 const messengerWorker = require("./services/messengerWorker");
+const pipelinesRoutes = require("./routes/guerrillaAxialPipelines");
 const kernel = require("./Kernels/kernel");
 const circuloIA = require("./knowledge/agents/circuloIA");
 
@@ -28,6 +29,9 @@ app.use("/api/truthtable", truthTableRoutes);
 
 // Worker autenticado: Vercel Cron despierta el procesamiento de la cola.
 app.use("/api/internal/messenger-worker", messengerWorker);
+
+// Módulo Guerrilla Axial Pipelines (estado/diagnóstico).
+app.use("/api/internal/axial-pipelines", pipelinesRoutes);
 
 // Webhook unificado de Facebook Messenger.
 app.use("/webhook/messenger", messengerRoutes);
