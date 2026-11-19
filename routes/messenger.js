@@ -264,6 +264,13 @@ router.post("/", async (req, res) => {
             received: events.length,
             queued
         });
+
+        // El pipeline despierta al worker en esta misma invocación serverless.
+        // Así Redis no queda esperando un cron de 15 minutos en Vercel Hobby.
+        const pipeline = require("../services/guerrillaAxialPipelines");
+        const dispatch = await pipeline.dispatchQueued(queued);
+        console.log("[Messenger] Despacho del pipeline completado:", dispatch);
+
         return res.sendStatus(200);
     } catch (error) {
         console.error("[Messenger] No se pudo procesar o depositar el evento:", error.message);
