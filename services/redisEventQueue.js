@@ -51,7 +51,7 @@ async function claim() {
         return { payload, job: JSON.parse(payload) };
     } catch (error) {
         await getRedis().lrem(PROCESSING, 1, payload);
-        await redis.lpush(DEAD, payload);
+        await getRedis().lpush(DEAD, payload);
         throw new Error(`Evento inválido movido a dead-letter: ${error.message}`);
     }
 }
@@ -64,13 +64,13 @@ async function retry(payload, job, maxAttempts = 5) {
     const nextJob = { ...job, attempts: Number(job.attempts || 0) + 1 };
     const nextPayload = JSON.stringify(nextJob);
 
-    await redis.lrem(PROCESSING, 1, payload);
+    await getRedis().lrem(PROCESSING, 1, payload);
     if (nextJob.attempts >= maxAttempts) {
-        await redis.lpush(DEAD, nextPayload);
+        await getRedis().lpush(DEAD, nextPayload);
         return { deadLetter: true, attempts: nextJob.attempts };
     }
 
-    await redis.lpush(PENDING, nextPayload);
+    await getRedis().lpush(PENDING, nextPayload);
     return { deadLetter: false, attempts: nextJob.attempts };
 }
 
