@@ -23,55 +23,65 @@ function authorized(req) {
     return a.length === b.length && require('crypto').timingSafeEqual(a, b);
 }
 
+/**
+ * Consume eventos de Guerrilla Axial Pipelines, pasarlos por Kernel Axial,
+ * enviar la respuesta y confirmar el trabajo solo después del envío.
+ * Se puede invocar desde el endpoint protegido o desde el webhook tras encolar.
+ */
+async function processBatch(requestedBatch = MAX_BATCH) {
+    const batchSize = Math.max(1, Math.min(MAX_BATCH, Number(requestedBatch) || MAX_BATCH));
+    const summary = { claimed: 0, processed: 0, ignored: 0, retried: 0, deadLetter: 0 };
+
+    for (let i = 0; i < batchSize; i++) {
+        const claimed = await queue.claim();
+        if (!claimed) break;
+        summary.claimed++;
+
+        const { payload, job } = claimed;
+        try {
+            const normalized = parseAndNormalizeEvent(job.event);
+            if (!normalized) {
+                await queue.acknowledge(payload);
+                summary.ignored++;
+                continue;
+            }
+
+            const { senderId, type, pregunta } = normalized;
+            let respuesta;
+
+            if (type === 'attachment') {
+                respuesta = 'Recibí el archivo o la imagen. Contame qué necesitás consultar sobre ese material y te ayudo.';
+            } else {
+                const decision = kernel.process({ pregunta, type, senderId });
+                respuesta = decision?.estado === 'accion_no_reconocida'
+                    ? 'Ese botón no está disponible en este momento. Podés escribir tu consulta y te ayudo.'
+                    : buildResponse(decision?.pregunta || pregunta, decision);
+            }
+
+            await messengerSend.sendMessage(senderId, respuesta);
+            await queue.acknowledge(payload);
+            summary.processed++;
+        } catch (error) {
+            const outcome = await queue.retry(payload, job);
+            if (outcome.deadLetter) summary.deadLetter++;
+            else summary.retried++;
+            console.error('[AXIAL WORKER] Falló un evento:', {
+                job_id: job.id,
+                attempts: outcome.attempts,
+                error: error.message
+            });
+        }
+    }
+
+    summary.queue = await queue.lengths();
+    return summary;
+}
+
 router.get('/', async (req, res) => {
     if (!authorized(req)) return res.sendStatus(401);
-
-    const summary = { processed: 0, ignored: 0, retried: 0, deadLetter: 0 };
     try {
-        for (let i = 0; i < MAX_BATCH; i++) {
-            const claimed = await queue.claim();
-            if (!claimed) break;
-
-            const { payload, job } = claimed;
-            try {
-                const normalized = parseAndNormalizeEvent(job.event);
-                if (!normalized) {
-                    await queue.acknowledge(payload);
-                    summary.ignored++;
-                    continue;
-                }
-
-                const { senderId, type, pregunta } = normalized;
-                let respuesta;
-
-                if (type === 'attachment') {
-                    respuesta = 'Recibí el archivo o la imagen. Contame qué necesitás consultar sobre ese material y te ayudo.';
-                } else {
-                    const decision = kernel.process({ pregunta, type, senderId });
-                    if (decision?.estado === 'accion_no_reconocida') {
-                        respuesta = 'Ese botón no está disponible en este momento. Podés escribir tu consulta y te ayudo.';
-                    } else {
-                        respuesta = buildResponse(decision?.pregunta || pregunta, decision);
-                    }
-                }
-
-                await messengerSend.sendMessage(senderId, respuesta);
-                await queue.acknowledge(payload);
-                summary.processed++;
-            } catch (error) {
-                const outcome = await queue.retry(payload, job);
-                if (outcome.deadLetter) summary.deadLetter++;
-                else summary.retried++;
-                console.error('[AXIAL WORKER] Falló un evento:', {
-                    job_id: job.id,
-                    attempts: outcome.attempts,
-                    error: error.message
-                });
-            }
-        }
-
-        const lengths = await queue.lengths();
-        return res.status(200).json({ ok: true, ...summary, queue: lengths });
+        const summary = await processBatch();
+        return res.status(200).json({ ok: true, ...summary });
     } catch (error) {
         console.error('[AXIAL WORKER] Error de infraestructura:', error.message);
         return res.status(503).json({ ok: false, error: 'Worker temporalmente no disponible.' });
@@ -79,3 +89,4 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.processBatch = processBatch;
