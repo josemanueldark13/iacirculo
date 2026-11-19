@@ -94,6 +94,7 @@ async function lengths() {
 
 module.exports = {
     enqueue,
+    isConfigured,
     claim,
     acknowledge,
     retry,
