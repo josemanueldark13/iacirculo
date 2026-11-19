@@ -3,6 +3,8 @@ const crypto = require("crypto");
 const router = express.Router();
 
 const circuloIA = require("../knowledge/agents/circuloIA");
+const kernel = require("../Kernels/kernel");
+const messengerSend = require("../services/messengerSend");
 const queue = require("../services/redisEventQueue");
 
 function envFirst(...names) {
@@ -227,8 +229,30 @@ router.post("/", async (req, res) => {
     });
 
     try {
-        // La superficie solo recibe y deposita el evento en la tubería.
-        // El worker independiente procesa el evento y envía la respuesta.
+        // Sin credenciales Upstash, mantenemos el recorrido síncrono anterior.
+        // Así el despliegue del código no interrumpe Messenger antes de configurar Redis.
+        if (!queue.isConfigured()) {
+            for (const event of events) {
+                const normalized = parseAndNormalizeEvent(event);
+                if (!normalized) continue;
+                const { senderId, type, pregunta } = normalized;
+                let respuesta;
+
+                if (type === "attachment") {
+                    respuesta = "Recibí el archivo o la imagen. Contame qué necesitás consultar sobre ese material y te ayudo.";
+                } else {
+                    const decision = kernel.process({ pregunta, type, senderId });
+                    respuesta = decision?.estado === "accion_no_reconocida"
+                        ? "Ese botón no está disponible en este momento. Podés escribir tu consulta y te ayudo."
+                        : buildResponse(decision?.pregunta || pregunta, decision);
+                }
+                await messengerSend.sendMessage(senderId, respuesta);
+            }
+            console.warn("[Messenger] Redis no configurado; se utilizó el recorrido síncrono de respaldo.");
+            return res.sendStatus(200);
+        }
+
+        // Con Redis configurado, la superficie solo deposita el evento en la tubería.
         let queued = 0;
         for (const event of events) {
             if (!parseAndNormalizeEvent(event)) continue;
@@ -240,12 +264,9 @@ router.post("/", async (req, res) => {
             received: events.length,
             queued
         });
-
-        // ACK a Meta después de confirmar que todos los eventos quedaron en Redis.
         return res.sendStatus(200);
     } catch (error) {
-        console.error("[Messenger] No se pudo depositar el evento en Redis:", error.message);
-        // Meta puede reintentar porque la recepción no quedó confirmada.
+        console.error("[Messenger] No se pudo procesar o depositar el evento:", error.message);
         return res.sendStatus(503);
     }
 });
