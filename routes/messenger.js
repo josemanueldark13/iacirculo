@@ -2,9 +2,8 @@ const express = require("express");
 const crypto = require("crypto");
 const router = express.Router();
 
-const kernel = require("../Kernels/kernel");
 const circuloIA = require("../knowledge/agents/circuloIA");
-const messengerSend = require("../services/messengerSend");
+const queue = require("../services/redisEventQueue");
 
 function envFirst(...names) {
     for (const name of names) {
@@ -228,50 +227,26 @@ router.post("/", async (req, res) => {
     });
 
     try {
-        // Procesamiento secuencial para conservar el orden de los mensajes
-        // dentro de un mismo evento de webhook.
+        // La superficie solo recibe y deposita el evento en la tubería.
+        // El worker independiente procesa el evento y envía la respuesta.
+        let queued = 0;
         for (const event of events) {
-            const normalized = parseAndNormalizeEvent(event);
-            if (!normalized) continue;
-
-            const { senderId, type, pregunta } = normalized;
-
-            if (type === "attachment") {
-                await messengerSend.sendMessage(
-                    senderId,
-                    "Recibí el archivo o la imagen. Contame qué necesitás consultar sobre ese material y te ayudo."
-                );
-                continue;
-            }
-
-            // El saludo inicial/Get Started de la Página sigue a cargo de la
-            // configuración de bienvenida de Meta; no enviamos otro saludo
-            // desde el webhook para evitar duplicarlo.
-            const decision = kernel.process({
-                pregunta,
-                type,
-                senderId
-            });
-
-            if (decision?.estado === "accion_no_reconocida") {
-                await messengerSend.sendMessage(
-                    senderId,
-                    "Ese botón no está disponible en este momento. Podés escribir tu consulta y te ayudo."
-                );
-                continue;
-            }
-
-            const preguntaParaResponder = decision?.pregunta || pregunta;
-            const respuesta = buildResponse(preguntaParaResponder, decision);
-
-            await messengerSend.sendMessage(senderId, respuesta);
+            if (!parseAndNormalizeEvent(event)) continue;
+            await queue.enqueue(event);
+            queued++;
         }
 
+        console.log("[Messenger] Eventos depositados en Guerrilla Axial Pipeline:", {
+            received: events.length,
+            queued
+        });
+
+        // ACK a Meta después de confirmar que todos los eventos quedaron en Redis.
         return res.sendStatus(200);
     } catch (error) {
-        console.error("[Messenger] Error procesando o enviando respuesta:", error.message);
-        // Un 5xx permite que Meta reintente la entrega del evento.
-        return res.sendStatus(500);
+        console.error("[Messenger] No se pudo depositar el evento en Redis:", error.message);
+        // Meta puede reintentar porque la recepción no quedó confirmada.
+        return res.sendStatus(503);
     }
 });
 
