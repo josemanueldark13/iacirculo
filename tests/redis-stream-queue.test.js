@@ -48,7 +48,7 @@ function makeFakeRedis() {
             calls.push(['hget', key, field]);
             return JSON.stringify({
                 attempts: 2,
-                nextRetryAt: 1763400005000,
+                nextRetryAt: Date.now() + 30000,
                 lastError: 'temporary failure'
             });
         }
@@ -103,13 +103,12 @@ async function main() {
         minIdleMs: 60000,
         count: 5
     });
-    assert.equal(claimed.length, 1);
-    assert.equal(claimed[0].fields.event_id, 'evt-2');
+    assert.equal(claimed.length, 0, 'los mensajes recuperados antes de nextRetryAt no deben liberarse al worker');
 
     const retryState = await queue.getRetryState('1763400000000-0');
     assert.equal(retryState.attempts, 2);
-    assert.equal(await queue.isRetryDue('1763400000000-0', 1763400004000), false);
-    assert.equal(await queue.isRetryDue('1763400000000-0', 1763400005000), true);
+    assert.equal(await queue.isRetryDue('1763400000000-0', Date.now()), false);
+    assert.equal(await queue.isRetryDue('1763400000000-0', retryState.nextRetryAt), true);
 
     const acked = await queue.acknowledge('1763400000000-0');
     assert.equal(acked, 1);
