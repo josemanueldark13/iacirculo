@@ -49,26 +49,31 @@ async function enqueue(event) {
 
 function toJob(entry) {
     const fields = entry.fields || {};
+    const rawPayload = String(fields.payload || '');
     let event;
+    let malformed = false;
 
     try {
-        event = JSON.parse(fields.payload);
-    } catch (error) {
-        throw new Error('Payload Redis inválido para el evento ' + entry.id + ': ' + error.message);
+        event = JSON.parse(rawPayload);
+    } catch {
+        malformed = true;
+        event = { __axialMalformed: true, malformedPayload: rawPayload.slice(0, 2000) };
     }
 
     if (!event || typeof event !== 'object' || Array.isArray(event)) {
-        throw new Error('Payload Redis no representa un evento válido: ' + entry.id);
+        malformed = true;
+        event = { __axialMalformed: true, malformedPayload: rawPayload.slice(0, 2000) };
     }
 
-    const eventId = String(fields.event_id || event.eventId || '');
-    if (!eventId) throw new Error('El evento Redis no tiene event_id: ' + entry.id);
+    const eventId = String(fields.event_id || event.eventId || ('invalid:' + entry.id));
+    if (!fields.event_id && !event.eventId) malformed = true;
 
     return {
         id: entry.id,
         streamId: entry.id,
         eventId,
         attempts: Number(fields.attempts || 0),
+        malformed,
         event
     };
 }
