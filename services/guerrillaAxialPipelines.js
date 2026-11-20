@@ -21,28 +21,23 @@ function status() {
 }
 
 /**
- * Despacha eventos dentro de la invocación del webhook.
- * Los reintentos vencidos también se publican al Stream antes de leer mensajes.
+ * Despacha hasta diez eventos por invocación, incluyendo reintentos vencidos.
+ * El endpoint protegido permite vaciar el resto de la cola sin depender del webhook.
  */
 async function dispatchQueued(eventCount) {
-    const worker = require('./messengerWorker');
     const total = Math.max(0, Number(eventCount) || 0);
-    const batches = [];
-    let remaining = total;
-    let attempts = 0;
-
-    while (remaining > 0 && attempts < 10) {
-        const result = await worker.processBatch(Math.min(10, remaining));
-        batches.push(result);
-        if (!result.claimed) break;
-        remaining -= result.claimed;
-        attempts++;
+    if (total === 0) {
+        return { requested: 0, processed: 0, batches: [], remainingUnclaimed: 0 };
     }
+
+    const worker = require('./messengerWorker');
+    const result = await worker.processBatch(10);
 
     return {
         requested: total,
-        batches,
-        remainingUnclaimed: remaining
+        processed: result.processed,
+        batches: [result],
+        queue: result.queue
     };
 }
 
