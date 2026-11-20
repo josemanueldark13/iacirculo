@@ -252,23 +252,30 @@ router.post("/", async (req, res) => {
             return res.sendStatus(200);
         }
 
-        // Con Redis configurado, la superficie solo deposita el evento en la tubería.
+        // Con Redis configurado, el webhook deposita eventos idempotentes en Streams.
+        // Un reenvío de Meta no duplica el evento, pero igualmente puede despertar al Worker.
         let queued = 0;
+        let duplicates = 0;
+        let accepted = 0;
         for (const event of events) {
             if (!parseAndNormalizeEvent(event)) continue;
-            await queue.enqueue(event);
-            queued++;
+            accepted++;
+            const result = await queue.enqueue(event);
+            if (result.inserted) queued++;
+            else duplicates++;
         }
 
-        console.log("[Messenger] Eventos depositados en Guerrilla Axial Pipeline:", {
+        console.log("[Messenger] Eventos depositados en Guerrilla Axial Pipelines:", {
             received: events.length,
-            queued
+            accepted,
+            queued,
+            duplicates
         });
 
-        // El pipeline despierta al worker en esta misma invocación serverless.
-        // Así Redis no queda esperando un cron de 15 minutos en Vercel Hobby.
+        // El despacho inline atiende la entrada y puede publicar reintentos cuyo plazo venció.
+        // El endpoint protegido del Worker permite además activación por un scheduler externo.
         const pipeline = require("../services/guerrillaAxialPipelines");
-        const dispatch = await pipeline.dispatchQueued(queued);
+        const dispatch = await pipeline.dispatchQueued(accepted);
         console.log("[Messenger] Despacho del pipeline completado:", dispatch);
 
         return res.sendStatus(200);

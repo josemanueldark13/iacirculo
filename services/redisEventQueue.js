@@ -1,103 +1,166 @@
 'use strict';
 
-/**
- * Guerrilla Axial Pipeline — transporte de eventos Messenger.
- *
- * Upstash Redis se usa mediante HTTP, compatible con funciones serverless
- * de Vercel. No abrir conexiones TCP persistentes desde una función efímera.
- *
- * Flujo FIFO:
- *   LPUSH pending -> RPOPLPUSH pending/processing -> LREM processing
- *
- * El worker confirma (ACK) únicamente después de completar el envío.
- */
-const { Redis } = require('@upstash/redis');
-const { randomUUID } = require('crypto');
+const crypto = require('node:crypto');
+const { randomUUID } = require('node:crypto');
+const redisConfig = require('../config/redis');
+const { createRedisStreamQueue } = require('./redisStreamQueue');
 
-function isConfigured() {
-    return Boolean(
-        process.env.UPSTASH_REDIS_REST_URL?.trim() &&
-        process.env.UPSTASH_REDIS_REST_TOKEN?.trim()
-    );
+function makeEventId(event) {
+    const messageId = event?.message?.mid || event?.postback?.mid;
+    const identity = messageId ? String(messageId) : JSON.stringify(event);
+    const digest = crypto.createHash('sha256').update(identity).digest('hex');
+    return 'messenger:' + digest;
 }
-function getRedis() {
-    if (!isConfigured()) throw new Error('Faltan UPSTASH_REDIS_REST_URL y UPSTASH_REDIS_REST_TOKEN.');
-    return Redis.fromEnv();
-}
-const PREFIX = process.env.AXIAL_QUEUE_PREFIX || 'axial:messenger';
-const PENDING = `${PREFIX}:pending`;
-const PROCESSING = `${PREFIX}:processing`;
-const DEAD = `${PREFIX}:dead`;
 
-function serializeEvent(event) {
-    if (!event || typeof event !== 'object' || Array.isArray(event)) {
-        throw new TypeError('El evento debe ser un objeto.');
+function eventOccurredAt(event) {
+    const timestamp = Number(event?.timestamp);
+    if (Number.isFinite(timestamp) && timestamp > 0) {
+        const parsed = new Date(timestamp);
+        if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
     }
-
-    return JSON.stringify({
-        id: randomUUID(),
-        createdAt: new Date().toISOString(),
-        attempts: 0,
-        event
-    });
+    return new Date().toISOString();
 }
 
-async function enqueue(event) {
-    const payload = serializeEvent(event);
-    await getRedis().lpush(PENDING, payload);
-    return JSON.parse(payload);
-}
-
-/**
- * Reclama el evento más antiguo y lo mueve atómicamente a processing.
- * Devuelve null cuando la cola está vacía.
- */
-async function claim() {
-    const payload = await getRedis().rpoplpush(PENDING, PROCESSING);
-    if (!payload) return null;
+function toJob(entry) {
+    const fields = entry.fields || {};
+    const rawPayload = String(fields.payload || '');
+    let event;
+    let malformed = false;
 
     try {
-        return { payload, job: JSON.parse(payload) };
-    } catch (error) {
-        await getRedis().lrem(PROCESSING, 1, payload);
-        await getRedis().lpush(DEAD, payload);
-        throw new Error(`Evento inválido movido a dead-letter: ${error.message}`);
-    }
-}
-
-async function acknowledge(payload) {
-    return getRedis().lrem(PROCESSING, 1, payload);
-}
-
-async function retry(payload, job, maxAttempts = 5) {
-    const nextJob = { ...job, attempts: Number(job.attempts || 0) + 1 };
-    const nextPayload = JSON.stringify(nextJob);
-
-    await getRedis().lrem(PROCESSING, 1, payload);
-    if (nextJob.attempts >= maxAttempts) {
-        await getRedis().lpush(DEAD, nextPayload);
-        return { deadLetter: true, attempts: nextJob.attempts };
+        event = JSON.parse(rawPayload);
+    } catch {
+        malformed = true;
+        event = { __axialMalformed: true, malformedPayload: rawPayload.slice(0, 2000) };
     }
 
-    await getRedis().lpush(PENDING, nextPayload);
-    return { deadLetter: false, attempts: nextJob.attempts };
+    if (!event || typeof event !== 'object' || Array.isArray(event)) {
+        malformed = true;
+        event = { __axialMalformed: true, malformedPayload: rawPayload.slice(0, 2000) };
+    }
+
+    const eventId = String(fields.event_id || event.eventId || ('invalid:' + entry.id));
+    if (!fields.event_id && !event.eventId) malformed = true;
+
+    return {
+        id: entry.id,
+        streamId: entry.id,
+        eventId,
+        attempts: Number(fields.attempts || 0),
+        malformed,
+        event
+    };
 }
 
-async function lengths() {
-    const [pending, processing, dead] = await Promise.all([
-        getRedis().llen(PENDING),
-        getRedis().llen(PROCESSING),
-        getRedis().llen(DEAD)
-    ]);
-    return { pending, processing, dead };
+function createMessengerQueueAdapter(options = {}) {
+    const streamQueue = options.streamQueue || createRedisStreamQueue();
+    const consumerId = options.consumerId || ('messenger-worker-' + randomUUID());
+    const minIdleMs = options.minIdleMs ?? Number(process.env.AXIAL_STREAM_MIN_IDLE_MS || 60000);
+    const isConfigured = options.isConfigured || redisConfig.isRedisConfigured;
+    const getRedis = options.getRedis || redisConfig.getRedis;
+
+    async function enqueue(event) {
+        if (!event || typeof event !== 'object' || Array.isArray(event)) {
+            throw new TypeError('El evento Messenger debe ser un objeto.');
+        }
+
+        const eventId = makeEventId(event);
+        const result = await streamQueue.enqueueEvent({
+            eventId,
+            payload: event,
+            occurredAt: eventOccurredAt(event)
+        });
+
+        return {
+            id: result.streamId,
+            streamId: result.streamId,
+            eventId,
+            event: result.event,
+            inserted: result.inserted,
+            duplicate: result.duplicate
+        };
+    }
+
+    async function claim() {
+        const stale = await streamQueue.claimStaleMessages(consumerId, {
+            count: 1,
+            minIdleMs
+        });
+        const entries = stale.length
+            ? stale
+            : await streamQueue.readNewMessages(consumerId, 1);
+
+        if (!entries.length) return null;
+        const entry = entries[0];
+        const job = toJob(entry);
+        return { payload: entry.id, job };
+    }
+
+    async function acknowledge(payload, job) {
+        const eventId = job?.eventId || job?.event?.eventId;
+        return streamQueue.acknowledge(String(payload), String(eventId || ''));
+    }
+
+    async function retry(payload, job, error) {
+        const eventId = job?.eventId || job?.event?.eventId;
+        const outcome = await streamQueue.recordFailure({
+            streamId: String(payload),
+            eventId,
+            payload: job?.event,
+            error
+        });
+
+        return {
+            deadLetter: outcome.deadLettered,
+            attempts: outcome.attempts,
+            nextRetryAt: outcome.nextRetryAt,
+            deadLetterId: outcome.deadLetterId
+        };
+    }
+
+    async function lengths() {
+        await streamQueue.ensureConsumerGroup();
+        const redis = getRedis();
+        const [groups, dead, streamEntries, retryScheduled] = await Promise.all([
+            redis.xinfo(streamQueue.settings.streamKey, { type: 'GROUPS' }),
+            redis.xlen(streamQueue.settings.deadLetterStreamKey),
+            redis.xlen(streamQueue.settings.streamKey),
+            redis.zcard(streamQueue.settings.retryScheduleKey)
+        ]);
+
+        const group = Array.isArray(groups)
+            ? groups.find(item => String(item.name) === streamQueue.settings.consumerGroup)
+            : null;
+
+        return {
+            pending: Number(group?.lag || 0),
+            processing: Number(group?.pending || 0),
+            dead: Number(dead || 0),
+            retryScheduled: Number(retryScheduled || 0),
+            streamEntries: Number(streamEntries || 0)
+        };
+    }
+
+    return {
+        enqueue,
+        isConfigured,
+        claim,
+        acknowledge,
+        retry,
+        lengths,
+        keys: streamQueue.settings,
+        getAxialKeyPrefix: redisConfig.getAxialKeyPrefix,
+        makeEventId,
+        consumerId
+    };
 }
+
+const adapter = createMessengerQueueAdapter();
 
 module.exports = {
-    enqueue,
-    isConfigured,
-    claim,
-    acknowledge,
-    retry,
-    lengths,
-    keys: { PENDING, PROCESSING, DEAD }
+    ...adapter,
+    createMessengerQueueAdapter,
+    makeEventId,
+    eventOccurredAt,
+    toJob
 };

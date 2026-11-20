@@ -27,7 +27,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/api/chat", chatRoutes);
 app.use("/api/truthtable", truthTableRoutes);
 
-// Worker autenticado: Vercel Cron despierta el procesamiento de la cola.
+// Worker autenticado: endpoint para activación inline o desde un scheduler externo.
 app.use("/api/internal/messenger-worker", messengerWorker);
 
 // Módulo Guerrilla Axial Pipelines (estado/diagnóstico).
