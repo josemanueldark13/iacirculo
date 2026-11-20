@@ -27,7 +27,7 @@ function makeFakeRedis() {
             calls.push(['eval', keys, args]);
             if (keys.length === 2) return enqueueResult;
             if (keys.length === 3) return 1;
-            if (keys.length === 4) return [2, '1763400005000', 0];
+            if (keys.length === 5) return [2, '1763400005000', 0];
             throw new Error('Unexpected EVAL call');
         },
         async xreadgroup(...args) {
@@ -130,6 +130,8 @@ async function main() {
     assert.equal(failure.attempts, 2);
     assert.equal(failure.deadLettered, false);
     assert.equal(failure.nextRetryAt, 1763400005000);
+    const failureCall = fake.calls.find(call => call[0] === 'eval' && call[1].length === 5);
+    assert.match(failureCall[1][4], /^axial:development:messenger:dlq-dedupe:v1:/);
 
     const groupCall = fake.calls.find(call => call[0] === 'xgroup');
     assert.equal(groupCall[1], streamKey);
