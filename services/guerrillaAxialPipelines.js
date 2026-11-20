@@ -10,18 +10,19 @@ function status() {
     return {
         module: 'Guerrilla Axial Pipelines',
         kernel: 'Kernel Axial (único)',
-        transport: 'Upstash Redis Lists',
+        transport: 'Upstash Redis Streams',
         queue: queue.keys,
         redisConfigured: queue.isConfigured(),
-        dispatch: 'inline_after_enqueue',
-        worker: 'messengerWorker.processBatch'
+        dispatch: 'inline_after_enqueue_and_protected_worker_endpoint',
+        worker: 'messengerWorker.processBatch',
+        consumerGroup: queue.keys.consumerGroup,
+        environmentPrefix: queue.getAxialKeyPrefix()
     };
 }
 
 /**
- * Despacha los eventos recién encolados al worker dentro de la misma
- * invocación serverless del webhook. Evita depender de un cron frecuente,
- * no disponible en el plan Hobby de Vercel.
+ * Despacha eventos dentro de la invocación del webhook.
+ * Los reintentos vencidos también se publican al Stream antes de leer mensajes.
  */
 async function dispatchQueued(eventCount) {
     const worker = require('./messengerWorker');
