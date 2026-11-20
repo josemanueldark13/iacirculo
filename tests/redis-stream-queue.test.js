@@ -160,6 +160,7 @@ async function main() {
     assert.equal(failureCall[2][6], 'axial:{development}:messenger:retry-payloads:v1');
     assert.match(failureCall[1], /ZADD/);
     assert.match(failureCall[1], /XACK/);
+    assert.match(failureCall[1], /HINCRBY\", KEYS\[3\], ARGV\[3\]/, 'el contador de reintentos se indexa por eventId, no por streamId');
 
     const groupCall = fake.calls.find(call => call[0] === 'xgroup');
     assert.equal(groupCall[1], streamKey);
