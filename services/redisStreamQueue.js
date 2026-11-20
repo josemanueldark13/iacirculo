@@ -61,7 +61,7 @@ const ACK_SCRIPT = [
 ].join('\n');
 
 const FAILURE_SCRIPT = [
-    'local attempts = redis.call("HINCRBY", KEYS[3], ARGV[2], 1)',
+    'local attempts = redis.call("HINCRBY", KEYS[3], ARGV[3], 1)',
     'local maxAttempts = tonumber(ARGV[5])',
     'if attempts >= maxAttempts then',
     '  local existingDeadLetterId = redis.call("GET", KEYS[5])',
