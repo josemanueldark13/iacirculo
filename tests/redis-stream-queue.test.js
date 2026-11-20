@@ -48,7 +48,7 @@ function makeFakeRedis() {
             calls.push(['hget', key, field]);
             return JSON.stringify({
                 attempts: 2,
-                nextRetryAt: Date.now() + 30000,
+                nextRetryAt: 4102444800000,
                 lastError: 'temporary failure'
             });
         }
