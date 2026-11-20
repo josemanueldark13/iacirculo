@@ -71,6 +71,8 @@ async function main() {
     assert.equal(parseRetryMetadata('{"attempts":2}').attempts, 2);
     assert.equal(parseRetryMetadata('not-json'), null);
 
+    const previousAxialEnv = process.env.AXIAL_ENV;
+    process.env.AXIAL_ENV = 'development';
     const namespacedQueue = createRedisStreamQueue({
         getRedis: () => makeFakeRedis(),
         config: { namespace: 'axial:staging' }
@@ -137,6 +139,9 @@ async function main() {
     assert.equal(groupCall[1], streamKey);
     assert.equal(groupCall[2].type, 'CREATE');
     assert.equal(groupCall[2].MKSTREAM, true);
+
+    if (previousAxialEnv === undefined) delete process.env.AXIAL_ENV;
+    else process.env.AXIAL_ENV = previousAxialEnv;
 
     console.log('REDIS STREAM QUEUE: PASS (idempotencia, grupo, lectura, recuperación, reintentos y ACK)');
 }
