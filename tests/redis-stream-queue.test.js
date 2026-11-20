@@ -157,7 +157,7 @@ async function main() {
     const failureCall = fake.calls.find(call => call[0] === 'eval' && call[2].length === 7);
     assert.match(failureCall[2][4], /^axial:development:messenger:dlq-dedupe:v1:/);
     assert.equal(failureCall[2][5], 'axial:development:messenger:retry-schedule:v1');
-    assert.equal(failureCall[2][6], 'axial:messenger:retry-payloads:v1');
+    assert.equal(failureCall[2][6], 'axial:development:messenger:retry-payloads:v1');
     assert.match(failureCall[1], /ZADD/);
     assert.match(failureCall[1], /XACK/);
 
