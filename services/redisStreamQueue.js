@@ -1,7 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
-const { getRedis: defaultGetRedis } = require('../config/redis');
+const { getRedis: defaultGetRedis, getAxialKeyPrefix } = require('../config/redis');
 
 const DEFAULTS = Object.freeze({
     streamKey: 'axial:messenger:inbound:v1',
@@ -138,7 +138,17 @@ function parseRetryMetadata(value) {
 
 function createRedisStreamQueue(options = {}) {
     const getRedis = options.getRedis || defaultGetRedis;
-    const settings = { ...DEFAULTS, ...(options.config || {}) };
+    const namespace = options.config?.namespace || getAxialKeyPrefix();
+    const namespacedDefaults = {
+        streamKey: `${namespace}:messenger:events:inbound:v1`,
+        deadLetterStreamKey: `${namespace}:messenger:events:dlq:v1`,
+        consumerGroup: `${namespace}:messenger:workers:v1`,
+        dedupePrefix: `${namespace}:messenger:dedupe:v1`,
+        retryHashKey: `${namespace}:messenger:retry-counts:v1`,
+        retryMetaHashKey: `${namespace}:messenger:retry-meta:v1`
+    };
+    const settings = { ...DEFAULTS, ...namespacedDefaults, ...(options.config || {}) };
+    delete settings.namespace;
     let groupReady = false;
 
     function redis() {
@@ -245,7 +255,12 @@ function createRedisStreamQueue(options = {}) {
         );
 
         const entries = Array.isArray(response) ? response[1] : [];
-        return parseStreamEntries([[settings.streamKey, entries]]);
+        const claimed = parseStreamEntries([[settings.streamKey, entries]]);
+        const eligible = [];
+        for (const entry of claimed) {
+            if (await isRetryDue(entry.id)) eligible.push(entry);
+        }
+        return eligible;
     }
 
     async function getRetryState(streamId) {
