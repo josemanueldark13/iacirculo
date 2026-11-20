@@ -12,7 +12,7 @@ function getAxialEnvironment() {
 }
 
 function getAxialKeyPrefix() {
-    return `axial:${getAxialEnvironment()}`;
+    return `axial:{${getAxialEnvironment()}}`;
 }
 
 function getRedisConfig() {
