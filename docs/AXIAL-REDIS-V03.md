@@ -8,7 +8,7 @@ The existing Messenger Worker contract is preserved. The webhook verifies Meta's
 
 ## Redis key layout
 
-All keys are scoped by environment:
+All keys are scoped by environment. The braces around the environment are a literal Redis Cluster hash tag, so every key touched by the same multi-key Lua operation is assigned to the same hash slot:
 
 - \`axial:{env}:messenger:events:inbound:v1\` — inbound event Stream.
 - \`axial:{env}:messenger:events:dlq:v1\` — dead-letter Stream.
