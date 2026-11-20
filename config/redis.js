@@ -4,6 +4,17 @@ const { Redis } = require('@upstash/redis');
 
 let client = null;
 
+function getAxialEnvironment() {
+    const raw = process.env.AXIAL_ENV || process.env.VERCEL_ENV || process.env.NODE_ENV || 'development';
+    const env = String(raw).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    if (!env) throw new Error('AXIAL_ENV no puede estar vacío.');
+    return env;
+}
+
+function getAxialKeyPrefix() {
+    return `axial:${getAxialEnvironment()}`;
+}
+
 function getRedisConfig() {
     const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
     const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
@@ -46,5 +57,7 @@ function resetRedisClientForTests() {
 module.exports = {
     getRedis,
     isRedisConfigured,
-    resetRedisClientForTests
+    resetRedisClientForTests,
+    getAxialEnvironment,
+    getAxialKeyPrefix
 };
