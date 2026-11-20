@@ -52,6 +52,7 @@ const PUBLISH_DUE_RETRIES_SCRIPT = [
 
 const ACK_SCRIPT = [
     'local acknowledged = redis.call("XACK", KEYS[1], ARGV[1], ARGV[2])',
+    'if acknowledged > 0 then redis.call("XDEL", KEYS[1], ARGV[2]) end',
     'redis.call("HDEL", KEYS[2], ARGV[3])',
     'redis.call("HDEL", KEYS[3], ARGV[3])',
     'redis.call("ZREM", KEYS[4], ARGV[3])',
@@ -73,6 +74,7 @@ const FAILURE_SCRIPT = [
     '    redis.call("SET", KEYS[5], deadLetterId, "EX", tonumber(ARGV[10]))',
     '  end',
     '  redis.call("XACK", KEYS[1], ARGV[1], ARGV[2])',
+    '  redis.call("XDEL", KEYS[1], ARGV[2])',
     '  redis.call("HDEL", KEYS[3], ARGV[3])',
     '  redis.call("HDEL", KEYS[4], ARGV[3])',
     '  redis.call("ZREM", KEYS[6], ARGV[3])',
@@ -88,6 +90,7 @@ const FAILURE_SCRIPT = [
     'redis.call("HSET", KEYS[7], ARGV[3], ARGV[4])',
     'redis.call("ZADD", KEYS[6], nextRetryAt, ARGV[3])',
     'redis.call("XACK", KEYS[1], ARGV[1], ARGV[2])',
+    'redis.call("XDEL", KEYS[1], ARGV[2])',
     'return {attempts, tostring(nextRetryAt), 0}'
 ].join('\n');
 
