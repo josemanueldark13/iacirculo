@@ -26,7 +26,7 @@ function authorized(req) {
 /**
  * Consume eventos de Guerrilla Axial Pipelines, pasarlos por Kernel Axial,
  * enviar la respuesta y confirmar el trabajo solo después del envío.
- * Se puede invocar desde el endpoint protegido o desde el webhook tras encolar.
+ * El transporte es Redis Streams con Consumer Groups.
  */
 async function processBatch(requestedBatch = MAX_BATCH) {
     const batchSize = Math.max(1, Math.min(MAX_BATCH, Number(requestedBatch) || MAX_BATCH));
@@ -41,7 +41,7 @@ async function processBatch(requestedBatch = MAX_BATCH) {
         try {
             const normalized = parseAndNormalizeEvent(job.event);
             if (!normalized) {
-                await queue.acknowledge(payload);
+                await queue.acknowledge(payload, job);
                 summary.ignored++;
                 continue;
             }
@@ -59,15 +59,16 @@ async function processBatch(requestedBatch = MAX_BATCH) {
             }
 
             await messengerSend.sendMessage(senderId, respuesta);
-            await queue.acknowledge(payload);
+            await queue.acknowledge(payload, job);
             summary.processed++;
         } catch (error) {
-            const outcome = await queue.retry(payload, job);
+            const outcome = await queue.retry(payload, job, error);
             if (outcome.deadLetter) summary.deadLetter++;
             else summary.retried++;
             console.error('[AXIAL WORKER] Falló un evento:', {
                 job_id: job.id,
                 attempts: outcome.attempts,
+                next_retry_at: outcome.nextRetryAt || null,
                 error: error.message
             });
         }
