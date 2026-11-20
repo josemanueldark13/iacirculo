@@ -2,6 +2,7 @@
 
 const crypto = require('node:crypto');
 const { getRedis: defaultGetRedis, getAxialKeyPrefix } = require('../config/redis');
+const { canonicalizeEvent } = require('./eventContract');
 
 const DEFAULTS = Object.freeze({
     streamKey: 'axial:messenger:inbound:v1',
@@ -189,7 +190,8 @@ function createRedisStreamQueue(options = {}) {
             throw new Error('payload debe ser un objeto.');
         }
 
-        const serializedPayload = JSON.stringify(payload);
+        const canonicalEvent = canonicalizeEvent({ eventId, payload, occurredAt });
+        const serializedPayload = JSON.stringify(canonicalEvent);
         if (typeof serializedPayload !== 'string') {
             throw new Error('No se pudo serializar el evento.');
         }
