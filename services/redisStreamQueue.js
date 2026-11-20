@@ -49,7 +49,10 @@ local attempts = redis.call('HINCRBY', KEYS[3], ARGV[2], 1)
 local maxAttempts = tonumber(ARGV[5])
 
 if attempts >= maxAttempts then
-    local deadLetterId = redis.call(
+    local existingDeadLetterId = redis.call('GET', KEYS[5])
+    local deadLetterId = existingDeadLetterId
+    if not deadLetterId then
+        deadLetterId = redis.call(
         'XADD', KEYS[2], '*',
         'original_stream_id', ARGV[2],
         'event_id', ARGV[3],
@@ -58,6 +61,8 @@ if attempts >= maxAttempts then
         'error', ARGV[6],
         'failed_at', ARGV[7]
     )
+        redis.call('SET', KEYS[5], deadLetterId, 'EX', tonumber(ARGV[10]))
+    end
 
     redis.call('XACK', KEYS[1], ARGV[1], ARGV[2])
     redis.call('HDEL', KEYS[3], ARGV[2])
@@ -146,7 +151,8 @@ function createRedisStreamQueue(options = {}) {
         consumerGroup: `${namespace}:messenger:workers:v1`,
         dedupePrefix: `${namespace}:messenger:dedupe:v1`,
         retryHashKey: `${namespace}:messenger:retry-counts:v1`,
-        retryMetaHashKey: `${namespace}:messenger:retry-meta:v1`
+        retryMetaHashKey: `${namespace}:messenger:retry-meta:v1`,
+        deadLetterDedupePrefix: `${namespace}:messenger:dlq-dedupe:v1`
     };
     const settings = { ...DEFAULTS, ...namespacedDefaults, ...(options.config || {}) };
     delete settings.namespace;
@@ -305,7 +311,8 @@ function createRedisStreamQueue(options = {}) {
                 settings.streamKey,
                 settings.deadLetterStreamKey,
                 settings.retryHashKey,
-                settings.retryMetaHashKey
+                settings.retryMetaHashKey,
+                `${settings.deadLetterDedupePrefix}:${crypto.createHash('sha256').update(eventId).digest('hex')}`
             ],
             [
                 settings.consumerGroup,
@@ -316,7 +323,8 @@ function createRedisStreamQueue(options = {}) {
                 message,
                 now,
                 settings.baseDelayMs,
-                settings.maxDelayMs
+                settings.maxDelayMs,
+                settings.dedupeTtlSeconds
             ]
         );
 
