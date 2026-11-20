@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/run30.js && node tests/run-natural.js && node tests/axial-truthtable.test.js && node tests/action-router.test.js && node tests/redis-stream-queue.test.js && node tests/event-contract.test.js",
+    "test": "node tests/run30.js && node tests/run-natural.js && node tests/axial-truthtable.test.js && node tests/action-router.test.js && node tests/redis-stream-queue.test.js && node tests/redis-messenger-adapter.test.js && node tests/event-contract.test.js",
     "test:truthtable": "node tests/axial-truthtable.test.js",
-    "test:redis": "node tests/redis-stream-queue.test.js"
+    "test:redis": "node tests/redis-stream-queue.test.js && node tests/redis-messenger-adapter.test.js"
   },
   "keywords": [],
   "author": "",
