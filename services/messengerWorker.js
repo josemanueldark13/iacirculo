@@ -39,6 +39,9 @@ async function processBatch(requestedBatch = MAX_BATCH) {
 
         const { payload, job } = claimed;
         try {
+            if (job.malformed || job.event?.__axialMalformed) {
+                throw new Error('El evento persistido en Redis no contiene un payload Messenger válido.');
+            }
             const normalized = parseAndNormalizeEvent(job.event);
             if (!normalized) {
                 await queue.acknowledge(payload, job);
