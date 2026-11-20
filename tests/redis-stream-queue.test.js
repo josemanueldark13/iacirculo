@@ -71,6 +71,14 @@ async function main() {
     assert.equal(parseRetryMetadata('{"attempts":2}').attempts, 2);
     assert.equal(parseRetryMetadata('not-json'), null);
 
+    const namespacedQueue = createRedisStreamQueue({
+        getRedis: () => makeFakeRedis(),
+        config: { namespace: 'axial:staging' }
+    });
+    assert.equal(namespacedQueue.settings.streamKey, 'axial:staging:messenger:events:inbound:v1');
+    assert.equal(namespacedQueue.settings.deadLetterStreamKey, 'axial:staging:messenger:events:dlq:v1');
+    assert.equal(namespacedQueue.settings.retryMetaHashKey, 'axial:staging:messenger:retry-meta:v1');
+
     const fake = makeFakeRedis();
     const queue = createRedisStreamQueue({
         getRedis: () => fake,
