@@ -183,7 +183,7 @@ function createRedisStreamQueue(options = {}) {
                 type: 'CREATE',
                 group: settings.consumerGroup,
                 id: '0-0',
-                MKSTREAM: true
+                options: { MKSTREAM: true }
             });
             groupReady = true;
             return result;

@@ -165,7 +165,9 @@ async function main() {
     const groupCall = fake.calls.find(call => call[0] === 'xgroup');
     assert.equal(groupCall[1], streamKey);
     assert.equal(groupCall[2].type, 'CREATE');
-    assert.equal(groupCall[2].MKSTREAM, true);
+    assert.equal(groupCall[2].id, '0-0');
+    assert.deepEqual(groupCall[2].options, { MKSTREAM: true });
+    assert.equal(groupCall[2].MKSTREAM, undefined, 'MKSTREAM debe ir dentro de options en @upstash/redis');
 
     if (previousAxialEnv === undefined) delete process.env.AXIAL_ENV;
     else process.env.AXIAL_ENV = previousAxialEnv;
