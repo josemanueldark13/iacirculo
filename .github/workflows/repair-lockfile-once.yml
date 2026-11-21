@@ -1,0 +1,41 @@
+name: Repair PR15 lockfile once
+
+on:
+  push:
+    branches:
+      - fix/messenger-human-contact-routing
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: contains(github.event.head_commit.message, '[repair-lockfile]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Regenerate and verify dependency lock
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm ci --no-audit --no-fund
+          npm test
+
+      - name: Commit lockfile and remove temporary workflow
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git rm .github/workflows/repair-lockfile-once.yml
+          git commit -m "Sync package lock and verify PR15 test suite"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
