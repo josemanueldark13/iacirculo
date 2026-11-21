@@ -30,7 +30,9 @@ const RULES = [
     ]},
     { intent: "contacto", domain: "institucional", priority: "normal", patterns: [
         /\b(contacto|comunicarme|comunicar|llamar|telefono|whatsapp|correo|email)\b/,
-        /\b(dejar un mensaje|enviar un mensaje|hablar con el circulo)\b/
+        /\b(dejar un mensaje|enviar un mensaje|hablar con el circulo)\b/,
+        /\b(quiero|necesito|solicito)\s+(contactar|comunicarme|ponerme en contacto)\b/,
+        /\b(contactar|comunicarme)\s+(con|al|a la)\s+(el\s+)?(circulo|institucion)\b/
     ]},
     { intent: "consulta_institucional", domain: "institucional", priority: "normal", patterns: [
         /\b(circulo|legisladores|ex legisladores|legislatura|institucion|autoridades|presidente|historia|decreto|sede|direccion|horario|actividad|actividades)\b/,
@@ -76,6 +78,13 @@ function detectImplicitComplaint(text) {
     return signals;
 }
 
+function isExplicitContactRequest(text) {
+    return /\b(quiero|necesito|solicito|deseo)\s+(contactar|comunicarme|ponerme en contacto|hablar)\b/.test(text)
+        || /\b(contactar|comunicarme)\s+(con|al|a la)\s+(el\s+)?(circulo|institucion)\b/.test(text)
+        || /\b(dejar|enviar|mandar)\s+(un\s+)?(mensaje|consulta|pedido)\b/.test(text)
+        || /\b(solicito|necesito|requiero)\s+contacto\s+con\b/.test(text);
+}
+
 function analyze(message, context = {}) {
     const original = String(message ?? "").trim();
     const text = normalize(original);
@@ -118,6 +127,7 @@ function analyze(message, context = {}) {
     const sensitive = selected.intent === "denuncia_sensible";
     const urgent = selected.intent === "urgencia";
     const asksHuman = selected.intent === "solicitud_humano";
+    const explicitContact = isExplicitContactRequest(text);
     const insultOnly = /\b(inutil|idiota|imbecil|estupido|tarado|pelotudo|boludo|forro|hdp)\b/.test(text) && !complaint;
     if (insultOnly && !urgent && !sensitive && !asksHuman) {
         selected = { intent: "insulto", domain: "conversacional", priority: "baja" };
@@ -136,7 +146,7 @@ function analyze(message, context = {}) {
         priority: urgent ? "critica" : (complaint || sensitive || asksHuman) ? "alta" : selected.priority,
         sentiment: negative ? "negativo" : selected.intent === "agradecimiento" ? "positivo" : "neutral",
         signals: [...new Set(signals)],
-        requires_human: urgent || sensitive || complaint || asksHuman,
+        requires_human: urgent || sensitive || complaint || asksHuman || explicitContact,
         is_follow_up: followUp,
         matched_intents: matches.map(item => item.rule.intent),
         complaint: { detected: complaint, informational_question: informational, negated: negatedComplaint, implicit_signals: implicitComplaintSignals }

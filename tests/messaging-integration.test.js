@@ -49,7 +49,51 @@ assert.equal(urgentDecision.prioridad, "critica");
 assert.equal(urgentDecision.decision_mensajeria.action, "ESCALATE");
 assert.equal(urgentDecision.analisis_mensaje.requires_human, true);
 
+const contactMessages = [
+    "Quiero hablar con alguien de la institución",
+    "Quiero comunicarme con el Círculo",
+    "Quiero contactar al Círculo"
+];
+for (const mode of ["AUTO", "SUPERVISION", "MANUAL"]) {
+    for (const message of contactMessages) {
+        const decision = kernel.process(message, { mode });
+        assert.equal(decision.agente, "atencion_humana", message + " / " + mode);
+        assert.equal(decision.requiere_revision_humana, true, message + " / " + mode);
+        assert.equal(decision.decision_mensajeria.action, mode === "MANUAL" ? "HUMAN_REVIEW" : "ESCALATE", message + " / " + mode);
+        assert.equal(decision.decision_mensajeria.auto_reply, false, message + " / " + mode);
+    }
+}
+
 const ambiguousDecision = kernel.process("Necesito hacer una consulta", { mode: "AUTO" });
 assert.equal(ambiguousDecision.decision_mensajeria.action, "CLARIFY");
+
+const phoneInfo = kernel.process("¿Cuál es el teléfono del Círculo?", { mode: "AUTO" });
+assert.equal(phoneInfo.agente, "orientacion");
+assert.equal(phoneInfo.requiere_revision_humana, false);
+
+
+const autoGreeting = kernel.process("Hola, buenas tardes", { mode: "AUTO" });
+assert.equal(autoGreeting.estado, "respuesta_conversacional_disponible");
+assert.equal(autoGreeting.respuesta_conversacional.id, "saludo-inicial");
+assert.equal(autoGreeting.respuesta_conversacional.delivery, "auto");
+assert.ok(autoGreeting.respuesta_conversacional.content);
+
+const supervisedHelp = kernel.process("¿Cómo podés ayudarme?", { mode: "SUPERVISION" });
+assert.equal(supervisedHelp.estado, "respuesta_conversacional_disponible");
+assert.equal(supervisedHelp.respuesta_conversacional.delivery, "borrador_para_revision");
+assert.ok(supervisedHelp.respuesta_conversacional.content);
+
+const manualGreeting = kernel.process("Hola", { mode: "MANUAL" });
+assert.equal(manualGreeting.estado, "respuesta_conversacional_disponible");
+assert.equal(manualGreeting.respuesta_conversacional.delivery, "manual");
+assert.equal(manualGreeting.respuesta_conversacional.content, null);
+
+const contactStillEscalates = kernel.process("Quiero hablar con una persona", { mode: "AUTO" });
+assert.equal(contactStillEscalates.estado, "requiere_atencion_humana");
+assert.equal(contactStillEscalates.respuesta_conversacional, undefined);
+
+const emailDraftHelp = kernel.process("Quiero enviar un correo", { mode: "AUTO" });
+assert.equal(emailDraftHelp.estado, "respuesta_conversacional_disponible");
+assert.match(emailDraftHelp.respuesta_conversacional.content, /confirmación expresa/);
 
 console.log("MESSAGING UNIFIED INTEGRATION: PASS");

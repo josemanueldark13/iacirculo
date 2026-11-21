@@ -5,6 +5,12 @@ const crypto = require("crypto");
 const router = express.Router();
 const kernel = require("../Kernels/kernel");
 const circuloIA = require("../knowledge/agents/circuloIA");
+const ragComposer = require("../knowledge/ragComposer");
+const openWebRetriever = require("../knowledge/openWebRetriever");
+const ragRouter = require("../Kernels/ragRouter");
+const documentRetriever = require("../knowledge/documentRetriever");
+const documentStore = require("../knowledge/documentStore");
+const bibliography = require("../knowledge/bibliografia");
 const reviewInboxStore = require("../Kernels/reviewInboxStore");
 const messengerSender = require("../Kernels/messengerSender");
 const outlookNotifier = require("../Kernels/outlookNotifier");
@@ -52,6 +58,12 @@ router.get("/status", (req, res) => res.json({
     token_operador_configurado: Boolean(envFirst("REVIEW_API_TOKEN")),
     dispatch_enabled: envFirst("DISPATCH_ENABLED") === "true",
     outlook_notificaciones_configuradas: outlookNotifier.isConfigured(),
+    rag_arquitectura: ragRouter.getArchitecture().id,
+    n1_documentos: documentRetriever.count,
+    n1_persistencia_configurada: documentStore.isConfigured(),
+    n2_catalogo: bibliography.getCatalogInfo(),
+    n3_fuentes_seleccionadas: ragRouter.getArchitecture().curatedSourceCount,
+    n4_proveedor_configurado: openWebRetriever.isConfigured(),
     site_url: envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/"
 }));
 
@@ -97,12 +109,13 @@ router.get("/", (req, res) => {
     return res.sendStatus(403);
 });
 
-function buildResponse(question, decision) {
+async function buildResponse(question, decision) {
     if (decision.agente === "atencion_humana") {
         return decision.prioridad === "critica"
             ? "Recibimos tu mensaje prioritario. Será derivado para revisión humana."
             : "Recibimos tu reclamo. Será revisado por el equipo del Círculo.";
     }
+    if (decision.respuesta_conversacional?.content) return decision.respuesta_conversacional.content;
     if (decision.estado === "requiere_reformulacion") {
         const suggestion = Array.isArray(decision.sugerencias) ? decision.sugerencias[0] : null;
         return suggestion ? "Necesito precisar la consulta. Podés reformularla así: " + suggestion
@@ -111,13 +124,29 @@ function buildResponse(question, decision) {
     if (decision.estado === "fuera_de_dominio") {
         return "La consulta está fuera del ámbito institucional de CÍRCULO IA. El equipo puede orientarte sobre el canal adecuado.";
     }
+    if (decision.plan_rag?.modules?.some(level =>
+        ["oficial", "bibliografico", "web_seleccionada", "web_abierta"].includes(level)
+    )) {
+        await documentRetriever.ensureLoaded();
+        const composed = await ragComposer.compose(question, decision, {
+            bibliographyLimit: 2,
+            abstractLength: 160,
+            maxSources: 3,
+            webLimit: 3,
+            openWebLimit: 3,
+            n3TimeoutMs: 3000,
+            n4TimeoutMs: 4500
+        });
+        return composed.answer.slice(0, 1900);
+    }
     if (decision.agente === "orientacion") return "Voy a ayudarte con orientación y datos de contacto del Círculo. ¿Qué dato necesitás?";
     if (decision.agente === "operativo") return "Voy a ayudarte con información operativa del Círculo. ¿Qué necesitás saber?";
     if (decision.agente === "contacto") return "Recibimos tu solicitud de contacto para que pueda ser atendida por el equipo del Círculo.";
     if (decision.agente === "formativo") return "Puedo ayudarte sobre el Círculo, la historia parlamentaria y la participación ciudadana. ¿Sobre qué tema querés aprender?";
+
     if (decision.requiere_fuente_externa) {
         const siteUrl = envFirst("CIRCULO_SITE_URL") || "https://iacirculo.vercel.app/";
-        return "Esta consulta requiere una fuente externa. Podés continuar en el portal: " + siteUrl;
+        return "Esta consulta requiere una fuente externa que todavía no está disponible en los sitios seleccionados. Podés continuar en el portal: " + siteUrl;
     }
     return circuloIA.responder(question);
 }
@@ -153,63 +182,161 @@ router.post("/", async (req, res) => {
 
             const mode = envFirst("MESSENGER_MODE") || "SUPERVISION";
             let conversationContext = [];
-            try { conversationContext = await reviewInboxStore.getConversationContext(senderId); }
-            catch (error) { console.error("[Messenger] Contexto no disponible; se analiza el mensaje aislado:", error.code || "CONTEXT_READ_ERROR"); }
+            try {
+                conversationContext = await reviewInboxStore.getConversationContext(senderId);
+            } catch (error) {
+                console.error("[Messenger] Contexto no disponible; se analiza el mensaje aislado:", error.code || "CONTEXT_READ_ERROR");
+            }
+
             const decision = kernel.process(question, { mode, conversationContext });
             const policy = decision.decision_mensajeria || {};
             if (policy.action === "IGNORE") continue;
 
             const eventKey = event.message?.mid || (senderId + ":" + (event.timestamp || "no-ts") + ":" + question);
-            const shouldCreateCase = policy.create_case !== false || policy.action === "AUTO_REPLY";
+            const isAutoAction = policy.action === "AUTO_REPLY" || policy.action === "CLARIFY";
+            const dispatchAvailable = messengerSender.dispatchEnabled() && messengerSender.isConfigured();
+            const requiresExternalRetrieval = decision.plan_rag?.modules?.some(level =>
+                level === "web_seleccionada" || level === "web_abierta"
+            );
+            // Persistimos antes de cualquier consulta de red: si Vercel interrumpe
+            // la función, el mensaje ya está registrado y Meta puede reintentar sin duplicarlo.
+            const shouldCreateCase = policy.create_case !== false
+                || (isAutoAction && (!dispatchAvailable || requiresExternalRetrieval));
             let item = null;
 
             if (shouldCreateCase) {
-                const proposedResponse = policy.draft_response === false ? "" : buildResponse(question, decision);
                 const created = await reviewInboxStore.createPending({
-                    senderId, messageText: question, proposedResponse,
+                    senderId,
+                    messageText: question,
+                    proposedResponse: policy.draft_response === false
+                        ? ""
+                        : "Consulta recibida. La recuperación de información está pendiente.",
                     semanticAnalysis: decision.analisis_mensaje,
                     kernelDecision: decision,
                     priority: decision.prioridad || "normal"
                 }, eventKey);
                 if (created.duplicate) continue;
                 item = created.item;
-                try { await reviewInboxStore.appendConversationTurn(senderId, { role: "user", content: question }); }
-                catch (error) { console.error("[Messenger] No se pudo actualizar contexto:", error.code || "CONTEXT_STORE_ERROR"); }
-                if (policy.action !== "AUTO_REPLY" && policy.action !== "CLARIFY") await notifySafely(item);
+                try {
+                    await reviewInboxStore.appendConversationTurn(senderId, { role: "user", content: question });
+                } catch (error) {
+                    console.error("[Messenger] No se pudo actualizar contexto:", error.code || "CONTEXT_STORE_ERROR");
+                }
             }
 
-            if (policy.action === "AUTO_REPLY" || policy.action === "CLARIFY") {
-                if (!messengerSender.dispatchEnabled() || !messengerSender.isConfigured()) {
+            let proposedResponse = "";
+            if (policy.draft_response !== false) {
+                try {
+                    proposedResponse = await buildResponse(question, decision);
+                } catch (error) {
+                    proposedResponse = "No se pudo completar la recuperación documental en este intento. El mensaje quedó registrado para revisión humana.";
+                    console.error("[Messenger] Falló la composición RAG:", error.code || error.name || "RAG_COMPOSE_ERROR");
                     if (!item) {
                         const created = await reviewInboxStore.createPending({
-                            senderId, messageText: question, proposedResponse: buildResponse(question, decision),
-                            semanticAnalysis: decision.analisis_mensaje, kernelDecision: decision,
+                            senderId,
+                            messageText: question,
+                            proposedResponse,
+                            semanticAnalysis: decision.analisis_mensaje,
+                            kernelDecision: decision,
                             priority: decision.prioridad || "normal"
                         }, eventKey);
                         if (!created.duplicate) {
                             item = created.item;
-                            try { await reviewInboxStore.appendConversationTurn(senderId, { role: "user", content: question }); }
-                            catch (error) { console.error("[Messenger] No se pudo actualizar contexto:", error.code || "CONTEXT_STORE_ERROR"); }
+                            try {
+                                await reviewInboxStore.appendConversationTurn(senderId, { role: "user", content: question });
+                            } catch (contextError) {
+                                console.error("[Messenger] No se pudo actualizar contexto:", contextError.code || "CONTEXT_STORE_ERROR");
+                            }
+                        }
+                    } else {
+                        try {
+                            item = await reviewInboxStore.transition(item.id, ["pending"], {
+                                proposedResponse,
+                                ragError: error.code || error.name || "RAG_COMPOSE_ERROR"
+                            }) || item;
+                        } catch { /* El caso inicial ya permanece en la bandeja. */ }
+                    }
+                    if (item) await notifySafely(item);
+                    continue;
+                }
+
+                if (item) {
+                    try {
+                        item = await reviewInboxStore.transition(item.id, ["pending"], { proposedResponse }) || item;
+                    } catch (error) {
+                        console.error("[Messenger] No se pudo guardar el borrador RAG:", error.code || "DRAFT_STORE_ERROR");
+                        await notifySafely(item);
+                        continue;
+                    }
+                }
+            }
+
+            if (item && !isAutoAction) {
+                await notifySafely(item);
+            }
+
+            if (isAutoAction) {
+                if (!dispatchAvailable) {
+                    if (!item) {
+                        const created = await reviewInboxStore.createPending({
+                            senderId,
+                            messageText: question,
+                            proposedResponse,
+                            semanticAnalysis: decision.analisis_mensaje,
+                            kernelDecision: decision,
+                            priority: decision.prioridad || "normal"
+                        }, eventKey);
+                        if (!created.duplicate) {
+                            item = created.item;
+                            try {
+                                await reviewInboxStore.appendConversationTurn(senderId, { role: "user", content: question });
+                            } catch (error) {
+                                console.error("[Messenger] No se pudo actualizar contexto:", error.code || "CONTEXT_STORE_ERROR");
+                            }
                         }
                     }
                     if (item) await notifySafely(item);
                     continue;
                 }
+
                 try {
-                    const sent = await messengerSender.sendApprovedMessage(senderId, buildResponse(question, decision));
+                    const sent = await messengerSender.sendApprovedMessage(senderId, proposedResponse);
                     if (item) {
                         await reviewInboxStore.transition(item.id, ["pending"], {
-                            status: "sent", sentAt: new Date().toISOString(), messageId: sent.messageId,
+                            status: "sent",
+                            sentAt: new Date().toISOString(),
+                            messageId: sent.messageId,
                             sentMode: mode
                         });
                     }
-                    try { await reviewInboxStore.appendConversationTurn(senderId, { role: "assistant", content: buildResponse(question, decision) }); }
-                    catch (error) { console.error("[Messenger] No se pudo guardar respuesta en contexto:", error.code || "CONTEXT_STORE_ERROR"); }
+                    try {
+                        await reviewInboxStore.appendConversationTurn(senderId, { role: "assistant", content: proposedResponse });
+                    } catch (error) {
+                        console.error("[Messenger] No se pudo guardar respuesta en contexto:", error.code || "CONTEXT_STORE_ERROR");
+                    }
                 } catch (error) {
-                    if (item) {
+                    if (!item) {
+                        const created = await reviewInboxStore.createPending({
+                            senderId,
+                            messageText: question,
+                            proposedResponse,
+                            semanticAnalysis: decision.analisis_mensaje,
+                            kernelDecision: decision,
+                            priority: decision.prioridad || "normal"
+                        }, eventKey);
+                        if (!created.duplicate) {
+                            item = created.item;
+                            try {
+                                await reviewInboxStore.appendConversationTurn(senderId, { role: "user", content: question });
+                            } catch (contextError) {
+                                console.error("[Messenger] No se pudo actualizar contexto:", contextError.code || "CONTEXT_STORE_ERROR");
+                            }
+                        }
+                    } else {
                         try {
                             await reviewInboxStore.transition(item.id, ["pending"], {
-                                status: "send_failed", sendFailedAt: new Date().toISOString(),
+                                status: "send_failed",
+                                sendFailedAt: new Date().toISOString(),
                                 sendErrorCode: error.code || "SEND_FAILED"
                             });
                         } catch { /* El caso permanece recuperable en la bandeja. */ }

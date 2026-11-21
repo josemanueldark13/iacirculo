@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/run30.js && node tests/run-natural.js && node tests/axial-truthtable.test.js && node tests/messenger-security.test.js && node tests/messenger-preview-simulation.test.js && node tests/messenger-concurrency.test.js && node tests/messaging-integration.test.js && node tests/semantic-frame-integration.test.js",
+    "test": "node tests/run30.js && node tests/run-natural.js && node tests/axial-truthtable.test.js && node tests/messenger-security.test.js && node tests/messenger-preview-simulation.test.js && node tests/messenger-concurrency.test.js && node tests/messaging-integration.test.js && node tests/semantic-frame-integration.test.js && node tests/rag-four-nuclei.test.js && node tests/rag-adapters.test.js",
     "test:truthtable": "node tests/axial-truthtable.test.js",
-    "test:messaging": "node tests/messaging-integration.test.js && node tests/semantic-frame-integration.test.js"
+    "test:messaging": "node tests/messaging-integration.test.js && node tests/semantic-frame-integration.test.js",
+    "test:rag": "node tests/rag-four-nuclei.test.js && node tests/rag-adapters.test.js"
   },
   "keywords": [],
   "author": "",
@@ -14,7 +15,8 @@
   "type": "commonjs",
   "dependencies": {
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "@vercel/blob": "^2.9.0"
   },
   "devDependencies": {}
 }
