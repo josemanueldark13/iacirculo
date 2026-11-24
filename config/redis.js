@@ -15,14 +15,22 @@ function getAxialKeyPrefix() {
     return `axial:{${getAxialEnvironment()}}`;
 }
 
+/**
+ * Resolve Upstash REST credentials from either the canonical AXIAL names or
+ * the names injected automatically by the Vercel Marketplace integration.
+ * Explicit UPSTASH_* values take precedence so existing deployments remain
+ * backwards compatible.
+ */
 function getRedisConfig() {
-    const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
-    const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+    const url = process.env.UPSTASH_REDIS_REST_URL?.trim() ||
+        process.env.KV_REST_API_URL?.trim();
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ||
+        process.env.KV_REST_API_TOKEN?.trim();
 
     if (!url || !token) {
         const missing = [
-            !url && 'UPSTASH_REDIS_REST_URL',
-            !token && 'UPSTASH_REDIS_REST_TOKEN'
+            !url && 'UPSTASH_REDIS_REST_URL (o KV_REST_API_URL)',
+            !token && 'UPSTASH_REDIS_REST_TOKEN (o KV_REST_API_TOKEN)'
         ].filter(Boolean);
 
         throw new Error(`Faltan credenciales Redis: ${missing.join(', ')}.`);
@@ -32,10 +40,12 @@ function getRedisConfig() {
 }
 
 function isRedisConfigured() {
-    return Boolean(
-        process.env.UPSTASH_REDIS_REST_URL?.trim() &&
-        process.env.UPSTASH_REDIS_REST_TOKEN?.trim()
-    );
+    try {
+        getRedisConfig();
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 function getRedis() {
@@ -56,6 +66,7 @@ function resetRedisClientForTests() {
 
 module.exports = {
     getRedis,
+    getRedisConfig,
     isRedisConfigured,
     resetRedisClientForTests,
     getAxialEnvironment,
