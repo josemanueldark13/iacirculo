@@ -165,21 +165,7 @@ async function main() {
     const groupCall = fake.calls.find(call => call[0] === 'xgroup');
     assert.equal(groupCall[1], streamKey);
     assert.equal(groupCall[2].type, 'CREATE');
-    assert.equal(groupCall[2].id, '
-    assert.deepEqual(groupCall[2].options, { MKSTREAM: true });
-    assert.equal(groupCall[2].MKSTREAM, undefined, 'MKSTREAM debe ir dentro de options en @upstash/redis');
-
-    if (previousAxialEnv === undefined) delete process.env.AXIAL_ENV;
-    else process.env.AXIAL_ENV = previousAxialEnv;
-
-    console.log('REDIS STREAM QUEUE: PASS (idempotencia, Consumer Groups, recuperación, backoff diferido, DLQ y ACK)');
-}
-
-main().catch(error => {
-    console.error(error);
-    process.exitCode = 1;
-});
-);
+    assert.equal(groupCall[2].id, '$');
     assert.deepEqual(groupCall[2].options, { MKSTREAM: true });
     assert.equal(groupCall[2].MKSTREAM, undefined, 'MKSTREAM debe ir dentro de options en @upstash/redis');
 
