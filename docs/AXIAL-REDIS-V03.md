@@ -4,7 +4,7 @@
 
 This document describes the v0.3 transport implementation on the review branch. It does not mean the branch has been merged or deployed.
 
-The existing Messenger Worker contract is preserved. The webhook verifies Meta's HMAC signature, enqueues a canonical event, and wakes the Worker inline. The Worker reads from a Redis Stream Consumer Group, passes valid Messenger events through Kernel Axial, sends the response, and acknowledges the stream entry only after the send succeeds.
+The existing Messenger Worker contract is preserved. The webhook verifies Meta's HMAC signature and durably enqueues a canonical event before returning HTTP 200. On Vercel it schedules the Worker dispatch with `waitUntil()` from `@vercel/functions`, so Kernel Axial and Graph API do not delay Meta's webhook acknowledgment. The Worker reads from a Redis Stream Consumer Group, passes valid Messenger events through Kernel Axial, sends the response, and acknowledges the stream entry only after the send succeeds. `waitUntil()` is still subject to the Function's maximum duration; it is not a durable scheduler.
 
 ## Redis key layout
 
@@ -37,13 +37,13 @@ The default delay starts at 5 seconds and doubles per failed attempt, capped at 
 
 ## Worker activation
 
-The webhook calls the Worker inline after enqueueing. A protected endpoint is also available at:
+The webhook schedules a bounded post-response Worker dispatch after enqueueing. A protected endpoint is also available at:
 
 \`GET /api/internal/messenger-worker\`
 
 It accepts \`Authorization: Bearer <secret>\`, where the secret is \`CRON_SECRET\` or \`AXIAL_WORKER_SECRET\`. Configure a strong secret in the deployment environment; never commit it to this repository.
 
-The protected endpoint is intended for an external scheduler or a future always-on worker. This trigger is necessary because Redis stores retry due times but does not execute JavaScript when a due time arrives. If no new Messenger event arrives, a due retry remains scheduled until the Worker endpoint is called.
+The protected endpoint is intended for an external scheduler or a future always-on worker. This trigger is necessary because Redis stores retry due times but does not execute JavaScript when a due time arrives. `waitUntil()` only covers the current webhook invocation; it does not wake a Function when a retry's due time arrives later. If no new Messenger event arrives, a due retry remains scheduled until the Worker endpoint is called.
 
 Do not configure a frequent Vercel Cron expression on Hobby: Vercel currently limits Hobby Cron Jobs to once per day. Pro permits once per minute, which is still coarser than the five-second initial retry delay. Use a scheduler capable of calling the protected endpoint at the required cadence, or deploy a continuously running worker. See the [Vercel Cron usage limits](https://vercel.com/docs/schedules/cron-jobs/usage-and-pricing).
 
