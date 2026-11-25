@@ -8,6 +8,7 @@ const DEFAULTS = Object.freeze({
     streamKey: 'axial:messenger:inbound:v1',
     deadLetterStreamKey: 'axial:messenger:dlq:v1',
     consumerGroup: 'axial-workers-v1',
+    consumerGroupStartId: '$',
     dedupePrefix: 'axial:messenger:dedupe:v1',
     dedupeTtlSeconds: 60 * 60 * 24 * 14,
     retryHashKey: 'axial:messenger:retry-counts:v1',
@@ -182,7 +183,7 @@ function createRedisStreamQueue(options = {}) {
             const result = await redis().xgroup(settings.streamKey, {
                 type: 'CREATE',
                 group: settings.consumerGroup,
-                id: '0-0',
+                id: settings.consumerGroupStartId,
                 options: { MKSTREAM: true }
             });
             groupReady = true;
