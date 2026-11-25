@@ -27,11 +27,11 @@ Environment selection order is \`AXIAL_ENV\`, \`VERCEL_ENV\`, then \`NODE_ENV\`.
 1. The webhook derives a deterministic event identifier from the Meta message ID when present; otherwise it hashes the serialized event.
 2. An atomic Lua script checks the idempotency key and appends the event only once.
 3. The Worker reads fresh events with \`XREADGROUP\`.
-4. Pending entries abandoned by a crashed invocation can be reclaimed with \`XAUTOCLAIM\` after \`AXIAL_STREAM_MIN_IDLE_MS\` (default: 60 seconds).
-5. Successful Messenger sends are acknowledged. Acknowledged inbound entries are deleted from the Stream so the active Stream does not grow indefinitely.
-6. On a processing or send failure, one Lua script increments the attempt count, stores the due time and payload, schedules the retry in a sorted set, acknowledges the failed delivery, and removes the old Stream entry.
-7. Before reading new events, the queue atomically republishes due retries to the inbound Stream.
-8. After five failed attempts by default, the event is copied to the DLQ with an idempotency marker and removed from the inbound Stream.
+5. Pending entries abandoned by a crashed invocation can be reclaimed with \`XAUTOCLAIM\` after \`AXIAL_STREAM_MIN_IDLE_MS\` (default: 60 seconds).
+6. Successful Messenger sends are acknowledged. Acknowledged inbound entries are deleted from the Stream so the active Stream does not grow indefinitely.
+7. On a processing or send failure, one Lua script increments the attempt count, stores the due time and payload, schedules the retry in a sorted set, acknowledges the failed delivery, and removes the old Stream entry.
+8. Before reading new events, the queue atomically republishes due retries to the inbound Stream.
+9. After five failed attempts by default, the event is copied to the DLQ with an idempotency marker and removed from the inbound Stream.
 
 The default delay starts at 5 seconds and doubles per failed attempt, capped at 5 minutes. With the default maximum of five attempts, the scheduled delays are 5, 10, 20, and 40 seconds; the fifth failure enters the DLQ.
 
