@@ -1,11 +1,5 @@
 'use strict';
 
-// Temporary deployment-time integration probe. Runs only in Vercel Preview builds.
-if (process.env.VERCEL !== '1') {
-    console.log('[AXIAL REDIS SMOKE] SKIP: ejecución fuera de Vercel.');
-    process.exit(0);
-}
-
 const crypto = require('node:crypto');
 const { getRedis, getAxialKeyPrefix } = require('../config/redis');
 const { createRedisStreamQueue } = require('../services/redisStreamQueue');
@@ -14,7 +8,11 @@ function assert(condition, message) {
     if (!condition) throw new Error(message);
 }
 
-async function main() {
+/**
+ * Executes a real Upstash smoke test using a unique, isolated key namespace.
+ * It never reads, claims, or writes to the production Messenger queue.
+ */
+async function runRedisSmokeTest() {
     const redis = getRedis();
     const nonce = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
     const namespace = `${getAxialKeyPrefix()}:smoke:${nonce}`;
@@ -44,17 +42,18 @@ async function main() {
         queue.settings.retryPayloadHashKey,
         ...dedupeKeys
     ];
+    const checks = [];
 
     try {
         const pong = await redis.ping();
         assert(String(pong).toUpperCase() === 'PONG', 'PING no devolvió PONG.');
-        console.log('[AXIAL REDIS SMOKE] PING: PASS');
+        checks.push('PING');
 
         const value = `axial-preview-${nonce}`;
         await redis.set(kvKey, value, { ex: 120 });
         const readValue = await redis.get(kvKey);
         assert(readValue === value, 'SET/GET devolvió un valor distinto.');
-        console.log('[AXIAL REDIS SMOKE] SET/GET: PASS');
+        checks.push('SET/GET');
 
         await queue.ensureConsumerGroup();
         const first = await queue.enqueueEvent({
@@ -74,12 +73,13 @@ async function main() {
 
         const ack = await queue.acknowledge(reclaimed[0].id, eventIds[0]);
         assert(Number(ack) === 1, 'XACK no confirmó el evento.');
+
         const duplicate = await queue.enqueueEvent({
             eventId: eventIds[0],
             payload: { senderId: 'smoke-test', text: 'duplicate should be suppressed', diagnostic: true }
         });
         assert(duplicate.duplicate && duplicate.streamId === first.streamId, 'La deduplicación no reconoció el evento repetido.');
-        console.log('[AXIAL REDIS SMOKE] STREAM / CONSUMER GROUP / XAUTOCLAIM / XACK / DEDUPE: PASS');
+        checks.push('STREAM / CONSUMER GROUP / XAUTOCLAIM / XACK / DEDUPE');
 
         const second = await queue.enqueueEvent({
             eventId: eventIds[1],
@@ -111,21 +111,17 @@ async function main() {
 
         const retryAck = await queue.acknowledge(retried[0].id, eventIds[1]);
         assert(Number(retryAck) === 1, 'No se confirmó el evento reintentado.');
-        console.log('[AXIAL REDIS SMOKE] RETRY SCHEDULE / REPUBLISH / ACK: PASS');
+        checks.push('RETRY SCHEDULE / REPUBLISH / ACK');
 
-        console.log('[AXIAL REDIS SMOKE] RESULT: PASS — conexión, KV, Streams, recuperación, ACK, deduplicación y reintentos.');
+        return {
+            ok: true,
+            environment: getAxialKeyPrefix(),
+            checks,
+            isolatedNamespace: namespace
+        };
     } finally {
-        try {
-            await redis.del(...cleanupKeys);
-            console.log('[AXIAL REDIS SMOKE] CLEANUP: PASS');
-        } catch (cleanupError) {
-            console.error('[AXIAL REDIS SMOKE] CLEANUP: FAIL —', cleanupError.message);
-            throw cleanupError;
-        }
+        await redis.del(...cleanupKeys);
     }
 }
 
-main().catch(error => {
-    console.error('[AXIAL REDIS SMOKE] RESULT: FAIL —', error.message);
-    process.exitCode = 1;
-});
+module.exports = { runRedisSmokeTest };
