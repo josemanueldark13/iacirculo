@@ -1,4 +1,5 @@
 const express = require("express");
+const { waitUntil } = require("@vercel/functions");
 const crypto = require("crypto");
 const router = express.Router();
 
@@ -272,11 +273,23 @@ router.post("/", async (req, res) => {
             duplicates
         });
 
-        // El despacho inline atiende la entrada y puede publicar reintentos cuyo plazo venció.
-        // El endpoint protegido del Worker permite además activación por un scheduler externo.
+        // El evento ya quedó persistido: confirmamos a Meta sin esperar al Kernel ni a Graph API.
+        // waitUntil mantiene el despacho asociado a la vida de esta Function después del HTTP 200.
+        // Los reintentos vencidos siguen necesitando un scheduler/worker que vuelva a invocar el endpoint.
         const pipeline = require("../services/guerrillaAxialPipelines");
-        const dispatch = await pipeline.dispatchQueued(accepted);
-        console.log("[Messenger] Despacho del pipeline completado:", dispatch);
+        const dispatchPromise = pipeline.dispatchQueued(accepted)
+            .then(dispatch => {
+                console.log("[Messenger] Despacho del pipeline completado:", dispatch);
+            })
+            .catch(dispatchError => {
+                console.error("[Messenger] Falló el despacho posterior al ACK; el evento permanece en Redis:", dispatchError.message);
+            });
+
+        if (process.env.VERCEL === "1") {
+            waitUntil(dispatchPromise);
+        } else {
+            await dispatchPromise;
+        }
 
         return res.sendStatus(200);
     } catch (error) {
