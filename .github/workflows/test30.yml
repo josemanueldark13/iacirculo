@@ -23,5 +23,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 10
         run: npm ci --no-audit --no-fund --prefer-offline
-      - name: Run regression 30
+      - name: Audit dependencies
+        run: npm audit --audit-level=low
+      - name: Run full test suite
         run: npm test
