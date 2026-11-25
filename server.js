@@ -1,13 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const crypto = require("node:crypto");
 const chatRoutes = require("./routes/chat");
 const truthTableRoutes = require("./routes/truthtable");
 const messengerRoutes = require("./routes/messenger");
 const messengerWorker = require("./services/messengerWorker");
 const pipelinesRoutes = require("./routes/guerrillaAxialPipelines");
-const { runRedisSmokeTest } = require("./scripts/redis-smoke-test");
 const kernel = require("./Kernels/kernel");
 const circuloIA = require("./knowledge/agents/circuloIA");
 
@@ -34,34 +32,6 @@ app.use("/api/internal/messenger-worker", messengerWorker);
 
 // Módulo Guerrilla Axial Pipelines (estado/diagnóstico).
 app.use("/api/internal/axial-pipelines", pipelinesRoutes);
-
-// Ruta temporal de verificación Redis, habilitada únicamente en la rama Preview
-// que recibe AXIAL_REDIS_SMOKE_SECRET. Usa un namespace efímero y no toca Messenger.
-app.get("/api/internal/redis-smoke-check", async (req, res) => {
-    const expected = process.env.AXIAL_REDIS_SMOKE_SECRET?.trim();
-    if (!expected) return res.sendStatus(404);
-
-    const authorization = req.get("authorization") || "";
-    const supplied = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
-    const expectedBuffer = Buffer.from(expected);
-    const suppliedBuffer = Buffer.from(supplied);
-    const authorized = suppliedBuffer.length === expectedBuffer.length &&
-        crypto.timingSafeEqual(suppliedBuffer, expectedBuffer);
-
-    if (!authorized) return res.sendStatus(401);
-
-    try {
-        const result = await runRedisSmokeTest();
-        return res.status(200).json(result);
-    } catch (error) {
-        console.error("[AXIAL REDIS SMOKE] Falló la prueba aislada:", error.message);
-        return res.status(503).json({
-            ok: false,
-            error: "redis_smoke_failed",
-            message: error.message
-        });
-    }
-});
 
 // Webhook unificado de Facebook Messenger.
 app.use("/webhook/messenger", messengerRoutes);
