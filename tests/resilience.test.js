@@ -197,6 +197,10 @@ test('DLQ-01/03/04/05: manual replay is idempotent, recoverable and audited', {
         });
         assert.equal(failed.deadLettered, true);
         assert.equal(await redis.xlen(ctx.queue.settings.deadLetterStreamKey), 1);
+        const listed = await ctx.queue.listDeadLetters(10);
+        assert.equal(listed.length, 1);
+        assert.equal(listed[0].deadLetterId, failed.deadLetterId);
+        assert.ok(!Object.hasOwn(listed[0], 'payload'), 'DLQ listing must not expose the event payload');
 
         const replay = await ctx.queue.replayDeadLetter(failed.deadLetterId, { workerId: 'operator-preview' });
         assert.equal(replay.status, 'REPLAY_QUEUED');
@@ -250,6 +254,9 @@ test('DLQ-02: batch replay handles 100 entries and duplicate batch requests safe
             deadLetterIds.push(id);
         }
 
+        const listed = await ctx.queue.listDeadLetters(100);
+        assert.equal(listed.length, 100);
+        assert.ok(listed.every(item => !Object.hasOwn(item, 'payload')));
         const first = await ctx.queue.replayDeadLetters(deadLetterIds, { workerId: 'bulk-operator-preview' });
         assert.equal(first.requested, 100);
         assert.equal(first.queued, 100);
