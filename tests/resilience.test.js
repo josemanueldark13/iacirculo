@@ -87,7 +87,7 @@ test('ID-003: webhook redelivery after ACK does not enqueue a second event', {
         await ctx.queue.enqueueEvent({ eventId, payload: event });
         const [entry] = await ctx.queue.readNewMessages('worker-ack-test', 1);
         assert.ok(entry);
-        assert.equal(await ctx.queue.acknowledge(entry.id, eventId), 1);
+        assert.equal(await ctx.queue.acknowledge(entry.id, eventId, { workerId: 'worker-ack-test' }), 1);
         assert.equal(await redis.xlen(ctx.queue.settings.ledgerStreamKey), 4);
         assert.equal(await ctx.queue.acknowledge(entry.id, eventId), 0);
         assert.equal(await redis.xlen(ctx.queue.settings.ledgerStreamKey), 4, 'repeated ACK must not append another COMPLETED');
@@ -120,13 +120,19 @@ test('FR-001: event enqueued before Consumer Group creation is still consumed', 
 test('FR-006: a pending entry is recoverable through XAUTOCLAIM', {
     skip: !hasRedis && 'requires non-production Upstash credentials'
 }, async () => {
-    const ctx = createContext();
+    const ctx = createContext({ processingLockMs: 10 });
     const eventId = 'evt-recovery-' + Date.now();
     try {
         await ctx.queue.enqueueEvent({ eventId, payload: ctx.event(eventId) });
         const [firstDelivery] = await ctx.queue.readNewMessages('worker-a', 1);
         assert.ok(firstDelivery);
 
+        const [blocked] = await ctx.queue.claimStaleMessages('worker-b', {
+            minIdleMs: 0,
+            count: 1
+        });
+        assert.equal(blocked, undefined, 'un segundo Worker no ejecuta mientras el lease sigue activo');
+        await new Promise(resolve => setTimeout(resolve, 20));
         const [recovered] = await ctx.queue.claimStaleMessages('worker-b', {
             minIdleMs: 0,
             count: 1
@@ -152,7 +158,8 @@ test('FR-007/008: retry is republished and max attempts move the event to DLQ', 
             streamId: delivery.id,
             eventId,
             payload: JSON.parse(delivery.fields.payload),
-            error: Object.assign(new Error('synthetic timeout'), { code: 'ETIMEDOUT' })
+            error: Object.assign(new Error('synthetic timeout'), { code: 'ETIMEDOUT' }),
+            workerId: 'worker-retry'
         });
         assert.equal(firstFailure.deadLettered, false);
 
@@ -168,7 +175,8 @@ test('FR-007/008: retry is republished and max attempts move the event to DLQ', 
             streamId: delivery.id,
             eventId,
             payload: JSON.parse(delivery.fields.payload),
-            error: Object.assign(new Error('synthetic timeout'), { code: 'ETIMEDOUT' })
+            error: Object.assign(new Error('synthetic timeout'), { code: 'ETIMEDOUT' }),
+            workerId: 'worker-retry'
         });
         assert.equal(finalFailure.deadLettered, true);
         assert.equal(await redis.xlen(ctx.queue.settings.deadLetterStreamKey), 1);
@@ -181,7 +189,7 @@ test('FR-007/008: retry is republished and max attempts move the event to DLQ', 
 test('DLQ-01/03/04/05: manual replay is idempotent, recoverable and audited', {
     skip: !hasRedis && 'requires non-production Upstash credentials'
 }, async () => {
-    const ctx = createContext({ maxAttempts: 1, baseDelayMs: 1, maxDelayMs: 1 });
+    const ctx = createContext({ maxAttempts: 1, baseDelayMs: 1, maxDelayMs: 1, processingLockMs: 10 });
     const eventId = 'evt-dlq-replay-' + Date.now();
     try {
         const event = ctx.event(eventId);
@@ -193,7 +201,8 @@ test('DLQ-01/03/04/05: manual replay is idempotent, recoverable and audited', {
             streamId: initial.id,
             eventId,
             payload: JSON.parse(initial.fields.payload),
-            error: Object.assign(new Error('synthetic terminal failure'), { code: 'E_INTERNAL' })
+            error: Object.assign(new Error('synthetic terminal failure'), { code: 'E_INTERNAL' }),
+            workerId: 'worker-dlq'
         });
         assert.equal(failed.deadLettered, true);
         assert.equal(await redis.xlen(ctx.queue.settings.deadLetterStreamKey), 1);
@@ -214,6 +223,7 @@ test('DLQ-01/03/04/05: manual replay is idempotent, recoverable and audited', {
         const replayPayload = JSON.parse(workerA.fields.payload);
         assert.equal(replayPayload.replayOf, failed.deadLetterId);
 
+        await new Promise(resolve => setTimeout(resolve, 20));
         const [workerB] = await ctx.queue.claimStaleMessages('worker-b', { minIdleMs: 0, count: 1 });
         assert.ok(workerB);
         assert.equal(workerB.id, workerA.id);
