@@ -112,7 +112,8 @@ function createMessengerQueueAdapter(options = {}) {
             attempt: (job?.attempts || 0) + 1,
             eventType: job?.event?.eventType || 'message.received',
             causationId: job?.event?.causationId || '',
-            processingMs: details.processingMs
+            processingMs: details.processingMs,
+            replayOf: job?.event?.replayOf || ''
         });
     }
 
@@ -134,6 +135,18 @@ function createMessengerQueueAdapter(options = {}) {
             nextRetryAt: outcome.nextRetryAt,
             deadLetterId: outcome.deadLetterId
         };
+    }
+
+    async function replayDeadLetter(deadLetterId) {
+        return streamQueue.replayDeadLetter(deadLetterId, { workerId: consumerId });
+    }
+
+    async function replayDeadLetters(deadLetterIds) {
+        return streamQueue.replayDeadLetters(deadLetterIds, { workerId: consumerId });
+    }
+
+    async function getDeadLetterReplayState(deadLetterId) {
+        return streamQueue.getDeadLetterReplayState(deadLetterId);
     }
 
     async function lengths() {
@@ -165,6 +178,9 @@ function createMessengerQueueAdapter(options = {}) {
         claim,
         acknowledge,
         retry,
+        replayDeadLetter,
+        replayDeadLetters,
+        getDeadLetterReplayState,
         lengths,
         keys: streamQueue.settings,
         getAxialKeyPrefix: redisConfig.getAxialKeyPrefix,
