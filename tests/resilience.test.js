@@ -38,7 +38,8 @@ function createContext(options = {}) {
                 const hash = crypto.createHash('sha256').update(eventId).digest('hex');
                 return [
                     queue.settings.dedupePrefix + ':' + hash,
-                    queue.settings.deadLetterDedupePrefix + ':' + hash
+                    queue.settings.deadLetterDedupePrefix + ':' + hash,
+                    queue.settings.failureDedupePrefix + ':' + hash
                 ];
             }).flat();
             await redis.del(
@@ -48,6 +49,8 @@ function createContext(options = {}) {
                 queue.settings.retryMetaHashKey,
                 queue.settings.retryScheduleKey,
                 queue.settings.retryPayloadHashKey,
+                queue.settings.ledgerStreamKey,
+                queue.settings.completedHashKey,
                 ...markers
             );
         }
@@ -67,6 +70,7 @@ test('ID-001/002/010: 100 concurrent duplicates create exactly one stream entry'
         assert.equal(results.filter(item => item.inserted).length, 1);
         assert.equal(results.filter(item => item.duplicate).length, 99);
         assert.equal(await redis.xlen(ctx.queue.settings.streamKey), 1);
+        assert.equal(await redis.xlen(ctx.queue.settings.ledgerStreamKey), 101);
     } finally {
         await ctx.cleanup();
     }
@@ -83,11 +87,15 @@ test('ID-003: webhook redelivery after ACK does not enqueue a second event', {
         const [entry] = await ctx.queue.readNewMessages('worker-ack-test', 1);
         assert.ok(entry);
         assert.equal(await ctx.queue.acknowledge(entry.id, eventId), 1);
+        assert.equal(await redis.xlen(ctx.queue.settings.ledgerStreamKey), 4);
+        assert.equal(await ctx.queue.acknowledge(entry.id, eventId), 0);
+        assert.equal(await redis.xlen(ctx.queue.settings.ledgerStreamKey), 4, 'repeated ACK must not append another COMPLETED');
 
         const redelivery = await ctx.queue.enqueueEvent({ eventId, payload: event });
         assert.equal(redelivery.inserted, false);
         assert.equal(redelivery.duplicate, true);
         assert.equal(await redis.xlen(ctx.queue.settings.streamKey), 0);
+        assert.equal(await redis.xlen(ctx.queue.settings.ledgerStreamKey), 5, 'redelivery must append DUPLICATE_SKIPPED');
     } finally {
         await ctx.cleanup();
     }
