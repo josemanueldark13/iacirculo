@@ -105,3 +105,6 @@ Manual replay is available through the authenticated Worker routes:
 Replay appends a new inbound Stream entry with the same eventId and a `replayOf` reference. It records `REPLAY_REQUESTED` and `QUEUED` in the Ledger, preserves the original DLQ entry, rejects a second replay request for the same DLQ entry, and marks the state `RECOVERED` only when the replayed event successfully ACKs. If the replay again reaches the DLQ, its replay state is marked `FAILED_AGAIN` so an operator may request another replay after correcting the cause. The DLQ entry remains intact for audit.
 
 The replay endpoint queues work; it does not send immediately. The normal Worker/scheduler must consume it. Test gates cover manual replay, batch replay of 100 entries, duplicate replay requests, recovery of an interrupted replay via XAUTOCLAIM, and the final Ledger transitions. Provider-side send ambiguity remains at-least-once.
+
+
+The DLQ is also queryable by an authenticated operator at `GET /api/internal/messenger-worker/dlq?limit=50`. The response omits the original payload and includes the DLQ stream ID needed for manual replay. Replay endpoints queue the event; they do not trigger an immediate send.
