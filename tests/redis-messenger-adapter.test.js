@@ -50,7 +50,13 @@ async function main() {
                 id: '1763400000000-0',
                 fields: {
                     event_id: 'messenger:test-event',
-                    payload: JSON.stringify(event),
+                    payload: JSON.stringify({
+                        ...event,
+                        eventId: 'messenger:test-event',
+                        correlationId: 'corr_' + 'a'.repeat(32),
+                        eventType: 'message.received'
+                    }),
+                    correlation_id: 'corr_' + 'a'.repeat(32),
                     attempts: '1'
                 }
             }];
