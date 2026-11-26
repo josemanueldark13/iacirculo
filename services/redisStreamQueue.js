@@ -395,6 +395,7 @@ function createRedisStreamQueue(options = {}) {
             { count }
         );
 
+        const entries = Array.isArray(response) ? response[1] : [];
         const rawEntries = parseStreamEntries([[settings.streamKey, entries]]);
         const accepted = [];
         for (const entry of rawEntries) {
