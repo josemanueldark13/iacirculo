@@ -100,6 +100,24 @@ router.get('/', async (req, res) => {
 });
 
 
+
+router.get('/dlq', async (req, res) => {
+    if (!authorized(req)) return res.sendStatus(401);
+    const limit = Number(req.query.limit || 50);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+        return res.status(400).json({ ok: false, error: 'limit debe estar entre 1 y 100.' });
+    }
+    try {
+        const entries = await queue.listDeadLetters(limit);
+        return res.status(200).json({ ok: true, count: entries.length, entries });
+    } catch (error) {
+        console.error('[AXIAL DLQ] No se pudo consultar la cola:', {
+            code: error?.code || error?.name || 'INTERNAL_ERROR'
+        });
+        return res.status(503).json({ ok: false, error: 'No se pudo consultar la DLQ.' });
+    }
+});
+
 router.post('/dlq/:deadLetterId/replay', async (req, res) => {
     if (!authorized(req)) return res.sendStatus(401);
     try {
