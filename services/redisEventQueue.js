@@ -145,6 +145,10 @@ function createMessengerQueueAdapter(options = {}) {
         return streamQueue.replayDeadLetters(deadLetterIds, { workerId: consumerId });
     }
 
+    async function listDeadLetters(limit = 50) {
+        return streamQueue.listDeadLetters(limit);
+    }
+
     async function getDeadLetterReplayState(deadLetterId) {
         return streamQueue.getDeadLetterReplayState(deadLetterId);
     }
@@ -180,6 +184,7 @@ function createMessengerQueueAdapter(options = {}) {
         retry,
         replayDeadLetter,
         replayDeadLetters,
+        listDeadLetters,
         getDeadLetterReplayState,
         lengths,
         keys: streamQueue.settings,
