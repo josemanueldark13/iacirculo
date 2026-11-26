@@ -165,7 +165,7 @@ async function main() {
     const groupCall = fake.calls.find(call => call[0] === 'xgroup');
     assert.equal(groupCall[1], streamKey);
     assert.equal(groupCall[2].type, 'CREATE');
-    assert.equal(groupCall[2].id, '$');
+    assert.equal(groupCall[2].id, '0-0', 'consume eventos que ya existían antes de crear el grupo');
     assert.deepEqual(groupCall[2].options, { MKSTREAM: true });
     assert.equal(groupCall[2].MKSTREAM, undefined, 'MKSTREAM debe ir dentro de options en @upstash/redis');
 
