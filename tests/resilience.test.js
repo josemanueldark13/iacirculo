@@ -224,7 +224,7 @@ test('DLQ-01/03/04/05: manual replay is idempotent, recoverable and audited', {
         assert.equal(acknowledged, 1);
         assert.equal(await ctx.queue.getDeadLetterReplayState(failed.deadLetterId), 'RECOVERED');
         assert.equal(await redis.xlen(ctx.queue.settings.deadLetterStreamKey), 1, 'original DLQ record remains preserved');
-        assert.equal(await redis.xlen(ctx.queue.settings.ledgerStreamKey), 11);
+        assert.equal(await redis.xlen(ctx.queue.settings.ledgerStreamKey), 12);
     } finally {
         await ctx.cleanup();
     }
