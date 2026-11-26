@@ -27,6 +27,8 @@ function canonicalizeEvent({ eventId, payload, occurredAt = new Date().toISOStri
         ...payload,
         eventId,
         correlationId,
+        causationId: typeof payload.causationId === 'string' ? payload.causationId : null,
+        eventType: typeof payload.eventType === 'string' ? payload.eventType : 'message.received',
         state: STATES.RECEIVED,
         direction: 'inbound',
         stage: 'persisted',
