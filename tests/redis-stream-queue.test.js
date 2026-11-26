@@ -150,6 +150,7 @@ async function main() {
     assert.equal(acked, 1);
     const ackCall = fake.calls.find(call => call[0] === 'eval' && call[2].length === 8);
     assert.equal(ackCall[3][2], 'evt-1');
+    assert.equal(ackCall[2][7], 'axial:{development}:messenger:dlq-replay-state:v1');
 
     const beforeFailure = Date.now();
     const failure = await queue.recordFailure({
