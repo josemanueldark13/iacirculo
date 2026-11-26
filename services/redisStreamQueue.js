@@ -8,7 +8,7 @@ const DEFAULTS = Object.freeze({
     streamKey: 'axial:messenger:inbound:v1',
     deadLetterStreamKey: 'axial:messenger:dlq:v1',
     consumerGroup: 'axial-workers-v1',
-    consumerGroupStartId: '$',
+    consumerGroupStartId: '0-0',
     dedupePrefix: 'axial:messenger:dedupe:v1',
     dedupeTtlSeconds: 60 * 60 * 24 * 14,
     retryHashKey: 'axial:messenger:retry-counts:v1',
