@@ -167,7 +167,7 @@ async function main() {
     assert.equal(failureCall[2][5], 'axial:{development}:messenger:retry-schedule:v1');
     assert.equal(failureCall[2][6], 'axial:{development}:messenger:retry-payloads:v1');
     assert.equal(failureCall[2][7], 'axial:{development}:messenger:events:ledger:v1');
-    assert.match(failureCall[2][8], /^axial:\\{development\\}:messenger:failure-dedupe:v1:/);
+    assert.match(failureCall[2][8], /^axial:\{development\}:messenger:failure-dedupe:v1:/);
     assert.match(failureCall[3][4], /"category":"INTERNAL"/);
     assert.match(failureCall[1], /ZADD/);
     assert.match(failureCall[1], /RETRY_SCHEDULED/);
