@@ -31,8 +31,8 @@ function makeFakeRedis() {
             calls.push(['eval', script, keys, args]);
             if (keys.length === 4) return enqueueResult;
             if (keys.length === 5) return publishResult;
-            if (keys.length === 7) return 1;
-            if (keys.length === 9) return [2, String(Number(args[5]) + 5000), 0];
+            if (keys.length === 8) return 1;
+            if (keys.length === 10) return [2, String(Number(args[5]) + 5000), 0];
             throw new Error('Unexpected EVAL call with ' + keys.length + ' keys');
         },
         async xadd(...args) {
@@ -95,6 +95,7 @@ async function main() {
     assert.equal(namespacedQueue.settings.ledgerStreamKey, 'axial:{staging}:messenger:events:ledger:v1');
     assert.equal(namespacedQueue.settings.completedHashKey, 'axial:{staging}:messenger:completed:v1');
     assert.equal(namespacedQueue.settings.failureDedupePrefix, 'axial:{staging}:messenger:failure-dedupe:v1');
+    assert.equal(namespacedQueue.settings.dlqReplayStateHashKey, 'axial:{staging}:messenger:dlq-replay-state:v1');
 
     const fake = makeFakeRedis();
     const queue = createRedisStreamQueue({
@@ -147,7 +148,7 @@ async function main() {
 
     const acked = await queue.acknowledge('1763400000000-0', 'evt-1');
     assert.equal(acked, 1);
-    const ackCall = fake.calls.find(call => call[0] === 'eval' && call[2].length === 7);
+    const ackCall = fake.calls.find(call => call[0] === 'eval' && call[2].length === 8);
     assert.equal(ackCall[3][2], 'evt-1');
 
     const beforeFailure = Date.now();
@@ -162,12 +163,13 @@ async function main() {
     assert.equal(failure.deadLettered, false);
     assert.equal(failure.nextRetryAt, beforeFailure + 5000);
 
-    const failureCall = fake.calls.find(call => call[0] === 'eval' && call[2].length === 9);
+    const failureCall = fake.calls.find(call => call[0] === 'eval' && call[2].length === 10);
     assert.match(failureCall[2][4], /^axial:\{development\}:messenger:dlq-dedupe:v1:/);
     assert.equal(failureCall[2][5], 'axial:{development}:messenger:retry-schedule:v1');
     assert.equal(failureCall[2][6], 'axial:{development}:messenger:retry-payloads:v1');
     assert.equal(failureCall[2][7], 'axial:{development}:messenger:events:ledger:v1');
     assert.match(failureCall[2][8], /^axial:\{development\}:messenger:failure-dedupe:v1:/);
+    assert.equal(failureCall[2][9], 'axial:{development}:messenger:dlq-replay-state:v1');
     assert.match(failureCall[3][4], /"category":"INTERNAL"/);
     assert.match(failureCall[1], /ZADD/);
     assert.match(failureCall[1], /RETRY_SCHEDULED/);
