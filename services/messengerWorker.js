@@ -38,13 +38,16 @@ async function processBatch(requestedBatch = MAX_BATCH) {
         summary.claimed++;
 
         const { payload, job } = claimed;
+        const processingStartedAt = Date.now();
         try {
             if (job.malformed || job.event?.__axialMalformed) {
                 throw new Error('El evento persistido en Redis no contiene un payload Messenger válido.');
             }
             const normalized = parseAndNormalizeEvent(job.event);
             if (!normalized) {
-                await queue.acknowledge(payload, job);
+                await queue.acknowledge(payload, job, {
+                    processingMs: Date.now() - processingStartedAt
+                });
                 summary.ignored++;
                 continue;
             }
@@ -62,10 +65,14 @@ async function processBatch(requestedBatch = MAX_BATCH) {
             }
 
             await messengerSend.sendMessage(senderId, respuesta);
-            await queue.acknowledge(payload, job);
+            await queue.acknowledge(payload, job, {
+                processingMs: Date.now() - processingStartedAt
+            });
             summary.processed++;
         } catch (error) {
-            const outcome = await queue.retry(payload, job, error);
+            const outcome = await queue.retry(payload, job, error, {
+                processingMs: Date.now() - processingStartedAt
+            });
             if (outcome.deadLetter) summary.deadLetter++;
             else summary.retried++;
             console.error('[AXIAL WORKER] Falló un evento:', {
