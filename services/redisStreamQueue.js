@@ -160,6 +160,11 @@ const FETCH_DLQ_ENTRY_SCRIPT = [
     'return redis.call("XRANGE", KEYS[1], ARGV[1], ARGV[1], "COUNT", 1)'
 ].join(String.fromCharCode(10));
 
+const LIST_DLQ_SCRIPT = [
+    'return redis.call("XREVRANGE", KEYS[1], "+", "-", "COUNT", ARGV[1])'
+].join(String.fromCharCode(10));
+
+
 const REPLAY_DEAD_LETTER_SCRIPT = [
     'local rows = redis.call("XRANGE", KEYS[1], ARGV[1], ARGV[1], "COUNT", 1)',
     'if #rows == 0 then return {"NOT_FOUND"} end',
@@ -588,6 +593,41 @@ function createRedisStreamQueue(options = {}) {
     }
 
 
+
+    async function listDeadLetters(limit = 50) {
+        const count = Number(limit);
+        if (!Number.isInteger(count) || count < 1 || count > 100) {
+            throw new Error('limit debe ser un entero entre 1 y 100.');
+        }
+        const rows = await redis().eval(
+            LIST_DLQ_SCRIPT,
+            [settings.deadLetterStreamKey],
+            [count]
+        );
+        const entries = parseStreamEntries([[settings.deadLetterStreamKey, Array.isArray(rows) ? rows : []]]);
+        return Promise.all(entries.map(async entry => {
+            const fields = entry.fields || {};
+            let error = null;
+            try {
+                const parsed = JSON.parse(String(fields.error || ''));
+                error = {
+                    code: typeof parsed.code === 'string' ? parsed.code : 'UNKNOWN_ERROR',
+                    category: typeof parsed.category === 'string' ? parsed.category : 'INTERNAL'
+                };
+            } catch {
+                error = fields.error ? { code: 'LEGACY_UNNORMALIZED', category: 'INTERNAL' } : null;
+            }
+            return {
+                deadLetterId: entry.id,
+                eventId: String(fields.event_id || ''),
+                attempts: Number(fields.attempts || 0),
+                failedAt: String(fields.failed_at || ''),
+                error,
+                replayState: await redis().hget(settings.dlqReplayStateHashKey, entry.id) || null
+            };
+        }));
+    }
+
     async function replayDeadLetter(deadLetterId, options = {}) {
         if (typeof deadLetterId !== 'string' || !deadLetterId.trim()) {
             throw new Error('deadLetterId es obligatorio para solicitar un replay.');
@@ -662,6 +702,7 @@ function createRedisStreamQueue(options = {}) {
         appendLedger,
         replayDeadLetter,
         replayDeadLetters,
+        listDeadLetters,
         getDeadLetterReplayState
     };
 }
