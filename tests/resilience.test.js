@@ -51,6 +51,7 @@ function createContext(options = {}) {
                 queue.settings.retryPayloadHashKey,
                 queue.settings.ledgerStreamKey,
                 queue.settings.completedHashKey,
+                queue.settings.dlqReplayStateHashKey,
                 ...markers
             );
         }
@@ -171,6 +172,94 @@ test('FR-007/008: retry is republished and max attempts move the event to DLQ', 
         });
         assert.equal(finalFailure.deadLettered, true);
         assert.equal(await redis.xlen(ctx.queue.settings.deadLetterStreamKey), 1);
+    } finally {
+        await ctx.cleanup();
+    }
+});
+
+
+test('DLQ-01/03/04/05: manual replay is idempotent, recoverable and audited', {
+    skip: !hasRedis && 'requires non-production Upstash credentials'
+}, async () => {
+    const ctx = createContext({ maxAttempts: 1, baseDelayMs: 1, maxDelayMs: 1 });
+    const eventId = 'evt-dlq-replay-' + Date.now();
+    try {
+        const event = ctx.event(eventId);
+        await ctx.queue.enqueueEvent({ eventId, payload: event });
+        const [initial] = await ctx.queue.readNewMessages('worker-dlq', 1);
+        assert.ok(initial);
+
+        const failed = await ctx.queue.recordFailure({
+            streamId: initial.id,
+            eventId,
+            payload: JSON.parse(initial.fields.payload),
+            error: Object.assign(new Error('synthetic terminal failure'), { code: 'E_INTERNAL' })
+        });
+        assert.equal(failed.deadLettered, true);
+        assert.equal(await redis.xlen(ctx.queue.settings.deadLetterStreamKey), 1);
+
+        const replay = await ctx.queue.replayDeadLetter(failed.deadLetterId, { workerId: 'operator-preview' });
+        assert.equal(replay.status, 'REPLAY_QUEUED');
+        assert.ok(replay.streamId);
+
+        const duplicateReplay = await ctx.queue.replayDeadLetter(failed.deadLetterId, { workerId: 'operator-preview' });
+        assert.equal(duplicateReplay.status, 'DUPLICATE_REPLAY');
+
+        const [workerA] = await ctx.queue.readNewMessages('worker-a', 1);
+        assert.ok(workerA);
+        const replayPayload = JSON.parse(workerA.fields.payload);
+        assert.equal(replayPayload.replayOf, failed.deadLetterId);
+
+        const [workerB] = await ctx.queue.claimStaleMessages('worker-b', { minIdleMs: 0, count: 1 });
+        assert.ok(workerB);
+        assert.equal(workerB.id, workerA.id);
+
+        const acknowledged = await ctx.queue.acknowledge(workerB.id, eventId, {
+            correlationId: replayPayload.correlationId,
+            workerId: 'worker-b',
+            attempt: 2,
+            eventType: replayPayload.eventType,
+            replayOf: replayPayload.replayOf
+        });
+        assert.equal(acknowledged, 1);
+        assert.equal(await ctx.queue.getDeadLetterReplayState(failed.deadLetterId), 'RECOVERED');
+        assert.equal(await redis.xlen(ctx.queue.settings.deadLetterStreamKey), 1, 'original DLQ record remains preserved');
+        assert.equal(await redis.xlen(ctx.queue.settings.ledgerStreamKey), 11);
+    } finally {
+        await ctx.cleanup();
+    }
+});
+
+test('DLQ-02: batch replay handles 100 entries and duplicate batch requests safely', {
+    skip: !hasRedis && 'requires non-production Upstash credentials'
+}, async () => {
+    const ctx = createContext();
+    const deadLetterIds = [];
+    try {
+        for (let index = 0; index < 100; index++) {
+            const eventId = 'evt-dlq-batch-' + Date.now() + '-' + index;
+            const event = ctx.event(eventId);
+            const id = await redis.xadd(ctx.queue.settings.deadLetterStreamKey, '*', {
+                original_stream_id: 'synthetic-' + index,
+                event_id: eventId,
+                payload: JSON.stringify(event),
+                attempts: '5',
+                error: JSON.stringify({ code: 'INTERNAL_ERROR', category: 'INTERNAL' }),
+                failed_at: new Date().toISOString()
+            });
+            deadLetterIds.push(id);
+        }
+
+        const first = await ctx.queue.replayDeadLetters(deadLetterIds, { workerId: 'bulk-operator-preview' });
+        assert.equal(first.requested, 100);
+        assert.equal(first.queued, 100);
+        assert.equal(await redis.xlen(ctx.queue.settings.streamKey), 100);
+
+        const second = await ctx.queue.replayDeadLetters(deadLetterIds, { workerId: 'bulk-operator-preview' });
+        assert.equal(second.queued, 0);
+        assert.equal(second.skipped, 100);
+        assert.equal(await redis.xlen(ctx.queue.settings.streamKey), 100);
+        assert.equal(await redis.xlen(ctx.queue.settings.deadLetterStreamKey), 100);
     } finally {
         await ctx.cleanup();
     }
