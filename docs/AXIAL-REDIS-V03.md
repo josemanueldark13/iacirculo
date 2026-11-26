@@ -93,3 +93,15 @@ The Ledger is stored in the separate `axial:{env}:messenger:events:ledger:v1` Re
 Enqueue appends `RECEIVED` and `QUEUED`. The adapter appends `PROCESSING` immediately after XREADGROUP or XAUTOCLAIM returns a claim. ACK atomically appends `COMPLETED` and writes a persistent completed-event tombstone. Failure handling appends `FAILED` followed by `RETRY_SCHEDULED` or `DLQ` within its Lua operation. Retry publication adds `QUEUED`; duplicate deliveries add `DUPLICATE_SKIPPED`. Correlation IDs are HMAC pseudonyms when TELEMETRY_HASH_SECRET is configured; otherwise an opaque event-scoped fallback is used.
 
 The processing Ledger write follows the claim rather than sharing the same Redis transaction with XREADGROUP/XAUTOCLAIM. If a worker dies in that narrow interval, the next XAUTOCLAIM records the recovered attempt. The completed tombstone is permanent in this revision; the Ledger is application append-only but not independently archived. Backup/retention policy and event/correlation indexes remain separate production requirements.
+
+
+## DLQ replay
+
+Manual replay is available through the authenticated Worker routes:
+
+- `POST /api/internal/messenger-worker/dlq/{deadLetterId}/replay`
+- `POST /api/internal/messenger-worker/dlq/replay` with `{ "deadLetterIds": ["..."] }` (maximum 100 IDs per request).
+
+Replay appends a new inbound Stream entry with the same eventId and a `replayOf` reference. It records `REPLAY_REQUESTED` and `QUEUED` in the Ledger, preserves the original DLQ entry, rejects a second replay request for the same DLQ entry, and marks the state `RECOVERED` only when the replayed event successfully ACKs. If the replay again reaches the DLQ, its replay state is marked `FAILED_AGAIN` so an operator may request another replay after correcting the cause. The DLQ entry remains intact for audit.
+
+The replay endpoint queues work; it does not send immediately. The normal Worker/scheduler must consume it. Test gates cover manual replay, batch replay of 100 entries, duplicate replay requests, recovery of an interrupted replay via XAUTOCLAIM, and the final Ledger transitions. Provider-side send ambiguity remains at-least-once.
