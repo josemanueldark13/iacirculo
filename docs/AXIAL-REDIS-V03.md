@@ -68,3 +68,19 @@ Before production merge/deploy, run the test suite and a controlled integration 
 ## Delivery semantics
 
 The queue provides durable, at-least-once processing. It does not promise exactly-once delivery to Messenger: if Meta accepts an outgoing message but the function fails before Redis ACK, a later recovery can send that response again. A future outbound idempotency layer should address that boundary if duplicate replies must be prevented.
+
+
+## Resilience test gates
+
+The CI resilience suite uses a dedicated non-production Upstash Redis database. Configure GitHub Actions repository secrets `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`; the workflow fails closed when either is missing. Tests use unique `axial:{ci-<run-id>}` namespaces and synthetic event IDs. They never call Messenger or send messages to real users.
+
+Current executable Redis integration coverage:
+- ID-001/002/010: concurrent duplicate enqueue and 100-delivery storm; one inbound Stream insertion.
+- ID-003: webhook redelivery after ACK is rejected by the queue idempotency marker.
+- FR-001: a Consumer Group created after enqueue still reads the first event (cursor `0-0`).
+- FR-006: pending entry recovery with `XAUTOCLAIM`.
+- FR-007/008: retry publication and transfer to DLQ at the configured attempt limit.
+
+These tests validate Redis queue behavior, not exactly-once Messenger delivery. The external-send/ACK crash window remains at-least-once; this implementation has no provider-backed idempotency guarantee for Messenger Send API. Worker side-effect crash tests, durable completed-event markers, the append-only Event Ledger, DLQ replay, scheduler outage/restart and restore testing remain separate mandatory production gates. A green Redis queue suite does not prove those controls.
+
+DLQ replay acceptance must separately prove manual replay, batch replay with recovered/still-failed/lost counts, replay idempotency, worker restart during replay, and Ledger transitions `DLQ → REPLAY_REQUESTED → COMPLETED/RECOVERED`. Keep the original DLQ record auditable until recovery has been confirmed.
