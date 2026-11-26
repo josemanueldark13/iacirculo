@@ -10,6 +10,8 @@ const DEFAULTS = Object.freeze({
     deadLetterStreamKey: 'axial:messenger:dlq:v1',
     consumerGroup: 'axial-workers-v1',
     consumerGroupStartId: '0-0',
+    processingLockPrefix: 'axial:messenger:processing-lock:v1',
+    processingLockMs: 300000,
     dedupePrefix: 'axial:messenger:dedupe:v1',
     dedupeTtlSeconds: 60 * 60 * 24 * 14,
     retryHashKey: 'axial:messenger:retry-counts:v1',
@@ -25,6 +27,10 @@ const DEFAULTS = Object.freeze({
     maxDelayMs: 5 * 60 * 1000,
     minIdleMs: 60000
 });
+
+const ACQUIRE_PROCESSING_LOCK_SCRIPT = [
+    'return redis.call("SET", KEYS[1], ARGV[1], "NX", "PX", ARGV[2])'
+].join(String.fromCharCode(10));
 
 const ENQUEUE_SCRIPT = [
     'if redis.call("HEXISTS", KEYS[3], ARGV[1]) == 1 then',
@@ -84,9 +90,11 @@ const PUBLISH_DUE_RETRIES_SCRIPT = [
 ].join(String.fromCharCode(10));
 
 const ACK_SCRIPT = [
+    'if redis.call("GET", KEYS[9]) ~= ARGV[5] then return 0 end',
     'local acknowledged = redis.call("XACK", KEYS[1], ARGV[1], ARGV[2])',
     'if acknowledged > 0 then',
     '  redis.call("XDEL", KEYS[1], ARGV[2])',
+    '  redis.call("DEL", KEYS[9])',
     '  redis.call("HSET", KEYS[7], ARGV[3], ARGV[6])',
     '  redis.call("XADD", KEYS[6], "*", "event_id", ARGV[3], "correlation_id", ARGV[4],',
     '    "causation_id", ARGV[10], "stream_id", ARGV[2], "event_type", ARGV[9],',
@@ -111,6 +119,7 @@ const ACK_SCRIPT = [
 const FAILURE_SCRIPT = [
     'local cached = redis.call("GET", KEYS[9])',
     'if cached then return cjson.decode(cached) end',
+    'if redis.call("GET", KEYS[11]) ~= ARGV[12] then return {-1, "LOCK_NOT_OWNED", 0} end',
     'local attempts = redis.call("HINCRBY", KEYS[3], ARGV[3], 1)',
     'local maxAttempts = tonumber(ARGV[9])',
     'local function ledger(status, metadata)',
@@ -132,6 +141,7 @@ const FAILURE_SCRIPT = [
     '  if ARGV[17] and ARGV[17] ~= "" then redis.call("HSET", KEYS[10], ARGV[17], "FAILED_AGAIN") end',
     '  redis.call("XACK", KEYS[1], ARGV[1], ARGV[2])',
     '  redis.call("XDEL", KEYS[1], ARGV[2])',
+    '  redis.call("DEL", KEYS[11])',
     '  redis.call("HDEL", KEYS[3], ARGV[3])',
     '  redis.call("HDEL", KEYS[4], ARGV[3])',
     '  redis.call("ZREM", KEYS[6], ARGV[3])',
@@ -151,6 +161,7 @@ const FAILURE_SCRIPT = [
     'ledger("RETRY_SCHEDULED", cjson.encode({ retryAt = nextRetryAt }))',
     'redis.call("XACK", KEYS[1], ARGV[1], ARGV[2])',
     'redis.call("XDEL", KEYS[1], ARGV[2])',
+    'redis.call("DEL", KEYS[11])',
     'local result = {attempts, tostring(nextRetryAt), 0}',
     'redis.call("SET", KEYS[9], cjson.encode(result), "EX", tonumber(ARGV[10]))',
     'return result'
@@ -297,6 +308,7 @@ function createRedisStreamQueue(options = {}) {
         completedHashKey: namespace + ':messenger:completed:v1',
         failureDedupePrefix: namespace + ':messenger:failure-dedupe:v1',
         dlqReplayStateHashKey: namespace + ':messenger:dlq-replay-state:v1',
+        processingLockPrefix: namespace + ':messenger:processing-lock:v1',
         deadLetterDedupePrefix: namespace + ':messenger:dlq-dedupe:v1'
     };
     const settings = { ...DEFAULTS, ...namespacedDefaults, ...(options.config || {}) };
@@ -331,6 +343,21 @@ function createRedisStreamQueue(options = {}) {
             }
             throw error;
         }
+    }
+
+
+    function processingLockKey(eventId) {
+        const digest = crypto.createHash('sha256').update(eventId).digest('hex');
+        return settings.processingLockPrefix + ':' + digest;
+    }
+
+    async function acquireProcessingLock(eventId, consumer) {
+        const result = await redis().eval(
+            ACQUIRE_PROCESSING_LOCK_SCRIPT,
+            [processingLockKey(eventId)],
+            [consumer, settings.processingLockMs]
+        );
+        return result === 'OK';
     }
 
     async function appendLedger(entry) {
@@ -440,6 +467,8 @@ function createRedisStreamQueue(options = {}) {
                 });
                 continue;
             }
+            const acquired = await acquireProcessingLock(eventId, consumer);
+            if (!acquired) continue;
             await appendLedger({
                 eventId, correlationId: fields.correlation_id || eventId,
                 causationId: fields.causation_id || '', streamId: entry.id,
@@ -497,6 +526,8 @@ function createRedisStreamQueue(options = {}) {
                 });
                 continue;
             }
+            const acquired = await acquireProcessingLock(eventId, consumer);
+            if (!acquired) continue;
             await appendLedger({
                 eventId, correlationId: fields.correlation_id || eventId,
                 causationId: fields.causation_id || '', streamId: entry.id,
@@ -540,7 +571,8 @@ function createRedisStreamQueue(options = {}) {
                 settings.retryPayloadHashKey,
                 settings.ledgerStreamKey,
                 settings.completedHashKey,
-                settings.dlqReplayStateHashKey
+                settings.dlqReplayStateHashKey,
+                processingLockKey(eventId)
             ],
             [settings.consumerGroup, streamId, eventId,
                 details.correlationId || eventId, details.workerId || 'unknown',
@@ -571,7 +603,8 @@ function createRedisStreamQueue(options = {}) {
                 settings.retryMetaHashKey,
                 settings.deadLetterDedupePrefix + ':' + crypto.createHash('sha256').update(eventId).digest('hex'),
                 settings.retryScheduleKey, settings.retryPayloadHashKey, settings.ledgerStreamKey,
-                failureKey, settings.dlqReplayStateHashKey
+                failureKey, settings.dlqReplayStateHashKey,
+                processingLockKey(eventId)
             ],
             [
                 settings.consumerGroup, streamId, eventId, serializedPayload, safeError, now,
@@ -584,9 +617,12 @@ function createRedisStreamQueue(options = {}) {
         );
 
         const attempts = Number(result?.[0] || 0);
+        if (attempts < 0) {
+            return { attempts, deadLettered: false, lockLost: true, nextRetryAt: null, deadLetterId: null };
+        }
         const deadLettered = Number(result?.[2]) === 1;
         return {
-            attempts, deadLettered,
+            attempts, deadLettered, lockLost: false,
             deadLetterId: deadLettered && result?.[1] ? String(result[1]) : null,
             nextRetryAt: deadLettered ? null : Number(result?.[1] || 0)
         };
@@ -700,6 +736,7 @@ function createRedisStreamQueue(options = {}) {
         acknowledge,
         recordFailure,
         appendLedger,
+        processingLockKey,
         replayDeadLetter,
         replayDeadLetters,
         listDeadLetters,
