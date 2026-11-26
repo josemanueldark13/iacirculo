@@ -13,6 +13,8 @@ const event = canonicalizeEvent({
 
 assert.equal(event.eventId, 'evt-001');
 assert.equal(event.correlationId, 'corr-001');
+assert.equal(event.eventType, 'message.received');
+assert.equal(event.causationId, null);
 assert.equal(event.state, STATES.RECEIVED);
 assert.equal(event.direction, 'inbound');
 assert.equal(event.stage, 'persisted');
