@@ -108,3 +108,12 @@ The replay endpoint queues work; it does not send immediately. The normal Worker
 
 
 The DLQ is also queryable by an authenticated operator at `GET /api/internal/messenger-worker/dlq?limit=50`. The response omits the original payload and includes the DLQ stream ID needed for manual replay. Replay endpoints queue the event; they do not trigger an immediate send.
+
+
+## Worker processing lease
+
+Each event has an environment-scoped lease key under `axial:{env}:messenger:processing-lock:v1:{sha256(eventId)}`. A Worker must acquire the lease with Redis `SET NX PX` before it executes the business path. The default lease is five minutes. ACK and failure handling verify the lease owner and release the lease as part of the Lua transition; a worker that no longer owns the lease cannot mark the event completed or schedule a retry. A claim that cannot acquire a live lease is not returned to the business handler. After a crashed worker's lease expires, a later XAUTOCLAIM can acquire the lease and recover the pending item.
+
+This lease prevents ordinary overlapping execution by two workers, but it is not an exactly-once guarantee for an external side effect. A lease can expire while an unusually slow worker is still executing, and the Meta-send/Redis-ACK crash window remains ambiguous. The real-Upstash chaos suite must validate expiry, competing claims, and restart recovery before production.
+
+The Resilience Suite also checks that the DLQ listing endpoint omits payload data and that batch replay retains all original DLQ records while marking replay requests and outcomes in the Ledger.
