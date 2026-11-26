@@ -29,11 +29,15 @@ function makeFakeRedis() {
         },
         async eval(script, keys, args) {
             calls.push(['eval', script, keys, args]);
-            if (keys.length === 2) return enqueueResult;
-            if (keys.length === 4) return publishResult;
-            if (keys.length === 5) return 1;
-            if (keys.length === 7) return [2, String(Number(args[6]) + 5000), 0];
+            if (keys.length === 4) return enqueueResult;
+            if (keys.length === 5) return publishResult;
+            if (keys.length === 7) return 1;
+            if (keys.length === 9) return [2, String(Number(args[5]) + 5000), 0];
             throw new Error('Unexpected EVAL call with ' + keys.length + ' keys');
+        },
+        async xadd(...args) {
+            calls.push(['xadd', ...args]);
+            return '1763400000000-99';
         },
         async xreadgroup(...args) {
             calls.push(['xreadgroup', ...args]);
@@ -51,6 +55,7 @@ function makeFakeRedis() {
         },
         async hget(key, field) {
             calls.push(['hget', key, field]);
+            if (key.includes('completed')) return null;
             return JSON.stringify({
                 attempts: 2,
                 nextRetryAt: 4102444800000,
@@ -87,6 +92,9 @@ async function main() {
     assert.equal(namespacedQueue.settings.retryMetaHashKey, 'axial:{staging}:messenger:retry-meta:v1');
     assert.equal(namespacedQueue.settings.retryScheduleKey, 'axial:{staging}:messenger:retry-schedule:v1');
     assert.equal(namespacedQueue.settings.retryPayloadHashKey, 'axial:{staging}:messenger:retry-payloads:v1');
+    assert.equal(namespacedQueue.settings.ledgerStreamKey, 'axial:{staging}:messenger:events:ledger:v1');
+    assert.equal(namespacedQueue.settings.completedHashKey, 'axial:{staging}:messenger:completed:v1');
+    assert.equal(namespacedQueue.settings.failureDedupePrefix, 'axial:{staging}:messenger:failure-dedupe:v1');
 
     const fake = makeFakeRedis();
     const queue = createRedisStreamQueue({
@@ -115,7 +123,7 @@ async function main() {
     fake.setPublishResult(['1763400000000-9']);
     const due = await queue.publishDueRetries({ now: 1763400010000, count: 5 });
     assert.deepEqual(due, ['1763400000000-9']);
-    const publishCall = fake.calls.find(call => call[0] === 'eval' && call[2].length === 4);
+    const publishCall = fake.calls.find(call => call[0] === 'eval' && call[2].length === 5);
     assert.match(publishCall[1], /ZRANGEBYSCORE/);
     assert.match(publishCall[1], /XADD/);
     assert.match(publishCall[1], /ZREM/);
@@ -123,7 +131,7 @@ async function main() {
     const fresh = await queue.readNewMessages('worker-test', 5);
     assert.equal(fresh.length, 1);
     assert.equal(fresh[0].fields.event_id, 'evt-1');
-    assert.ok(fake.calls.some(call => call[0] === 'eval' && call[2].length === 4), 'la lectura publica reintentos vencidos antes de consumir');
+    assert.ok(fake.calls.some(call => call[0] === 'eval' && call[2].length === 5), 'la lectura publica reintentos vencidos antes de consumir');
 
     const claimed = await queue.claimStaleMessages('worker-test', {
         minIdleMs: 60000,
@@ -139,7 +147,7 @@ async function main() {
 
     const acked = await queue.acknowledge('1763400000000-0', 'evt-1');
     assert.equal(acked, 1);
-    const ackCall = fake.calls.find(call => call[0] === 'eval' && call[2].length === 5);
+    const ackCall = fake.calls.find(call => call[0] === 'eval' && call[2].length === 7);
     assert.equal(ackCall[3][2], 'evt-1');
 
     const beforeFailure = Date.now();
@@ -154,11 +162,16 @@ async function main() {
     assert.equal(failure.deadLettered, false);
     assert.equal(failure.nextRetryAt, beforeFailure + 5000);
 
-    const failureCall = fake.calls.find(call => call[0] === 'eval' && call[2].length === 7);
+    const failureCall = fake.calls.find(call => call[0] === 'eval' && call[2].length === 9);
     assert.match(failureCall[2][4], /^axial:\{development\}:messenger:dlq-dedupe:v1:/);
     assert.equal(failureCall[2][5], 'axial:{development}:messenger:retry-schedule:v1');
     assert.equal(failureCall[2][6], 'axial:{development}:messenger:retry-payloads:v1');
+    assert.equal(failureCall[2][7], 'axial:{development}:messenger:events:ledger:v1');
+    assert.match(failureCall[2][8], /^axial:\\{development\\}:messenger:failure-dedupe:v1:/);
+    assert.match(failureCall[3][4], /"category":"INTERNAL"/);
     assert.match(failureCall[1], /ZADD/);
+    assert.match(failureCall[1], /RETRY_SCHEDULED/);
+    assert.match(failureCall[1], /DLQ/);
     assert.match(failureCall[1], /XACK/);
     assert.match(failureCall[1], /HINCRBY\", KEYS\[3\], ARGV\[3\]/, 'el contador de reintentos se indexa por eventId, no por streamId');
 
