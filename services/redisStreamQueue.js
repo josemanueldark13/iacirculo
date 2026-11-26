@@ -161,8 +161,6 @@ const FETCH_DLQ_ENTRY_SCRIPT = [
 ].join(String.fromCharCode(10));
 
 const REPLAY_DEAD_LETTER_SCRIPT = [
-    'local prior = redis.call("HGET", KEYS[5], ARGV[1])',
-    'if prior and prior ~= "FAILED_AGAIN" then return {"DUPLICATE_REPLAY", prior} end',
     'local rows = redis.call("XRANGE", KEYS[1], ARGV[1], ARGV[1], "COUNT", 1)',
     'if #rows == 0 then return {"NOT_FOUND"} end',
     'local fields = rows[1][2]',
@@ -173,6 +171,16 @@ const REPLAY_DEAD_LETTER_SCRIPT = [
     'local eventId = field("event_id")',
     'local rawPayload = field("payload")',
     'if eventId == "" or rawPayload == "" then return {"INVALID_PAYLOAD"} end',
+    'local prior = redis.call("HGET", KEYS[5], ARGV[1])',
+    'if prior and prior ~= "FAILED_AGAIN" then',
+    '  redis.call("XADD", KEYS[4], "*", "event_id", eventId,',
+    '    "correlation_id", field("correlation_id"), "causation_id", "",',
+    '    "stream_id", ARGV[1], "event_type", "dead_letter.replay",',
+    '    "status", "DUPLICATE_SKIPPED", "attempt", field("attempts"),',
+    '    "worker_id", ARGV[3], "timestamp", ARGV[4], "processing_ms", "",',
+    '    "error", "", "metadata", \'{"reason":"replay_already_requested"}\')',
+    '  return {"DUPLICATE_REPLAY", prior}',
+    'end',
     'if redis.call("HEXISTS", KEYS[6], eventId) == 1 then',
     '  redis.call("HSET", KEYS[5], ARGV[1], "ALREADY_COMPLETED")',
     '  redis.call("XADD", KEYS[4], "*", "event_id", eventId,',
