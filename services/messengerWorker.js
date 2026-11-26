@@ -65,15 +65,21 @@ async function processBatch(requestedBatch = MAX_BATCH) {
             }
 
             await messengerSend.sendMessage(senderId, respuesta);
-            await queue.acknowledge(payload, job, {
+            const acknowledged = await queue.acknowledge(payload, job, {
                 processingMs: Date.now() - processingStartedAt
             });
+            if (Number(acknowledged) !== 1) {
+                const ackError = new Error('El Worker perdió el lease antes de confirmar ACK.');
+                ackError.code = 'AXIAL_ACK_NOT_CONFIRMED';
+                throw ackError;
+            }
             summary.processed++;
         } catch (error) {
             const outcome = await queue.retry(payload, job, error, {
                 processingMs: Date.now() - processingStartedAt
             });
-            if (outcome.deadLetter) summary.deadLetter++;
+            if (outcome.lockLost) summary.ignored++;
+            else if (outcome.deadLetter) summary.deadLetter++;
             else summary.retried++;
             console.error('[AXIAL WORKER] Falló un evento:', {
                 job_id: job.id,
