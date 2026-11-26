@@ -3,6 +3,7 @@
 const crypto = require('node:crypto');
 const { getRedis: defaultGetRedis, getAxialKeyPrefix } = require('../config/redis');
 const { canonicalizeEvent } = require('./eventContract');
+const { normalizeError } = require('./eventLedger');
 
 const DEFAULTS = Object.freeze({
     streamKey: 'axial:messenger:inbound:v1',
@@ -15,6 +16,9 @@ const DEFAULTS = Object.freeze({
     retryMetaHashKey: 'axial:messenger:retry-meta:v1',
     retryScheduleKey: 'axial:messenger:retry-schedule:v1',
     retryPayloadHashKey: 'axial:messenger:retry-payloads:v1',
+    ledgerStreamKey: 'axial:messenger:events:ledger:v1',
+    completedHashKey: 'axial:messenger:completed:v1',
+    failureDedupePrefix: 'axial:messenger:failure-dedupe:v1',
     maxAttempts: 5,
     baseDelayMs: 5000,
     maxDelayMs: 5 * 60 * 1000,
@@ -22,14 +26,36 @@ const DEFAULTS = Object.freeze({
 });
 
 const ENQUEUE_SCRIPT = [
+    'if redis.call("HEXISTS", KEYS[3], ARGV[1]) == 1 then',
+    '  redis.call("XADD", KEYS[4], "*", "event_id", ARGV[1], "correlation_id", ARGV[5],',
+    '    "stream_id", "completed", "event_type", "message.duplicate", "status", "DUPLICATE_SKIPPED",',
+    '    "attempt", "0", "worker_id", "", "timestamp", ARGV[6], "processing_ms", "",',
+    '    "error", "", "metadata", \'{"reason":"already_completed"}\')',
+    '  return {0, "completed"}',
+    'end',
     'local existing = redis.call("GET", KEYS[1])',
-    'if existing then return {0, existing} end',
+    'if existing then',
+    '  redis.call("XADD", KEYS[4], "*", "event_id", ARGV[1], "correlation_id", ARGV[5],',
+    '    "stream_id", existing, "event_type", "message.duplicate", "status", "DUPLICATE_SKIPPED",',
+    '    "attempt", "0", "worker_id", "", "timestamp", ARGV[6], "processing_ms", "",',
+    '    "error", "", "metadata", \'{"reason":"already_queued"}\')',
+    '  return {0, existing}',
+    'end',
     'local streamId = redis.call("XADD", KEYS[2], "*",',
-    '  "event_id", ARGV[1], "payload", ARGV[2],',
-    '  "occurred_at", ARGV[3], "attempts", "0")',
+    '  "event_id", ARGV[1], "payload", ARGV[2], "occurred_at", ARGV[3],',
+    '  "attempts", "0", "correlation_id", ARGV[5], "event_type", ARGV[7],',
+    '  "causation_id", ARGV[8])',
     'redis.call("SET", KEYS[1], streamId, "EX", tonumber(ARGV[4]))',
+    'redis.call("XADD", KEYS[4], "*", "event_id", ARGV[1], "correlation_id", ARGV[5],',
+    '  "causation_id", ARGV[8], "stream_id", streamId, "event_type", ARGV[7],',
+    '  "status", "RECEIVED", "attempt", "0", "worker_id", "", "timestamp", ARGV[6],',
+    '  "processing_ms", "", "error", "", "metadata", "{}")',
+    'redis.call("XADD", KEYS[4], "*", "event_id", ARGV[1], "correlation_id", ARGV[5],',
+    '  "causation_id", ARGV[8], "stream_id", streamId, "event_type", ARGV[7],',
+    '  "status", "QUEUED", "attempt", "0", "worker_id", "", "timestamp", ARGV[6],',
+    '  "processing_ms", "", "error", "", "metadata", "{}")',
     'return {1, streamId}'
-].join('\n');
+].join(String.fromCharCode(10));
 
 const PUBLISH_DUE_RETRIES_SCRIPT = [
     'local due = redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", ARGV[1], "LIMIT", 0, ARGV[2])',
@@ -39,61 +65,86 @@ const PUBLISH_DUE_RETRIES_SCRIPT = [
     '  if payload then',
     '    local attempts = redis.call("HGET", KEYS[3], eventId) or "0"',
     '    local event = cjson.decode(payload)',
-    '    local occurredAt = tostring(event["occurredAt"] or ARGV[1])',
-    '    local streamId = redis.call("XADD", KEYS[4], "*",',
-    '      "event_id", eventId, "payload", payload,',
-    '      "occurred_at", occurredAt, "attempts", attempts)',
+    '    local correlationId = tostring(event["correlationId"] or eventId)',
+    '    local eventType = tostring(event["eventType"] or "message.received")',
+    '    local streamId = redis.call("XADD", KEYS[4], "*", "event_id", eventId, "payload", payload,',
+    '      "occurred_at", tostring(event["occurredAt"] or ARGV[3]), "attempts", attempts,',
+    '      "correlation_id", correlationId, "event_type", eventType, "causation_id", tostring(event["causationId"] or ""))',
+    '    redis.call("XADD", KEYS[5], "*", "event_id", eventId, "correlation_id", correlationId,',
+    '      "stream_id", streamId, "event_type", eventType, "status", "QUEUED",',
+    '      "attempt", attempts, "worker_id", "", "timestamp", ARGV[3], "processing_ms", "",',
+    '      "error", "", "metadata", \'{"retry":true}\')',
     '    table.insert(published, streamId)',
     '  end',
     '  redis.call("ZREM", KEYS[1], eventId)',
     '  redis.call("HDEL", KEYS[2], eventId)',
     'end',
     'return published'
-].join('\n');
+].join(String.fromCharCode(10));
 
 const ACK_SCRIPT = [
     'local acknowledged = redis.call("XACK", KEYS[1], ARGV[1], ARGV[2])',
-    'if acknowledged > 0 then redis.call("XDEL", KEYS[1], ARGV[2]) end',
+    'if acknowledged > 0 then',
+    '  redis.call("XDEL", KEYS[1], ARGV[2])',
+    '  redis.call("HSET", KEYS[7], ARGV[3], ARGV[6])',
+    '  redis.call("XADD", KEYS[6], "*", "event_id", ARGV[3], "correlation_id", ARGV[4],',
+    '    "causation_id", ARGV[10], "stream_id", ARGV[2], "event_type", ARGV[9],',
+    '    "status", "COMPLETED", "attempt", ARGV[7], "worker_id", ARGV[5],',
+    '    "timestamp", ARGV[6], "processing_ms", ARGV[8], "error", "", "metadata", "{}")',
+    'end',
     'redis.call("HDEL", KEYS[2], ARGV[3])',
     'redis.call("HDEL", KEYS[3], ARGV[3])',
     'redis.call("ZREM", KEYS[4], ARGV[3])',
     'redis.call("HDEL", KEYS[5], ARGV[3])',
     'return acknowledged'
-].join('\n');
+].join(String.fromCharCode(10));
 
 const FAILURE_SCRIPT = [
+    'local cached = redis.call("GET", KEYS[9])',
+    'if cached then return cjson.decode(cached) end',
     'local attempts = redis.call("HINCRBY", KEYS[3], ARGV[3], 1)',
-    'local maxAttempts = tonumber(ARGV[5])',
+    'local maxAttempts = tonumber(ARGV[9])',
+    'local function ledger(status, metadata)',
+    '  redis.call("XADD", KEYS[8], "*", "event_id", ARGV[3], "correlation_id", ARGV[11],',
+    '    "causation_id", ARGV[15], "stream_id", ARGV[2], "event_type", ARGV[14],',
+    '    "status", status, "attempt", tostring(attempts), "worker_id", ARGV[12],',
+    '    "timestamp", ARGV[13], "processing_ms", ARGV[16], "error", ARGV[5], "metadata", metadata or "{}")',
+    'end',
+    'ledger("FAILED", "{}")',
     'if attempts >= maxAttempts then',
-    '  local existingDeadLetterId = redis.call("GET", KEYS[5])',
-    '  local deadLetterId = existingDeadLetterId',
+    '  local deadLetterId = redis.call("GET", KEYS[5])',
     '  if not deadLetterId then',
-    '    deadLetterId = redis.call("XADD", KEYS[2], "*",',
-    '      "original_stream_id", ARGV[2], "event_id", ARGV[3],',
-    '      "payload", ARGV[4], "attempts", tostring(attempts),',
-    '      "error", ARGV[6], "failed_at", ARGV[7])',
+    '    deadLetterId = redis.call("XADD", KEYS[2], "*", "original_stream_id", ARGV[2],',
+    '      "event_id", ARGV[3], "payload", ARGV[4], "attempts", tostring(attempts),',
+    '      "error", ARGV[5], "failed_at", ARGV[13])',
     '    redis.call("SET", KEYS[5], deadLetterId, "EX", tonumber(ARGV[10]))',
     '  end',
+    '  ledger("DLQ", \'{"deadLetter":true}\')',
     '  redis.call("XACK", KEYS[1], ARGV[1], ARGV[2])',
     '  redis.call("XDEL", KEYS[1], ARGV[2])',
     '  redis.call("HDEL", KEYS[3], ARGV[3])',
     '  redis.call("HDEL", KEYS[4], ARGV[3])',
     '  redis.call("ZREM", KEYS[6], ARGV[3])',
     '  redis.call("HDEL", KEYS[7], ARGV[3])',
-    '  return {attempts, deadLetterId, 1}',
+    '  local result = {attempts, deadLetterId, 1}',
+    '  redis.call("SET", KEYS[9], cjson.encode(result), "EX", tonumber(ARGV[10]))',
+    '  return result',
     'end',
-    'local delay = tonumber(ARGV[8]) * math.pow(2, attempts - 1)',
-    'local maxDelay = tonumber(ARGV[9])',
+    'local delay = tonumber(ARGV[7]) * math.pow(2, attempts - 1)',
+    'local maxDelay = tonumber(ARGV[8])',
     'if delay > maxDelay then delay = maxDelay end',
-    'local nextRetryAt = tonumber(ARGV[7]) + delay',
-    'local metadata = cjson.encode({ attempts = attempts, nextRetryAt = nextRetryAt, lastError = ARGV[6] })',
+    'local nextRetryAt = tonumber(ARGV[6]) + delay',
+    'local metadata = cjson.encode({ attempts = attempts, nextRetryAt = nextRetryAt, lastError = ARGV[5] })',
     'redis.call("HSET", KEYS[4], ARGV[3], metadata)',
     'redis.call("HSET", KEYS[7], ARGV[3], ARGV[4])',
     'redis.call("ZADD", KEYS[6], nextRetryAt, ARGV[3])',
+    'ledger("RETRY_SCHEDULED", cjson.encode({ retryAt = nextRetryAt }))',
     'redis.call("XACK", KEYS[1], ARGV[1], ARGV[2])',
     'redis.call("XDEL", KEYS[1], ARGV[2])',
-    'return {attempts, tostring(nextRetryAt), 0}'
-].join('\n');
+    'local result = {attempts, tostring(nextRetryAt), 0}',
+    'redis.call("SET", KEYS[9], cjson.encode(result), "EX", tonumber(ARGV[10]))',
+    'return result'
+].join(String.fromCharCode(10));
 
 function fieldsToObject(fields) {
     if (!Array.isArray(fields)) {
@@ -161,6 +212,9 @@ function createRedisStreamQueue(options = {}) {
         retryMetaHashKey: namespace + ':messenger:retry-meta:v1',
         retryScheduleKey: namespace + ':messenger:retry-schedule:v1',
         retryPayloadHashKey: namespace + ':messenger:retry-payloads:v1',
+        ledgerStreamKey: namespace + ':messenger:events:ledger:v1',
+        completedHashKey: namespace + ':messenger:completed:v1',
+        failureDedupePrefix: namespace + ':messenger:failure-dedupe:v1',
         deadLetterDedupePrefix: namespace + ':messenger:dlq-dedupe:v1'
     };
     const settings = { ...DEFAULTS, ...namespacedDefaults, ...(options.config || {}) };
@@ -197,7 +251,24 @@ function createRedisStreamQueue(options = {}) {
         }
     }
 
-    async function enqueueEvent({ eventId, payload, occurredAt = new Date().toISOString() }) {
+    async function appendLedger(entry) {
+        return redis().xadd(settings.ledgerStreamKey, '*', {
+            event_id: String(entry.eventId),
+            correlation_id: String(entry.correlationId || entry.eventId),
+            causation_id: String(entry.causationId || ''),
+            stream_id: String(entry.streamId || ''),
+            event_type: String(entry.eventType || 'message.received'),
+            status: String(entry.status),
+            attempt: String(Number(entry.attempt || 0)),
+            worker_id: String(entry.workerId || ''),
+            timestamp: entry.timestamp || new Date().toISOString(),
+            processing_ms: String(Number(entry.processingMs || 0)),
+            error: entry.error ? JSON.stringify(entry.error) : '',
+            metadata: JSON.stringify(entry.metadata || {})
+        });
+    }
+
+    async function enqueueEvent({ eventId, payload, occurredAt = new Date().toISOString(), correlationId = eventId }) {
         if (typeof eventId !== 'string' || !eventId.trim()) {
             throw new Error('eventId es obligatorio para la idempotencia.');
         }
@@ -205,7 +276,7 @@ function createRedisStreamQueue(options = {}) {
             throw new Error('payload debe ser un objeto.');
         }
 
-        const canonicalEvent = canonicalizeEvent({ eventId, payload, occurredAt });
+        const canonicalEvent = canonicalizeEvent({ eventId, payload, occurredAt, correlationId });
         const serializedPayload = JSON.stringify(canonicalEvent);
         if (typeof serializedPayload !== 'string') {
             throw new Error('No se pudo serializar el evento.');
@@ -213,8 +284,10 @@ function createRedisStreamQueue(options = {}) {
 
         const result = await redis().eval(
             ENQUEUE_SCRIPT,
-            [dedupeKey(eventId), settings.streamKey],
-            [eventId, serializedPayload, occurredAt, settings.dedupeTtlSeconds]
+            [dedupeKey(eventId), settings.streamKey, settings.completedHashKey, settings.ledgerStreamKey],
+            [eventId, serializedPayload, occurredAt, settings.dedupeTtlSeconds,
+                canonicalEvent.correlationId, new Date().toISOString(),
+                canonicalEvent.eventType || 'message.received', canonicalEvent.causationId || '']
         );
 
         const inserted = Number(result?.[0]) === 1;
@@ -239,9 +312,10 @@ function createRedisStreamQueue(options = {}) {
                 settings.retryScheduleKey,
                 settings.retryPayloadHashKey,
                 settings.retryHashKey,
-                settings.streamKey
+                settings.streamKey,
+                settings.ledgerStreamKey
             ],
-            [now, count]
+            [now, count, new Date(now).toISOString()]
         );
 
         return Array.isArray(result) ? result.map(String) : [];
@@ -265,7 +339,34 @@ function createRedisStreamQueue(options = {}) {
             { count }
         );
 
-        return parseStreamEntries(response);
+        const rawEntries = parseStreamEntries(response);
+        const accepted = [];
+        for (const entry of rawEntries) {
+            const fields = entry.fields || {};
+            const eventId = String(fields.event_id || '');
+            if (!eventId) continue;
+            const completedAt = await redis().hget(settings.completedHashKey, eventId);
+            if (completedAt) {
+                await redis().xack(settings.streamKey, settings.consumerGroup, entry.id);
+                await redis().xdel(settings.streamKey, entry.id);
+                await appendLedger({
+                    eventId, correlationId: fields.correlation_id || eventId,
+                    causationId: fields.causation_id || '', streamId: entry.id,
+                    eventType: 'message.duplicate', status: 'DUPLICATE_SKIPPED',
+                    attempt: Number(fields.attempts || 0), workerId: consumer,
+                    metadata: { reason: 'completed_marker' }
+                });
+                continue;
+            }
+            await appendLedger({
+                eventId, correlationId: fields.correlation_id || eventId,
+                causationId: fields.causation_id || '', streamId: entry.id,
+                eventType: fields.event_type || 'message.received', status: 'PROCESSING',
+                attempt: Number(fields.attempts || 0) + 1, workerId: consumer
+            });
+            accepted.push(entry);
+        }
+        return accepted;
     }
 
     async function claimStaleMessages(consumer, options = {}) {
@@ -294,8 +395,35 @@ function createRedisStreamQueue(options = {}) {
             { count }
         );
 
-        const entries = Array.isArray(response) ? response[1] : [];
-        return parseStreamEntries([[settings.streamKey, entries]]);
+        const rawEntries = parseStreamEntries([[settings.streamKey, entries]]);
+        const accepted = [];
+        for (const entry of rawEntries) {
+            const fields = entry.fields || {};
+            const eventId = String(fields.event_id || '');
+            if (!eventId) continue;
+            const completedAt = await redis().hget(settings.completedHashKey, eventId);
+            if (completedAt) {
+                await redis().xack(settings.streamKey, settings.consumerGroup, entry.id);
+                await redis().xdel(settings.streamKey, entry.id);
+                await appendLedger({
+                    eventId, correlationId: fields.correlation_id || eventId,
+                    causationId: fields.causation_id || '', streamId: entry.id,
+                    eventType: 'message.duplicate', status: 'DUPLICATE_SKIPPED',
+                    attempt: Number(fields.attempts || 0), workerId: consumer,
+                    metadata: { reason: 'completed_marker' }
+                });
+                continue;
+            }
+            await appendLedger({
+                eventId, correlationId: fields.correlation_id || eventId,
+                causationId: fields.causation_id || '', streamId: entry.id,
+                eventType: fields.event_type || 'message.received', status: 'PROCESSING',
+                attempt: Number(fields.attempts || 0) + 1, workerId: consumer,
+                metadata: { reclaimed: true }
+            });
+            accepted.push(entry);
+        }
+        return accepted;
     }
 
     async function getRetryState(eventId) {
@@ -311,7 +439,7 @@ function createRedisStreamQueue(options = {}) {
         return !Number.isFinite(nextRetryAt) || nextRetryAt <= now;
     }
 
-    async function acknowledge(streamId, eventId) {
+    async function acknowledge(streamId, eventId, details = {}) {
         if (typeof streamId !== 'string' || !streamId.trim()) {
             throw new Error('streamId es obligatorio.');
         }
@@ -326,49 +454,53 @@ function createRedisStreamQueue(options = {}) {
                 settings.retryHashKey,
                 settings.retryMetaHashKey,
                 settings.retryScheduleKey,
-                settings.retryPayloadHashKey
+                settings.retryPayloadHashKey,
+                settings.ledgerStreamKey,
+                settings.completedHashKey
             ],
-            [settings.consumerGroup, streamId, eventId]
+            [settings.consumerGroup, streamId, eventId,
+                details.correlationId || eventId, details.workerId || 'unknown',
+                details.timestamp || new Date().toISOString(),
+                Number.isInteger(details.attempt) && details.attempt > 0 ? details.attempt : 1,
+                Number.isFinite(details.processingMs) && details.processingMs >= 0 ? Math.round(details.processingMs) : 0,
+                details.eventType || 'message.received', details.causationId || '']
         );
     }
 
-    async function recordFailure({ streamId, eventId, payload, error, now = Date.now() }) {
+    async function recordFailure({
+        streamId, eventId, payload, error, now = Date.now(),
+        correlationId, workerId = 'unknown', processingMs = 0
+    }) {
         if (!streamId || !eventId || !payload) {
             throw new Error('streamId, eventId y payload son obligatorios para registrar el fallo.');
         }
-
-        const message = String(error?.message || error || 'Error desconocido').slice(0, 1000);
+        const safeError = JSON.stringify(normalizeError(error));
         const serializedPayload = JSON.stringify(payload);
+        const timestamp = new Date(now).toISOString();
+        const failureKey = settings.failureDedupePrefix + ':' +
+            crypto.createHash('sha256').update(eventId + ':' + streamId).digest('hex');
         const result = await redis().eval(
             FAILURE_SCRIPT,
             [
-                settings.streamKey,
-                settings.deadLetterStreamKey,
-                settings.retryHashKey,
+                settings.streamKey, settings.deadLetterStreamKey, settings.retryHashKey,
                 settings.retryMetaHashKey,
                 settings.deadLetterDedupePrefix + ':' + crypto.createHash('sha256').update(eventId).digest('hex'),
-                settings.retryScheduleKey,
-                settings.retryPayloadHashKey
+                settings.retryScheduleKey, settings.retryPayloadHashKey, settings.ledgerStreamKey,
+                failureKey
             ],
             [
-                settings.consumerGroup,
-                streamId,
-                eventId,
-                serializedPayload,
-                settings.maxAttempts,
-                message,
-                now,
-                settings.baseDelayMs,
-                settings.maxDelayMs,
-                settings.dedupeTtlSeconds
+                settings.consumerGroup, streamId, eventId, serializedPayload, safeError, now,
+                settings.baseDelayMs, settings.maxDelayMs, settings.maxAttempts, settings.dedupeTtlSeconds,
+                correlationId || payload.correlationId || eventId, workerId, timestamp,
+                payload.eventType || 'message.received', payload.causationId || '',
+                Number.isFinite(processingMs) && processingMs >= 0 ? Math.round(processingMs) : 0
             ]
         );
 
         const attempts = Number(result?.[0] || 0);
         const deadLettered = Number(result?.[2]) === 1;
         return {
-            attempts,
-            deadLettered,
+            attempts, deadLettered,
             deadLetterId: deadLettered && result?.[1] ? String(result[1]) : null,
             nextRetryAt: deadLettered ? null : Number(result?.[1] || 0)
         };
@@ -384,7 +516,8 @@ function createRedisStreamQueue(options = {}) {
         getRetryState,
         isRetryDue,
         acknowledge,
-        recordFailure
+        recordFailure,
+        appendLedger
     };
 }
 
