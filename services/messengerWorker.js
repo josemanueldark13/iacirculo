@@ -99,5 +99,38 @@ router.get('/', async (req, res) => {
     }
 });
 
+
+router.post('/dlq/:deadLetterId/replay', async (req, res) => {
+    if (!authorized(req)) return res.sendStatus(401);
+    try {
+        const result = await queue.replayDeadLetter(req.params.deadLetterId);
+        if (result.status === 'NOT_FOUND') {
+            return res.status(404).json({ ok: false, ...result });
+        }
+        if (result.status === 'INVALID_PAYLOAD') {
+            return res.status(422).json({ ok: false, ...result });
+        }
+        return res.status(202).json({ ok: true, ...result });
+    } catch (error) {
+        console.error('[AXIAL DLQ] No se pudo solicitar el replay:', {
+            code: error?.code || error?.name || 'INTERNAL_ERROR'
+        });
+        return res.status(503).json({ ok: false, error: 'No se pudo solicitar el replay de DLQ.' });
+    }
+});
+
+router.post('/dlq/replay', async (req, res) => {
+    if (!authorized(req)) return res.sendStatus(401);
+    try {
+        const result = await queue.replayDeadLetters(req.body?.deadLetterIds);
+        return res.status(202).json({ ok: true, ...result });
+    } catch (error) {
+        return res.status(400).json({
+            ok: false,
+            error: 'Se requieren entre 1 y 100 deadLetterIds válidos.'
+        });
+    }
+});
+
 module.exports = router;
 module.exports.processBatch = processBatch;
