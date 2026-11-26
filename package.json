@@ -7,7 +7,8 @@
     "test": "node tests/run30.js && node tests/run-natural.js && node tests/axial-truthtable.test.js && node tests/action-router.test.js && node tests/redis-stream-queue.test.js && node tests/redis-messenger-adapter.test.js && node tests/event-contract.test.js && node tests/pipeline-dispatch.test.js && node tests/redis-config.test.js",
     "test:truthtable": "node tests/axial-truthtable.test.js",
     "test:redis": "node tests/redis-stream-queue.test.js && node tests/redis-messenger-adapter.test.js && node tests/redis-config.test.js",
-    "test:pipeline": "node tests/pipeline-dispatch.test.js"
+    "test:pipeline": "node tests/pipeline-dispatch.test.js",
+    "test:resilience": "node --test tests/resilience.test.js"
   },
   "keywords": [],
   "author": "",
