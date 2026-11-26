@@ -133,7 +133,8 @@ function createMessengerQueueAdapter(options = {}) {
             deadLetter: outcome.deadLettered,
             attempts: outcome.attempts,
             nextRetryAt: outcome.nextRetryAt,
-            deadLetterId: outcome.deadLetterId
+            deadLetterId: outcome.deadLetterId,
+            lockLost: outcome.lockLost === true
         };
     }
 
