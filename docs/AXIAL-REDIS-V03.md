@@ -84,3 +84,12 @@ Current executable Redis integration coverage:
 These tests validate Redis queue behavior, not exactly-once Messenger delivery. The external-send/ACK crash window remains at-least-once; this implementation has no provider-backed idempotency guarantee for Messenger Send API. Worker side-effect crash tests, durable completed-event markers, the append-only Event Ledger, DLQ replay, scheduler outage/restart and restore testing remain separate mandatory production gates. A green Redis queue suite does not prove those controls.
 
 DLQ replay acceptance must separately prove manual replay, batch replay with recovered/still-failed/lost counts, replay idempotency, worker restart during replay, and Ledger transitions `DLQ → REPLAY_REQUESTED → COMPLETED/RECOVERED`. Keep the original DLQ record auditable until recovery has been confirmed.
+
+
+## Event Ledger implementation
+
+The Ledger is stored in the separate `axial:{env}:messenger:events:ledger:v1` Redis Stream. It records identifiers, state, attempt, worker, timestamp, processing duration, normalized error code/category, and safe metadata; it does not copy message text, sender IDs, recipient IDs or raw exception messages.
+
+Enqueue appends `RECEIVED` and `QUEUED`. The adapter appends `PROCESSING` immediately after XREADGROUP or XAUTOCLAIM returns a claim. ACK atomically appends `COMPLETED` and writes a persistent completed-event tombstone. Failure handling appends `FAILED` followed by `RETRY_SCHEDULED` or `DLQ` within its Lua operation. Retry publication adds `QUEUED`; duplicate deliveries add `DUPLICATE_SKIPPED`. Correlation IDs are HMAC pseudonyms when TELEMETRY_HASH_SECRET is configured; otherwise an opaque event-scoped fallback is used.
+
+The processing Ledger write follows the claim rather than sharing the same Redis transaction with XREADGROUP/XAUTOCLAIM. If a worker dies in that narrow interval, the next XAUTOCLAIM records the recovered attempt. The completed tombstone is permanent in this revision; the Ledger is application append-only but not independently archived. Backup/retention policy and event/correlation indexes remain separate production requirements.
