@@ -33,7 +33,11 @@ async function main() {
                 inserted: true,
                 duplicate: false,
                 streamId: '1763400000000-0',
-                event: { ...args.payload, eventId: args.eventId }
+                event: {
+                    ...args.payload,
+                    eventId: args.eventId,
+                    correlationId: args.correlationId
+                }
             };
         },
         async claimStaleMessages(consumer, options) {
@@ -51,8 +55,8 @@ async function main() {
                 }
             }];
         },
-        async acknowledge(streamId, eventId) {
-            calls.push(['acknowledge', streamId, eventId]);
+        async acknowledge(streamId, eventId, details) {
+            calls.push(['acknowledge', streamId, eventId, details]);
             return 1;
         },
         async recordFailure(args) {
@@ -92,9 +96,13 @@ async function main() {
         })
     });
 
+    const previousTelemetrySecret = process.env.TELEMETRY_HASH_SECRET;
+    process.env.TELEMETRY_HASH_SECRET = 'test-secret-with-at-least-32-characters';
     const enqueued = await adapter.enqueue(event);
     assert.equal(enqueued.inserted, true);
     assert.equal(enqueued.eventId, makeEventId(event));
+    assert.match(enqueued.correlationId, /^corr_[a-f0-9]{32}$/);
+    assert.ok(!enqueued.correlationId.includes('sender-private-value'));
     assert.equal(calls.find(call => call[0] === 'enqueueEvent')[1].occurredAt, new Date(event.timestamp).toISOString());
 
     const claimed = await adapter.claim();
@@ -104,15 +112,18 @@ async function main() {
     assert.equal(calls.find(call => call[0] === 'claimStaleMessages')[2].minIdleMs, 1000);
 
     await adapter.acknowledge(claimed.payload, claimed.job);
-    assert.deepEqual(calls.find(call => call[0] === 'acknowledge').slice(1), [
+    assert.deepEqual(calls.find(call => call[0] === 'acknowledge').slice(1, 3), [
         '1763400000000-0',
         'messenger:test-event'
     ]);
+    assert.equal(calls.find(call => call[0] === 'acknowledge')[3].workerId, 'worker-test');
+    assert.match(calls.find(call => call[0] === 'acknowledge')[3].correlationId, /^corr_[a-f0-9]{32}$/);
 
     const retried = await adapter.retry(claimed.payload, claimed.job, new Error('temporary'));
     assert.equal(retried.deadLetter, false);
     assert.equal(retried.attempts, 2);
     assert.equal(calls.find(call => call[0] === 'recordFailure')[1].eventId, 'messenger:test-event');
+    assert.equal(calls.find(call => call[0] === 'recordFailure')[1].workerId, 'worker-test');
 
     const lengths = await adapter.lengths();
     assert.deepEqual(lengths, {
@@ -130,6 +141,9 @@ async function main() {
     assert.equal(malformed.malformed, true);
     assert.equal(malformed.event.__axialMalformed, true);
     assert.equal(adapter.isConfigured(), true);
+
+    if (previousTelemetrySecret === undefined) delete process.env.TELEMETRY_HASH_SECRET;
+    else process.env.TELEMETRY_HASH_SECRET = previousTelemetrySecret;
 
     console.log('REDIS MESSENGER ADAPTER: PASS (event id, enqueue, claim, ACK, retry, queue metrics, malformed payload)');
 }
