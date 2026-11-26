@@ -19,5 +19,11 @@
       "src": "/(.*)",
       "dest": "/public/$1"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "axial-redis-v03-clean-review": false
+    }
+  }
 }
