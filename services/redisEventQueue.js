@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const { randomUUID } = require('node:crypto');
 const redisConfig = require('../config/redis');
 const { createRedisStreamQueue } = require('./redisStreamQueue');
+const { makeCorrelationId } = require('./eventLedger');
 
 function makeEventId(event) {
     const messageId = event?.message?.mid || event?.postback?.mid;
@@ -47,6 +48,7 @@ function toJob(entry) {
         streamId: entry.id,
         eventId,
         attempts: Number(fields.attempts || 0),
+        correlationId: event.correlationId || fields.correlation_id || eventId,
         malformed,
         event
     };
@@ -65,10 +67,15 @@ function createMessengerQueueAdapter(options = {}) {
         }
 
         const eventId = makeEventId(event);
+        const correlationId = makeCorrelationId(
+            event?.sender?.id || event?.postback?.sender?.id || null,
+            eventId
+        );
         const result = await streamQueue.enqueueEvent({
             eventId,
             payload: event,
-            occurredAt: eventOccurredAt(event)
+            occurredAt: eventOccurredAt(event),
+            correlationId
         });
 
         return {
@@ -76,6 +83,7 @@ function createMessengerQueueAdapter(options = {}) {
             streamId: result.streamId,
             eventId,
             event: result.event,
+            correlationId: result.event?.correlationId || correlationId,
             inserted: result.inserted,
             duplicate: result.duplicate
         };
@@ -96,18 +104,28 @@ function createMessengerQueueAdapter(options = {}) {
         return { payload: entry.id, job };
     }
 
-    async function acknowledge(payload, job) {
+    async function acknowledge(payload, job, details = {}) {
         const eventId = job?.eventId || job?.event?.eventId;
-        return streamQueue.acknowledge(String(payload), String(eventId || ''));
+        return streamQueue.acknowledge(String(payload), String(eventId || ''), {
+            correlationId: job?.correlationId || job?.event?.correlationId || eventId,
+            workerId: consumerId,
+            attempt: (job?.attempts || 0) + 1,
+            eventType: job?.event?.eventType || 'message.received',
+            causationId: job?.event?.causationId || '',
+            processingMs: details.processingMs
+        });
     }
 
-    async function retry(payload, job, error) {
+    async function retry(payload, job, error, details = {}) {
         const eventId = job?.eventId || job?.event?.eventId;
         const outcome = await streamQueue.recordFailure({
             streamId: String(payload),
             eventId,
             payload: job?.event,
-            error
+            error,
+            correlationId: job?.correlationId || job?.event?.correlationId || eventId,
+            workerId: consumerId,
+            processingMs: details.processingMs
         });
 
         return {
