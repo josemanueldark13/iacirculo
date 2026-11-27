@@ -31,7 +31,8 @@
 - [x] Rama de revisión AXIAL v0.3 con Redis Streams, Consumer Groups, deduplicación, Event Ledger, reintentos, DLQ y replay.
 - [x] CI de regresión general aprobado en el último run revisado del PR #17.
 - [x] Añadido al PR #17 un workflow de recuperación del Worker cada cinco minutos mediante GitHub Actions; requiere configuración de URL y secreto y solo opera después de integrarse en la rama predeterminada.
-- [ ] Configurar credenciales de una base Upstash **no productiva** como secretos de GitHub Actions.
+- [x] Preview aislado de PR #17 habilitado en Vercel y despliegue marcado READY; los endpoints de aplicación siguen sin validar porque la protección de Vercel exige autenticación.
+- [ ] Configurar en GitHub Actions los secretos `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN` tomando sus valores de las variables de Vercel Preview `KV_REST_API_URL` y `KV_REST_API_TOKEN`; no usar valores de Production ni compartirlos por chat.
 - [ ] Ejecutar la suite de resiliencia contra Redis real; el último intento se detuvo antes de ejecutar pruebas por falta de esos secretos.
 - [ ] Verificar recuperación de eventos pendientes, leases vencidas, ACK idempotente, reintentos y DLQ.
 - [x] Documentar el límite de `waitUntil` y agregar un disparador periódico del Worker; el scheduler de cinco minutos es recuperación periódica, no ejecución en tiempo real.
