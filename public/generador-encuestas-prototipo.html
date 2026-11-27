@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f2a4d">
+<title>Generador de encuestas · CÍRCULO IA</title>
+<style>
+:root{
+  color-scheme:light;
+  --navy:#0f2a4d;
+  --blue:#1b5686;
+  --sky:#79b9df;
+  --gold:#c7a45b;
+  --ink:#1c2b3a;
+  --muted:#66788a;
+  --line:#dce5ed;
+  --soft:#f4f7fa;
+  --paper:#ffffff;
+  --green:#24734c;
+  --red:#a43e45;
+  --shadow:0 12px 34px rgba(15,42,77,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;background:#edf2f6;color:var(--ink);font-family:Inter,"Segoe UI",Arial,sans-serif;font-size:14px;line-height:1.45}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.topbar{height:72px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,4vw,54px);gap:16px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.brand img{width:48px;height:48px;object-fit:contain}
+.brand-copy{min-width:0}
+.brand-copy strong{display:block;color:var(--navy);font-size:14px;letter-spacing:.07em}
+.brand-copy span{display:block;color:var(--muted);font-size:11px}
+.top-actions{display:flex;align-items:center;gap:12px}
+.prototype-tag{padding:6px 10px;border:1px solid #e7d9b7;border-radius:999px;background:#fbf7ed;color:#80642b;font-size:10px;font-weight:800;letter-spacing:.09em}
+.home-link{color:var(--blue);font-size:12px;font-weight:700;text-decoration:none}
+.home-link:hover{text-decoration:underline}
+.app{max-width:1280px;margin:0 auto;padding:28px clamp(14px,3vw,36px) 42px}
+.page-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:0 0 22px}
+.eyebrow{margin:0 0 5px;color:var(--blue);font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+h1{margin:0;color:var(--navy);font-size:clamp(24px,3vw,32px);line-height:1.15;letter-spacing:-.03em}
+.page-intro p{max-width:650px;margin:8px 0 0;color:var(--muted);font-size:13px}
+.intro-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.meta-pill{padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:#586b7d;font-size:11px}
+.workspace{display:grid;grid-template-columns:290px minmax(0,1fr);gap:18px;align-items:start}
+.settings,.main-panel{border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:var(--shadow)}
+.settings{padding:19px;position:sticky;top:16px}
+.panel-kicker{display:flex;justify-content:space-between;align-items:center;margin:0 0 15px;color:var(--navy);font-size:11px;font-weight:850;letter-spacing:.1em}
+.panel-kicker span:last-child{color:#94a2ae;font-size:10px;font-weight:700}
+.field{margin:0 0 15px}
+.field label{display:flex;justify-content:space-between;gap:8px;margin:0 0 6px;color:#31475b;font-size:11px;font-weight:750}
+.field small{color:#8998a6;font-size:10px;font-weight:500}
+input[type=text],textarea,select{width:100%;border:1px solid #ced9e3;border-radius:9px;background:#fff;color:var(--ink);padding:10px 11px;outline:none;transition:border-color .15s,box-shadow .15s}
+input[type=text]:focus,textarea:focus,select:focus{border-color:#6da5cc;box-shadow:0 0 0 3px rgba(121,185,223,.2)}
+textarea{resize:vertical;min-height:76px}
+select{appearance:auto}
+.field-hint{margin:5px 0 0;color:#8a98a5;font-size:10px}
+.privacy-note{display:flex;gap:9px;padding:11px;border:1px solid #d8e8df;border-radius:10px;background:#f4faf6;color:#39684e;font-size:11px;line-height:1.45}
+.privacy-note .symbol{font-size:16px;line-height:1}
+.settings-divider{height:1px;background:var(--line);margin:17px 0}
+.settings-status{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--muted);font-size:11px}
+.status-dot{display:inline-block;width:7px;height:7px;margin-right:6px;border-radius:50%;background:#c49a4a}
+.main-panel{min-width:0;overflow:hidden}
+.tabs{display:flex;gap:4px;padding:9px 12px 0;border-bottom:1px solid var(--line);background:#fbfcfd}
+.tab{min-height:42px;padding:0 15px;border:0;border-bottom:2px solid transparent;background:transparent;color:#718091;font-size:12px;font-weight:750}
+.tab[aria-selected=true]{border-bottom-color:var(--blue);color:var(--navy)}
+.tab-count{display:inline-grid;place-items:center;min-width:19px;height:19px;margin-left:6px;padding:0 5px;border-radius:99px;background:#edf3f8;color:#577089;font-size:10px}
+.panel-view{padding:22px}
+.panel-view[hidden]{display:none}
+.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px}
+.panel-head h2{margin:0;color:var(--navy);font-size:17px}
+.panel-head p{margin:5px 0 0;color:var(--muted);font-size:12px}
+.editor-guide{padding:9px 11px;border-radius:9px;background:#f2f7fb;color:#54718a;font-size:10px;line-height:1.45}
+.question-list{display:grid;gap:12px}
+.question-card{border:1px solid #dce5ed;border-radius:12px;background:#fff;overflow:hidden}
+.question-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;background:#f8fafc;border-bottom:1px solid #e7edf2}
+.question-number{display:flex;align-items:center;gap:9px;color:var(--navy);font-size:11px;font-weight:850}
+.number-badge{display:grid;place-items:center;width:25px;height:25px;border-radius:8px;background:#e8f0f6;color:var(--blue);font-size:11px}
+.question-actions{display:flex;align-items:center;gap:5px}
+.icon-btn{width:29px;height:29px;border:1px solid #dbe3ea;border-radius:7px;background:#fff;color:#607285;font-size:13px}
+.icon-btn:hover{border-color:#94b6d0;color:var(--navy);background:#f3f8fb}
+.icon-btn.danger:hover{border-color:#e2b8bb;color:var(--red);background:#fff7f7}
+.question-body{display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:13px;padding:14px}
+.question-body .full{grid-column:1/-1}
+.question-title{font-weight:700}
+.question-options{display:grid;gap:7px}
+.option-row{display:flex;align-items:center;gap:8px}
+.option-glyph{width:15px;height:15px;flex:none;border:1.5px solid #9baab8;border-radius:50%}
+.option-glyph.square{border-radius:4px}
+.option-row input{flex:1;min-width:0}
+.option-row .icon-btn{flex:none}
+.add-option{justify-self:start;padding:6px 9px;border:1px dashed #b7c9d8;border-radius:8px;background:#f9fbfd;color:var(--blue);font-size:10px;font-weight:750}
+.add-option:hover{border-color:var(--blue);background:#eff6fb}
+.question-settings{display:flex;align-items:center;gap:15px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid #edf1f4;background:#fcfdfe}
+.check-line{display:flex;align-items:center;gap:7px;color:#637589;font-size:10px}
+.check-line input{accent-color:var(--blue)}
+.type-select{font-size:11px;padding:8px 9px!important}
+.add-question-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding:13px;border:1px dashed #b8c9d7;border-radius:12px;background:#f8fbfd}
+.add-question-row strong{display:block;color:var(--navy);font-size:12px}
+.add-question-row span{display:block;margin-top:3px;color:#78899a;font-size:10px}
+.add-question-controls{display:flex;align-items:center;gap:8px}
+.add-question-controls select{min-width:170px;padding:9px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:0 13px;border:1px solid transparent;border-radius:9px;font-size:11px;font-weight:800;transition:transform .15s,background .15s}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:#174a78}
+.btn-secondary{border-color:#d6e0e8;background:#fff;color:#36546f}
+.btn-secondary:hover{background:#f4f8fb;border-color:#b9cbd9}
+.btn-quiet{border-color:transparent;background:transparent;color:#667b8e}
+.btn-quiet:hover{background:#f1f5f8}
+.btn-gold{background:#f1e6ce;color:#685124;border-color:#e5d5b1}
+.btn-gold:hover{background:#eadbb9}
+.action-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.action-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.feedback{min-height:17px;color:var(--green);font-size:10px}
+.preview-wrap{max-width:680px;margin:0 auto}
+.preview-topline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}
+.preview-badge{padding:6px 9px;border:1px solid #d7e5f0;border-radius:99px;background:#f0f6fa;color:#476b88;font-size:10px;font-weight:800}
+.preview-card{border:1px solid #dce5ed;border-radius:14px;background:#fff;box-shadow:0 7px 24px rgba(15,42,77,.05);overflow:hidden}
+.preview-brand{display:flex;align-items:center;gap:10px;padding:15px 18px;border-bottom:1px solid #edf1f4;background:#fbfcfd}
+.preview-brand img{width:34px;height:34px;object-fit:contain}
+.preview-brand strong{display:block;color:var(--navy);font-size:11px}
+.preview-brand span{display:block;color:#8594a2;font-size:9px}
+.preview-content{padding:22px}
+.preview-content h3{margin:0;color:var(--navy);font-size:21px;line-height:1.2}
+.preview-content>p{margin:9px 0 19px;color:var(--muted);font-size:12px}
+.preview-question{padding:14px 0;border-top:1px solid #edf1f4}
+.preview-question h4{margin:0 0 10px;color:#31475b;font-size:12px}
+.required-mark{color:#a64d50}
+.preview-option{display:flex;align-items:flex-start;gap:9px;margin:8px 0;color:#52677a;font-size:12px}
+.preview-option input{margin:2px 0 0;accent-color:var(--blue)}
+.preview-option input[type=radio]{accent-color:var(--blue)}
+.preview-text{min-height:88px}
+.rating-options{display:flex;gap:8px;flex-wrap:wrap}
+.rating-options label{display:grid;place-items:center;width:39px;height:39px;border:1px solid #dce5ed;border-radius:9px;color:#567087;font-weight:750;cursor:pointer}
+.rating-options label:has(input:checked){border-color:var(--blue);background:#eef5fa;color:var(--navy)}
+.rating-options input{position:absolute;opacity:0;pointer-events:none}
+.preview-help{margin:7px 0 0;color:#95a2ad;font-size:9px}
+.preview-submit{width:100%;margin-top:15px}
+.preview-success{padding:28px;text-align:center}
+.preview-success .success-mark{display:grid;place-items:center;width:44px;height:44px;margin:0 auto 12px;border-radius:50%;background:#e8f4ed;color:var(--green);font-size:22px}
+.preview-success h3{color:var(--navy)}
+.preview-success p{color:var(--muted);font-size:12px}
+.preview-footer{padding:11px 18px;border-top:1px solid #edf1f4;background:#fbfcfd;color:#8a98a4;font-size:9px;text-align:center}
+.results-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.results-head h2{margin:0;color:var(--navy);font-size:17px}
+.results-head p{margin:4px 0 0;color:var(--muted);font-size:11px}
+.results-demo-label{padding:6px 9px;border:1px solid #e7d9b7;border-radius:99px;background:#fbf7ed;color:#80642b;font-size:9px;font-weight:800}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.metric{padding:14px;border:1px solid var(--line);border-radius:11px;background:#fbfcfd}
+.metric span{display:block;color:#82909d;font-size:10px}
+.metric strong{display:block;margin-top:4px;color:var(--navy);font-size:22px}
+.result-question{margin:0 0 12px;padding:15px;border:1px solid var(--line);border-radius:11px;background:#fff}
+.result-question h3{margin:0 0 12px;color:#31475b;font-size:12px}
+.result-row{display:grid;grid-template-columns:minmax(100px,1fr) minmax(80px,2fr) 35px;gap:9px;align-items:center;margin:10px 0;color:#627589;font-size:10px}
+.result-track{height:8px;border-radius:99px;background:#edf1f4;overflow:hidden}
+.result-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#1b5686,#79b9df)}
+.result-empty{padding:32px 18px;border:1px dashed #cbd7e0;border-radius:12px;color:#718293;text-align:center;font-size:12px}
+.result-empty strong{display:block;margin-bottom:5px;color:var(--navy);font-size:13px}
+.text-answer{margin:7px 0;padding:9px 10px;border-radius:8px;background:#f5f8fa;color:#5b6f82;font-size:11px;overflow-wrap:anywhere}
+.notice{margin:12px 0 0;padding:11px 13px;border:1px solid #e7d9b7;border-radius:10px;background:#fbf7ed;color:#755e2f;font-size:10px;line-height:1.5}
+.footer-note{margin:18px 0 0;color:#8997a3;font-size:10px;text-align:center}
+.toast{position:fixed;right:20px;bottom:20px;z-index:10;max-width:min(360px,calc(100vw - 40px));padding:12px 15px;border:1px solid #c8d9e6;border-radius:10px;background:#fff;color:var(--navy);box-shadow:0 10px 35px rgba(15,42,77,.18);font-size:11px;opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:translateY(0)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid rgba(121,185,223,.65);outline-offset:2px}
+@media(max-width:900px){
+  .workspace{grid-template-columns:1fr}
+  .settings{position:static}
+  .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+  .privacy-note,.settings-divider,.settings-status{grid-column:1/-1}
+}
+@media(max-width:620px){
+  .topbar{height:auto;min-height:66px;padding:10px 14px}
+  .brand img{width:40px;height:40px}
+  .brand-copy span{display:none}
+  .prototype-tag{display:none}
+  .app{padding:20px 12px 32px}
+  .page-intro{display:block}
+  .intro-meta{margin-top:12px}
+  .settings-grid{grid-template-columns:1fr}
+  .panel-view{padding:15px}
+  .panel-head{display:block}
+  .editor-guide{margin-top:10px}
+  .question-body{grid-template-columns:1fr}
+  .question-body .full{grid-column:auto}
+  .add-question-row{display:block}
+  .add-question-controls{margin-top:10px}
+  .add-question-controls select{flex:1;min-width:0}
+  .action-bar{align-items:flex-start;flex-direction:column}
+  .metrics{grid-template-columns:1fr}
+  .metric{display:flex;align-items:center;justify-content:space-between}
+  .metric strong{margin:0}
+  .results-head{align-items:flex-start;flex-direction:column}
+  .preview-content{padding:17px}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <img src="/circulo-ia-logo.png" alt="Logo oficial del Círculo de Legisladores de Tucumán">
+    <div class="brand-copy">
+      <strong>CÍRCULO IA</strong>
+      <span>Laboratorio de herramientas institucionales</span>
+    </div>
+  </div>
+  <div class="top-actions">
+    <span class="prototype-tag">PROTOTIPO INTERACTIVO</span>
+    <a class="home-link" href="/">← Volver al portal</a>
+  </div>
+</header>
+
+<main class="app">
+  <section class="page-intro">
+    <div>
+      <p class="eyebrow">Participación · Herramienta experimental</p>
+      <h1>Generador de encuestas</h1>
+      <p>Diseñá consultas para la comunidad, ordená las preguntas y revisá cómo se verán antes de publicarlas. Este prototipo permite probar el recorrido completo de diseño sin recopilar datos reales.</p>
+    </div>
+    <div class="intro-meta">
+      <span class="meta-pill">Versión 0.1 · Beta</span>
+      <span class="meta-pill">Borrador local</span>
+    </div>
+  </section>
+
+  <div class="workspace">
+    <aside class="settings">
+      <div class="panel-kicker"><span>CONFIGURACIÓN</span><span>01 / 03</span></div>
+      <div class="settings-grid">
+        <div class="field">
+          <label for="surveyTitle">Título de la encuesta</label>
+          <input id="surveyTitle" type="text" maxlength="100" value="Agenda de temas de interés ciudadano">
+        </div>
+        <div class="field">
+          <label for="surveyDescription">Introducción</label>
+          <textarea id="surveyDescription" maxlength="360">Queremos conocer qué temas te interesa seguir a través de los servicios y contenidos institucionales del Círculo.</textarea>
+        </div>
+        <div class="field">
+          <label for="surveyAudience">Público destinatario</label>
+          <select id="surveyAudience">
+            <option>Ciudadanía en general</option>
+            <option>Legisladores y personal institucional</option>
+            <option>Visitantes del portal</option>
+            <option>Participantes de actividades</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="surveyPurpose">Finalidad</label>
+          <select id="surveyPurpose">
+            <option>Consulta de intereses</option>
+            <option>Evaluación de servicios</option>
+            <option>Opinión sobre una actividad</option>
+            <option>Relevamiento institucional</option>
+          </select>
+        </div>
+        <div class="privacy-note">
+          <span class="symbol" aria-hidden="true">◇</span>
+          <div><strong>Encuesta anónima por defecto.</strong><br>El prototipo no solicita nombres, teléfonos ni correos. Las respuestas de prueba quedan solo en la memoria de esta sesión.</div>
+        </div>
+        <div class="settings-divider"></div>
+        <div class="settings-status">
+          <span><i class="status-dot"></i>Borrador sin publicar</span>
+          <span id="questionCountLabel">3 preguntas</span>
+        </div>
+      </div>
+    </aside>
+
+    <section class="main-panel">
+      <nav class="tabs" role="tablist" aria-label="Etapas de la encuesta">
+        <button class="tab" type="button" role="tab" data-tab="editor" aria-selected="true">Editor <span class="tab-count" id="editorCount">3</span></button>
+        <button class="tab" type="button" role="tab" data-tab="preview" aria-selected="false">Vista previa</button>
+        <button class="tab" type="button" role="tab" data-tab="results" aria-selected="false">Respuestas <span class="tab-count" id="responseCountTab">0</span></button>
+      </nav>
+
+      <section class="panel-view" id="editorView" role="tabpanel">
+        <div class="panel-head">
+          <div>
+            <h2>Construí tu encuesta</h2>
+            <p>Agregá preguntas, ajustá las opciones y ordená el recorrido.</p>
+          </div>
+          <div class="editor-guide">TIPO DE PREGUNTA<br><strong>Opción única · Múltiple · Texto libre · Escala</strong></div>
+        </div>
+        <div id="questionList" class="question-list"></div>
+        <div class="add-question-row">
+          <div>
+            <strong>¿Qué querés preguntar?</strong>
+            <span>Elegí un formato y agregalo al final de la encuesta.</span>
+          </div>
+          <div class="add-question-controls">
+            <select id="newQuestionType" aria-label="Tipo de nueva pregunta">
+              <option value="single">Opción única</option>
+              <option value="multiple">Selección múltiple</option>
+              <option value="text">Texto libre</option>
+              <option value="rating">Escala de 1 a 5</option>
+            </select>
+            <button class="btn btn-primary" type="button" id="addQuestionButton">＋ Agregar</button>
+          </div>
+        </div>
+        <div class="action-bar">
+          <div class="action-group">
+            <button class="btn btn-secondary" type="button" id="saveDraftButton">Guardar borrador</button>
+            <button class="btn btn-quiet" type="button" id="loadDraftButton">Recuperar borrador</button>
+          </div>
+          <div class="action-group">
+            <button class="btn btn-gold" type="button" id="exportButton">Exportar estructura JSON</button>
+            <button class="btn btn-primary" type="button" id="goPreviewButton">Ver encuesta →</button>
+          </div>
+        </div>
+        <p class="feedback" id="editorFeedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="panel-view" id="previewView" role="tabpanel" hidden>
+        <div class="panel-head">
+          <div>
+            <h2>Vista previa para participantes</h2>
+            <p>Así se mostrará la encuesta en una pantalla pública.</p>
+          </div>
+          <button class="btn btn-secondary" type="button" id="backToEditorButton">← Volver al editor</button>
+        </div>
+        <div class="preview-wrap">
+          <div class="preview-topline">
+            <span class="preview-badge">VISTA DE PRUEBA</span>
+            <span class="field-hint">No se publican ni transmiten respuestas</span>
+          </div>
+          <div class="preview-card" id="previewCanvas"></div>
+          <div class="notice">Este formulario es demostrativo: las respuestas ingresadas se conservan únicamente en la memoria temporal de esta página. No se envían a Meta, Redis ni a una base de datos.</div>
+        </div>
+      </section>
+
+      <section class="panel-view" id="resultsView" role="tabpanel" hidden>
+        <div class="results-head">
+          <div>
+            <h2>Panel de respuestas</h2>
+            <p>Resumen de las respuestas realizadas desde la vista previa durante esta sesión.</p>
+          </div>
+          <span class="results-demo-label">DATOS DE PRUEBA</span>
+        </div>
+        <div class="metrics">
+          <div class="metric"><span>Respuestas recibidas</span><strong id="totalResponses">0</strong></div>
+          <div class="metric"><span>Preguntas configuradas</span><strong id="totalQuestions">3</strong></div>
+          <div class="metric"><span>Modo de captura</span><strong style="font-size:15px">Anónimo</strong></div>
+        </div>
+        <div id="resultsContent"></div>
+        <div class="action-bar">
+          <div class="feedback" id="resultsFeedback" role="status" aria-live="polite"></div>
+          <div class="action-group">
+            <button class="btn btn-secondary" type="button" id="resetResponsesButton">Limpiar respuestas de prueba</button>
+            <button class="btn btn-gold" type="button" id="exportResultsButton">Exportar resultados JSON</button>
+          </div>
+        </div>
+        <div class="notice">Los indicadores no representan una encuesta real ni una muestra estadística. Solo resumen lo que se haya respondido en esta sesión de prueba.</div>
+      </section>
+    </section>
+  </div>
+  <p class="footer-note">CÍRCULO IA · Prototipo de participación ciudadana · Sin conexión a backend ni publicación pública</p>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+
+const STORAGE_KEY = 'circulo-ia-survey-builder-v01';
+let nextQuestionId = 4;
+let questions = [
+  {
+    id: 1,
+    type: 'single',
+    title: '¿Qué tema te interesa consultar con mayor frecuencia?',
+    help: 'Elegí el tema principal de tu interés.',
+    required: true,
+    options: ['Historia institucional y de Tucumán', 'Legislación y normativa', 'Gestión pública y políticas públicas', 'Actividades y novedades']
+  },
+  {
+    id: 2,
+    type: 'multiple',
+    title: '¿Qué formatos preferís para informarte?',
+    help: 'Podés seleccionar más de una opción.',
+    required: true,
+    options: ['Artículos breves', 'Documentos y publicaciones', 'Líneas de tiempo y material histórico', 'Encuentros y actividades']
+  },
+  {
+    id: 3,
+    type: 'rating',
+    title: '¿Qué tan útil te resulta el portal institucional?',
+    help: 'Uno significa poco útil y cinco muy útil.',
+    required: false,
+    options: []
+  }
+];
+let responses = [];
+
+const $ = (id) => document.getElementById(id);
+const questionList = $('questionList');
+const previewCanvas = $('previewCanvas');
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function typeLabel(type) {
+  const labels = {
+    single: 'Opción única',
+    multiple: 'Selección múltiple',
+    text: 'Texto libre',
+    rating: 'Escala de 1 a 5'
+  };
+  return labels[type] || 'Pregunta';
+}
+
+function makeQuestion(type) {
+  const defaults = {
+    single: ['Opción 1', 'Opción 2'],
+    multiple: ['Opción 1', 'Opción 2'],
+    text: [],
+    rating: []
+  };
+  return {
+    id: nextQuestionId++,
+    type: type,
+    title: '',
+    help: '',
+    required: true,
+    options: defaults[type] ? defaults[type].slice() : []
+  };
+}
+
+function getQuestion(id) {
+  return questions.find((question) => question.id === Number(id));
+}
+
+function renderQuestions() {
+  questionList.innerHTML = questions.map((question, index) => {
+    let optionsMarkup = '';
+    if (question.type === 'single' || question.type === 'multiple') {
+      optionsMarkup = '<div class="field full"><label>Opciones de respuesta <small>' +
+        (question.type === 'single' ? 'Solo se admite una selección' : 'Se admite más de una selección') +
+        '</small></label><div class="question-options">' +
+        question.options.map((option, optionIndex) =>
+          '<div class="option-row">' +
+            '<span class="option-glyph ' + (question.type === 'multiple' ? 'square' : '') + '" aria-hidden="true"></span>' +
+            '<input type="text" maxlength="100" data-field="option" data-option-index="' + optionIndex + '" value="' + escapeHtml(option) + '" aria-label="Opción ' + (optionIndex + 1) + '">' +
+            '<button class="icon-btn danger" type="button" data-action="remove-option" data-option-index="' + optionIndex + '" aria-label="Eliminar opción">×</button>' +
+          '</div>'
+        ).join('') +
+        '</div><button class="add-option" type="button" data-action="add-option">＋ Agregar opción</button></div>';
+    } else if (question.type === 'rating') {
+      optionsMarkup = '<div class="field full"><label>Escala de valoración</label><div class="rating-options"><label>1</label><label>2</label><label>3</label><label>4</label><label>5</label></div><p class="field-hint">La vista previa mostrará cinco valores seleccionables.</p></div>';
+    } else {
+      optionsMarkup = '<div class="field full"><label>Respuesta</label><p class="field-hint">La persona podrá escribir una respuesta abierta en un campo de texto.</p></div>';
+    }
+
+    return '<article class="question-card" data-question-id="' + question.id + '">' +
+      '<div class="question-card-head">' +
+        '<div class="question-number"><span class="number-badge">' + String(index + 1).padStart(2, '0') + '</span>' +
+          '<span>PREGUNTA ' + (index + 1) + ' · ' + typeLabel(question.type).toUpperCase() + '</span></div>' +
+        '<div class="question-actions">' +
+          '<button class="icon-btn" type="button" data-action="up" aria-label="Mover pregunta arriba" ' + (index === 0 ? 'disabled' : '') + '>↑</button>' +
+          '<button class="icon-btn" type="button" data-action="down" aria-label="Mover pregunta abajo" ' + (index === questions.length - 1 ? 'disabled' : '') + '>↓</button>' +
+          '<button class="icon-btn danger" type="button" data-action="delete" aria-label="Eliminar pregunta">×</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="question-body">' +
+        '<div class="field">' +
+          '<label>Texto de la pregunta</label>' +
+          '<input class="question-title" type="text" maxlength="180" data-field="title" value="' + escapeHtml(question.title) + '" placeholder="Escribí la pregunta">' +
+        '</div>' +
+        '<div class="field">' +
+          '<label>Formato</label>' +
+          '<select class="type-select" data-field="type">' +
+            '<option value="single" ' + (question.type === 'single' ? 'selected' : '') + '>Opción única</option>' +
+            '<option value="multiple" ' + (question.type === 'multiple' ? 'selected' : '') + '>Selección múltiple</option>' +
+            '<option value="text" ' + (question.type === 'text' ? 'selected' : '') + '>Texto libre</option>' +
+            '<option value="rating" ' + (question.type === 'rating' ? 'selected' : '') + '>Escala 1 a 5</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="field full">' +
+          '<label>Orientación o aclaración <small>Opcional</small></label>' +
+          '<input type="text" maxlength="160" data-field="help" value="' + escapeHtml(question.help) + '" placeholder="Agregá una breve indicación para responder">' +
+        '</div>' +
+        optionsMarkup +
+      '</div>' +
+      '<div class="question-settings">' +
+        '<label class="check-line"><input type="checkbox" data-field="required" ' + (question.required ? 'checked' : '') + '> Respuesta obligatoria</label>' +
+        '<span class="check-line">ID interno: Q-' + String(question.id).padStart(3, '0') + '</span>' +
+      '</div>' +
+    '</article>';
+  }).join('');
+
+  const count = questions.length;
+  $('editorCount').textContent = count;
+  $('questionCountLabel').textContent = count + (count === 1 ? ' pregunta' : ' preguntas');
+  $('totalQuestions').textContent = count;
+  $('addQuestionButton').disabled = count >= 20;
+  $('addQuestionButton').title = count >= 20 ? 'Máximo 20 preguntas en este prototipo' : '';
+}
+
+function readSettings() {
+  return {
+    title: $('surveyTitle').value.trim(),
+    description: $('surveyDescription').value.trim(),
+    audience: $('surveyAudience').value,
+    purpose: $('surveyPurpose').value,
+    anonymous: true
+  };
+}
+
+function switchTab(tabName) {
+  document.querySelectorAll('.tab').forEach((button) => {
+    const active = button.dataset.tab === tabName;
+    button.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  $('editorView').hidden = tabName !== 'editor';
+  $('previewView').hidden = tabName !== 'preview';
+  $('resultsView').hidden = tabName !== 'results';
+
+  if (tabName === 'preview') renderPreview();
+  if (tabName === 'results') renderResults();
+}
+
+function renderPreview() {
+  const settings = readSettings();
+  if (!questions.length) {
+    previewCanvas.innerHTML = '<div class="preview-content"><div class="result-empty"><strong>No hay preguntas todavía</strong>Volvé al editor y agregá al menos una pregunta para crear la vista previa.</div></div>';
+    return;
+  }
+
+  const questionMarkup = questions.map((question, index) => {
+    let controls = '';
+    if (question.type === 'single') {
+      controls = question.options.map((option, i) =>
+        '<label class="preview-option"><input type="radio" name="q_' + question.id + '" value="' + escapeHtml(option) + '" ' + (question.required ? 'required' : '') + '> <span>' + escapeHtml(option) + '</span></label>'
+      ).join('');
+    } else if (question.type === 'multiple') {
+      controls = question.options.map((option) =>
+        '<label class="preview-option"><input type="checkbox" name="q_' + question.id + '" value="' + escapeHtml(option) + '"> <span>' + escapeHtml(option) + '</span></label>'
+      ).join('');
+    } else if (question.type === 'text') {
+      controls = '<textarea class="preview-text" name="q_' + question.id + '" maxlength="500" placeholder="Escribí tu respuesta..." ' + (question.required ? 'required' : '') + '></textarea>';
+    } else if (question.type === 'rating') {
+      controls = '<div class="rating-options">' + [1,2,3,4,5].map((value) =>
+        '<label><input type="radio" name="q_' + question.id + '" value="' + value + '" ' + (question.required ? 'required' : '') + '>' + value + '</label>'
+      ).join('') + '</div>';
+    }
+
+    return '<div class="preview-question">' +
+      '<h4>' + (index + 1) + '. ' + escapeHtml(question.title || 'Pregunta sin título') +
+      (question.required ? ' <span class="required-mark">*</span>' : '') + '</h4>' +
+      (question.help ? '<p class="preview-help">' + escapeHtml(question.help) + '</p>' : '') +
+      controls +
+    '</div>';
+  }).join('');
+
+  previewCanvas.innerHTML =
+    '<div class="preview-brand"><img src="/circulo-ia-logo.png" alt=""><div><strong>CÍRCULO DE LEGISLADORES DE TUCUMÁN</strong><span>Consulta de participación · Anónima</span></div></div>' +
+    '<div class="preview-content">' +
+      '<h3>' + escapeHtml(settings.title || 'Encuesta sin título') + '</h3>' +
+      '<p>' + escapeHtml(settings.description || 'Participá respondiendo esta consulta.') + '</p>' +
+      '<form id="surveyPreviewForm">' +
+        questionMarkup +
+        '<button type="submit" class="btn btn-primary preview-submit">Enviar respuesta de prueba</button>' +
+      '</form>' +
+    '</div>' +
+    '<div class="preview-footer">Participación anónima · Los campos con * son obligatorios</div>';
+
+  $('surveyPreviewForm').addEventListener('submit', handlePreviewSubmit);
+}
+
+function handlePreviewSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const answers = {};
+
+  for (const question of questions) {
+    let value;
+    if (question.type === 'multiple') {
+      value = Array.from(form.querySelectorAll('input[name="q_' + question.id + '"]:checked')).map((input) => input.value);
+    } else if (question.type === 'text') {
+      const input = form.elements['q_' + question.id];
+      value = input ? input.value.trim() : '';
+    } else {
+      const selected = form.querySelector('input[name="q_' + question.id + '"]:checked');
+      value = selected ? selected.value : '';
+    }
+
+    const isEmpty = Array.isArray(value) ? value.length === 0 : value === '';
+    if (question.required && isEmpty) {
+      showToast('Completá las preguntas obligatorias antes de enviar.');
+      return;
+    }
+    answers['Q-' + String(question.id).padStart(3, '0')] = value;
+  }
+
+  responses.push({
+    submittedAt: new Date().toISOString(),
+    answers: answers
+  });
+  $('responseCountTab').textContent = responses.length;
+  previewCanvas.innerHTML =
+    '<div class="preview-success"><span class="success-mark">✓</span><h3>¡Gracias por participar!</h3><p>Tu respuesta de prueba se registró en la memoria temporal de esta sesión.</p><button class="btn btn-secondary" type="button" id="answerAgainButton">Volver a responder</button></div>' +
+    '<div class="preview-footer">Prototipo local · No se transmitieron datos</div>';
+  $('answerAgainButton').addEventListener('click', renderPreview);
+  showToast('Respuesta de prueba registrada.');
+}
+
+function renderResults() {
+  $('totalResponses').textContent = responses.length;
+  $('responseCountTab').textContent = responses.length;
+  $('totalQuestions').textContent = questions.length;
+
+  if (!responses.length) {
+    $('resultsContent').innerHTML = '<div class="result-empty"><strong>Todavía no hay respuestas</strong>Entrá en “Vista previa”, completá la encuesta y enviá una respuesta de prueba. El resumen aparecerá acá.</div>';
+    return;
+  }
+
+  $('resultsContent').innerHTML = questions.map((question, index) => {
+    let body = '';
+    if (question.type === 'single' || question.type === 'multiple') {
+      const counts = {};
+      question.options.forEach((option) => { counts[option] = 0; });
+      responses.forEach((response) => {
+        const answer = response.answers['Q-' + String(question.id).padStart(3, '0')];
+        const selected = Array.isArray(answer) ? answer : [answer];
+        selected.forEach((item) => { if (Object.prototype.hasOwnProperty.call(counts, item)) counts[item]++; });
+      });
+      body = Object.keys(counts).map((option) => {
+        const count = counts[option];
+        const percent = responses.length ? Math.round((count / responses.length) * 100) : 0;
+        return '<div class="result-row"><span>' + escapeHtml(option) + '</span><div class="result-track"><div class="result-fill" style="width:' + percent + '%"></div></div><strong>' + count + '</strong></div>';
+      }).join('');
+    } else if (question.type === 'rating') {
+      const counts = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+      responses.forEach((response) => {
+        const answer = response.answers['Q-' + String(question.id).padStart(3, '0')];
+        if (Object.prototype.hasOwnProperty.call(counts, answer)) counts[answer]++;
+      });
+      body = Object.keys(counts).map((value) => {
+        const count = counts[value];
+        const percent = Math.round((count / responses.length) * 100);
+        return '<div class="result-row"><span>Valor ' + value + '</span><div class="result-track"><div class="result-fill" style="width:' + percent + '%"></div></div><strong>' + count + '</strong></div>';
+      }).join('');
+    } else {
+      const answers = responses.map((response) => response.answers['Q-' + String(question.id).padStart(3, '0')]).filter((answer) => typeof answer === 'string' && answer.trim());
+      body = answers.length
+        ? answers.map((answer) => '<div class="text-answer">' + escapeHtml(answer) + '</div>').join('')
+        : '<p class="field-hint">Todavía no se ingresaron respuestas de texto.</p>';
+    }
+    return '<article class="result-question"><h3>' + (index + 1) + '. ' + escapeHtml(question.title || 'Pregunta sin título') + '</h3>' + body + '</article>';
+  }).join('');
+}
+
+function saveDraft() {
+  const payload = {
+    settings: readSettings(),
+    questions: questions
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    $('editorFeedback').textContent = 'Borrador guardado en este navegador.';
+    showToast('Borrador guardado localmente.');
+  } catch (error) {
+    $('editorFeedback').textContent = 'No se pudo guardar el borrador en este navegador.';
+    showToast('El almacenamiento local no está disponible.');
+  }
+}
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      showToast('Todavía no hay un borrador guardado en este navegador.');
+      return;
+    }
+    const payload = JSON.parse(raw);
+    $('surveyTitle').value = payload.settings?.title || '';
+    $('surveyDescription').value = payload.settings?.description || '';
+    $('surveyAudience').value = payload.settings?.audience || 'Ciudadanía en general';
+    $('surveyPurpose').value = payload.settings?.purpose || 'Consulta de intereses';
+    questions = Array.isArray(payload.questions) ? payload.questions : [];
+    nextQuestionId = questions.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1;
+    renderQuestions();
+    showToast('Borrador recuperado.');
+  } catch (error) {
+    showToast('El borrador guardado no se pudo leer.');
+  }
+}
+
+function downloadJson(filename, payload) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportSurvey() {
+  const settings = readSettings();
+  if (!settings.title) {
+    showToast('Ingresá un título antes de exportar.');
+    $('surveyTitle').focus();
+    return;
+  }
+  if (!questions.length) {
+    showToast('Agregá al menos una pregunta antes de exportar.');
+    return;
+  }
+  downloadJson('encuesta-circulo-ia.json', {
+    schemaVersion: 'circulo.survey.v1',
+    exportedAt: new Date().toISOString(),
+    status: 'draft',
+    settings: settings,
+    questions: questions
+  });
+  showToast('Estructura de encuesta exportada.');
+}
+
+function exportResults() {
+  downloadJson('respuestas-de-prueba-circulo-ia.json', {
+    schemaVersion: 'circulo.survey.responses.v1',
+    exportedAt: new Date().toISOString(),
+    prototypeOnly: true,
+    survey: readSettings(),
+    responses: responses
+  });
+  showToast('Respuestas de esta sesión exportadas.');
+}
+
+function showToast(message) {
+  const toast = $('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  window.clearTimeout(showToast.timeoutId);
+  showToast.timeoutId = window.setTimeout(() => toast.classList.remove('show'), 2600);
+}
+
+questionList.addEventListener('input', (event) => {
+  const field = event.target.dataset.field;
+  if (!field) return;
+  const card = event.target.closest('[data-question-id]');
+  if (!card) return;
+  const question = getQuestion(card.dataset.questionId);
+  if (!question) return;
+  if (field === 'title' || field === 'help') {
+    question[field] = event.target.value;
+  } else if (field === 'option') {
+    question.options[Number(event.target.dataset.optionIndex)] = event.target.value;
+  }
+});
+
+questionList.addEventListener('change', (event) => {
+  const field = event.target.dataset.field;
+  if (!field) return;
+  const card = event.target.closest('[data-question-id]');
+  if (!card) return;
+  const question = getQuestion(card.dataset.questionId);
+  if (!question) return;
+  if (field === 'required') {
+    question.required = event.target.checked;
+  } else if (field === 'type') {
+    const nextType = event.target.value;
+    question.type = nextType;
+    question.options = (nextType === 'single' || nextType === 'multiple') ? ['Opción 1', 'Opción 2'] : [];
+    renderQuestions();
+  }
+});
+
+questionList.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-action]');
+  if (!button) return;
+  const card = button.closest('[data-question-id]');
+  if (!card) return;
+  const questionId = Number(card.dataset.questionId);
+  const questionIndex = questions.findIndex((question) => question.id === questionId);
+  if (questionIndex < 0) return;
+  const action = button.dataset.action;
+
+  if (action === 'delete') {
+    questions.splice(questionIndex, 1);
+  } else if (action === 'up' && questionIndex > 0) {
+    const item = questions.splice(questionIndex, 1)[0];
+    questions.splice(questionIndex - 1, 0, item);
+  } else if (action === 'down' && questionIndex < questions.length - 1) {
+    const item = questions.splice(questionIndex, 1)[0];
+    questions.splice(questionIndex + 1, 0, item);
+  } else if (action === 'add-option') {
+    question.options.push('Nueva opción');
+  } else if (action === 'remove-option') {
+    const optionIndex = Number(button.dataset.optionIndex);
+    if (question.options.length <= 2) {
+      showToast('Las preguntas con opciones necesitan al menos dos alternativas.');
+      return;
+    }
+    question.options.splice(optionIndex, 1);
+  }
+  renderQuestions();
+});
+
+$('addQuestionButton').addEventListener('click', () => {
+  if (questions.length >= 20) {
+    showToast('El prototipo admite hasta 20 preguntas por encuesta.');
+    return;
+  }
+  questions.push(makeQuestion($('newQuestionType').value));
+  renderQuestions();
+  showToast('Pregunta agregada.');
+});
+
+document.querySelectorAll('.tab').forEach((button) => {
+  button.addEventListener('click', () => switchTab(button.dataset.tab));
+});
+
+$('goPreviewButton').addEventListener('click', () => switchTab('preview'));
+$('backToEditorButton').addEventListener('click', () => switchTab('editor'));
+$('saveDraftButton').addEventListener('click', saveDraft);
+$('loadDraftButton').addEventListener('click', loadDraft);
+$('exportButton').addEventListener('click', exportSurvey);
+$('exportResultsButton').addEventListener('click', exportResults);
+$('resetResponsesButton').addEventListener('click', () => {
+  responses = [];
+  $('responseCountTab').textContent = '0';
+  $('resultsFeedback').textContent = 'Respuestas de prueba eliminadas de esta sesión.';
+  renderResults();
+});
+$('surveyTitle').addEventListener('input', () => {
+  $('editorFeedback').textContent = '';
+});
+$('surveyDescription').addEventListener('input', () => {
+  $('editorFeedback').textContent = '';
+});
+
+renderQuestions();
+renderResults();
+</script>
+</body>
+</html>
