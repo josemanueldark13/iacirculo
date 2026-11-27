@@ -27,7 +27,7 @@ for (const id of referencedIds) {
 }
 
 for (const type of ['single', 'multiple', 'text', 'rating']) {
-    assert.ok(html.includes("type: '" + type + "'"), 'Falta el formato de pregunta: ' + type);
+    assert.ok(html.includes('value="' + type + '"'), 'Falta el formato de pregunta: ' + type);
 }
 
 assert.ok(html.includes('localStorage'), 'El prototipo debe guardar borradores localmente.');
