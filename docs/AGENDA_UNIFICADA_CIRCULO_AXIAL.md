@@ -64,7 +64,8 @@
 - [x] Definir el frente de trabajo «gadgets de encuestas» dentro de la agenda del proyecto.
 - [x] Crear el prototipo independiente del Generador de encuestas en `public/generador-encuestas-prototipo.html`, PR #18, con editor, cuatro formatos de pregunta, reordenamiento, vista previa, resultados de sesión, guardado local y exportación JSON.
 - [x] Publicar Preview de revisión del prototipo sin enlazarlo a la portada; la portada de esa rama conserva Mini Pizarra, Historiografía y AXIAL · TruthTable.
-- [ ] Completar la regresión del PR #18 y revisar el prototipo antes de integrar.
+- [x] Regresión del PR #18 aprobada: `npm ci` y `npm test` completados en el run 45919680951, incluida la prueba `SURVEY BUILDER: PASS`.
+- [ ] Revisar el prototipo en Preview antes de integrar; la verificación de HTML y gadgets está hecha, pero falta la revisión funcional del usuario.
 - [ ] Diseñar la experiencia de consulta y participación sin reemplazar el chat institucional ni los gadgets actuales.
 - [ ] Determinar si las encuestas serán institucionales, de opinión/sondeo o de evaluación de servicios; separar esos usos y sus políticas.
 - [ ] Definir almacenamiento, anonimización o identificación, retención y acceso a resultados antes de implementarlas.
