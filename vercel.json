@@ -23,7 +23,7 @@
   "git": {
     "deploymentEnabled": {
       "main": true,
-      "axial-redis-v03-clean-review": false
+      "axial-redis-v03-clean-review": true
     }
   }
 }
