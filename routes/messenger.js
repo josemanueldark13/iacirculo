@@ -1,4 +1,5 @@
 const express = require("express");
+const { waitUntil } = require("@vercel/functions");
 const crypto = require("crypto");
 const router = express.Router();
 
@@ -252,24 +253,43 @@ router.post("/", async (req, res) => {
             return res.sendStatus(200);
         }
 
-        // Con Redis configurado, la superficie solo deposita el evento en la tubería.
+        // Con Redis configurado, el webhook deposita eventos idempotentes en Streams.
+        // Un reenvío de Meta no duplica el evento, pero igualmente puede despertar al Worker.
         let queued = 0;
+        let duplicates = 0;
+        let accepted = 0;
         for (const event of events) {
             if (!parseAndNormalizeEvent(event)) continue;
-            await queue.enqueue(event);
-            queued++;
+            accepted++;
+            const result = await queue.enqueue(event);
+            if (result.inserted) queued++;
+            else duplicates++;
         }
 
-        console.log("[Messenger] Eventos depositados en Guerrilla Axial Pipeline:", {
+        console.log("[Messenger] Eventos depositados en Guerrilla Axial Pipelines:", {
             received: events.length,
-            queued
+            accepted,
+            queued,
+            duplicates
         });
 
-        // El pipeline despierta al worker en esta misma invocación serverless.
-        // Así Redis no queda esperando un cron de 15 minutos en Vercel Hobby.
+        // El evento ya quedó persistido: confirmamos a Meta sin esperar al Kernel ni a Graph API.
+        // waitUntil mantiene el despacho asociado a la vida de esta Function después del HTTP 200.
+        // Los reintentos vencidos siguen necesitando un scheduler/worker que vuelva a invocar el endpoint.
         const pipeline = require("../services/guerrillaAxialPipelines");
-        const dispatch = await pipeline.dispatchQueued(queued);
-        console.log("[Messenger] Despacho del pipeline completado:", dispatch);
+        const dispatchPromise = pipeline.dispatchQueued(accepted)
+            .then(dispatch => {
+                console.log("[Messenger] Despacho del pipeline completado:", dispatch);
+            })
+            .catch(dispatchError => {
+                console.error("[Messenger] Falló el despacho posterior al ACK; el evento permanece en Redis:", dispatchError.message);
+            });
+
+        if (process.env.VERCEL === "1") {
+            waitUntil(dispatchPromise);
+        } else {
+            await dispatchPromise;
+        }
 
         return res.sendStatus(200);
     } catch (error) {

@@ -1,0 +1,42 @@
+name: AXIAL NETWORK - Messenger Worker Scheduler
+
+on:
+  schedule:
+    - cron: "2-57/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: axial-messenger-worker-scheduler
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Wake authenticated Messenger Worker
+        shell: bash
+        env:
+          AXIAL_WORKER_URL: ${{ vars.AXIAL_WORKER_URL }}
+          AXIAL_WORKER_SECRET: ${{ secrets.AXIAL_WORKER_SECRET }}
+        run: |
+          if [[ -z "$AXIAL_WORKER_URL" || -z "$AXIAL_WORKER_SECRET" ]]; then
+            echo "::notice::Worker scheduler sin configurar. Definir AXIAL_WORKER_URL (Repository Variable) y AXIAL_WORKER_SECRET (Repository Secret)."
+            exit 0
+          fi
+
+          if [[ ! "$AXIAL_WORKER_URL" =~ ^https://[^[:space:]]+/api/internal/messenger-worker/?$ ]]; then
+            echo "::error::AXIAL_WORKER_URL debe ser una URL HTTPS del endpoint protegido /api/internal/messenger-worker."
+            exit 1
+          fi
+
+          response="$(curl --fail --silent --show-error \
+            --max-time 45 \
+            --retry 2 \
+            --retry-all-errors \
+            --retry-delay 2 \
+            -H "Authorization: Bearer $AXIAL_WORKER_SECRET" \
+            "$AXIAL_WORKER_URL")"
+
+          printf '%s' "$response" | jq -e '.ok == true' >/dev/null
+          printf '%s\n' "$response" | jq '{ok, claimed, processed, ignored, retried, deadLetter, queue}'

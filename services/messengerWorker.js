@@ -26,7 +26,7 @@ function authorized(req) {
 /**
  * Consume eventos de Guerrilla Axial Pipelines, pasarlos por Kernel Axial,
  * enviar la respuesta y confirmar el trabajo solo después del envío.
- * Se puede invocar desde el endpoint protegido o desde el webhook tras encolar.
+ * El transporte es Redis Streams con Consumer Groups.
  */
 async function processBatch(requestedBatch = MAX_BATCH) {
     const batchSize = Math.max(1, Math.min(MAX_BATCH, Number(requestedBatch) || MAX_BATCH));
@@ -38,10 +38,16 @@ async function processBatch(requestedBatch = MAX_BATCH) {
         summary.claimed++;
 
         const { payload, job } = claimed;
+        const processingStartedAt = Date.now();
         try {
+            if (job.malformed || job.event?.__axialMalformed) {
+                throw new Error('El evento persistido en Redis no contiene un payload Messenger válido.');
+            }
             const normalized = parseAndNormalizeEvent(job.event);
             if (!normalized) {
-                await queue.acknowledge(payload);
+                await queue.acknowledge(payload, job, {
+                    processingMs: Date.now() - processingStartedAt
+                });
                 summary.ignored++;
                 continue;
             }
@@ -59,15 +65,26 @@ async function processBatch(requestedBatch = MAX_BATCH) {
             }
 
             await messengerSend.sendMessage(senderId, respuesta);
-            await queue.acknowledge(payload);
+            const acknowledged = await queue.acknowledge(payload, job, {
+                processingMs: Date.now() - processingStartedAt
+            });
+            if (Number(acknowledged) !== 1) {
+                const ackError = new Error('El Worker perdió el lease antes de confirmar ACK.');
+                ackError.code = 'AXIAL_ACK_NOT_CONFIRMED';
+                throw ackError;
+            }
             summary.processed++;
         } catch (error) {
-            const outcome = await queue.retry(payload, job);
-            if (outcome.deadLetter) summary.deadLetter++;
+            const outcome = await queue.retry(payload, job, error, {
+                processingMs: Date.now() - processingStartedAt
+            });
+            if (outcome.lockLost) summary.ignored++;
+            else if (outcome.deadLetter) summary.deadLetter++;
             else summary.retried++;
             console.error('[AXIAL WORKER] Falló un evento:', {
                 job_id: job.id,
                 attempts: outcome.attempts,
+                next_retry_at: outcome.nextRetryAt || null,
                 error: error.message
             });
         }
@@ -85,6 +102,57 @@ router.get('/', async (req, res) => {
     } catch (error) {
         console.error('[AXIAL WORKER] Error de infraestructura:', error.message);
         return res.status(503).json({ ok: false, error: 'Worker temporalmente no disponible.' });
+    }
+});
+
+
+
+router.get('/dlq', async (req, res) => {
+    if (!authorized(req)) return res.sendStatus(401);
+    const limit = Number(req.query.limit || 50);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+        return res.status(400).json({ ok: false, error: 'limit debe estar entre 1 y 100.' });
+    }
+    try {
+        const entries = await queue.listDeadLetters(limit);
+        return res.status(200).json({ ok: true, count: entries.length, entries });
+    } catch (error) {
+        console.error('[AXIAL DLQ] No se pudo consultar la cola:', {
+            code: error?.code || error?.name || 'INTERNAL_ERROR'
+        });
+        return res.status(503).json({ ok: false, error: 'No se pudo consultar la DLQ.' });
+    }
+});
+
+router.post('/dlq/:deadLetterId/replay', async (req, res) => {
+    if (!authorized(req)) return res.sendStatus(401);
+    try {
+        const result = await queue.replayDeadLetter(req.params.deadLetterId);
+        if (result.status === 'NOT_FOUND') {
+            return res.status(404).json({ ok: false, ...result });
+        }
+        if (result.status === 'INVALID_PAYLOAD') {
+            return res.status(422).json({ ok: false, ...result });
+        }
+        return res.status(202).json({ ok: true, ...result });
+    } catch (error) {
+        console.error('[AXIAL DLQ] No se pudo solicitar el replay:', {
+            code: error?.code || error?.name || 'INTERNAL_ERROR'
+        });
+        return res.status(503).json({ ok: false, error: 'No se pudo solicitar el replay de DLQ.' });
+    }
+});
+
+router.post('/dlq/replay', async (req, res) => {
+    if (!authorized(req)) return res.sendStatus(401);
+    try {
+        const result = await queue.replayDeadLetters(req.body?.deadLetterIds);
+        return res.status(202).json({ ok: true, ...result });
+    } catch (error) {
+        return res.status(400).json({
+            ok: false,
+            error: 'Se requieren entre 1 y 100 deadLetterIds válidos.'
+        });
     }
 });
 
