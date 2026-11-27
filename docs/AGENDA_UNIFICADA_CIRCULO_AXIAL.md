@@ -30,12 +30,15 @@
 - [x] Transporte Redis Lists implementado en `main` como implementación previa.
 - [x] Rama de revisión AXIAL v0.3 con Redis Streams, Consumer Groups, deduplicación, Event Ledger, reintentos, DLQ y replay.
 - [x] CI de regresión general aprobado en el último run revisado del PR #17.
+- [x] Añadido al PR #17 un workflow de recuperación del Worker cada cinco minutos mediante GitHub Actions; requiere configuración de URL y secreto y solo opera después de integrarse en la rama predeterminada.
 - [ ] Configurar credenciales de una base Upstash **no productiva** como secretos de GitHub Actions.
 - [ ] Ejecutar la suite de resiliencia contra Redis real; el último intento se detuvo antes de ejecutar pruebas por falta de esos secretos.
 - [ ] Verificar recuperación de eventos pendientes, leases vencidas, ACK idempotente, reintentos y DLQ.
-- [ ] Aclarar el modelo de ejecución del worker: `waitUntil` prolonga el trabajo de la invocación actual, pero no sustituye un scheduler durable.
-- [ ] Reconciliar documentación y código para describir con exactitud el flujo real, el ACK a Meta y la recuperación de reintentos.
-- [ ] Revisar y cerrar PR #17 antes de cualquier integración.
+- [x] Documentar el límite de `waitUntil` y agregar un disparador periódico del Worker; el scheduler de cinco minutos es recuperación periódica, no ejecución en tiempo real.
+- [x] Reconciliar documentación del PR #17 con el ACK después de persistencia, despacho acotado y semántica de entrega al menos una vez.
+- [ ] Probar la autorización y operación del Worker en Preview.
+- [ ] Ejecutar la suite de resiliencia contra Upstash no productivo y resolver cualquier incidencia real.
+- [ ] Revisar y cerrar PR #17 después de cumplir las puertas anteriores; permanece en borrador.
 
 **Criterio de cierre:** regresión aprobada y evidencia de integración real en un entorno aislado. No usar Redis de producción para pruebas de estrés.
 
@@ -58,7 +61,10 @@
 - [x] Portal lateral de créditos, novedades y proyectos.
 
 **Nuevo frente incorporado a la agenda:**
-- [ ] Gadgets de encuestas: definir propósito, preguntas, población destinataria, mecanismo de respuesta, resultados y criterios de privacidad.
+- [x] Definir el frente de trabajo «gadgets de encuestas» dentro de la agenda del proyecto.
+- [x] Crear el prototipo independiente del Generador de encuestas en `public/generador-encuestas-prototipo.html`, PR #18, con editor, cuatro formatos de pregunta, reordenamiento, vista previa, resultados de sesión, guardado local y exportación JSON.
+- [x] Publicar Preview de revisión del prototipo sin enlazarlo a la portada; la portada de esa rama conserva Mini Pizarra, Historiografía y AXIAL · TruthTable.
+- [ ] Completar la regresión del PR #18 y revisar el prototipo antes de integrar.
 - [ ] Diseñar la experiencia de consulta y participación sin reemplazar el chat institucional ni los gadgets actuales.
 - [ ] Determinar si las encuestas serán institucionales, de opinión/sondeo o de evaluación de servicios; separar esos usos y sus políticas.
 - [ ] Definir almacenamiento, anonimización o identificación, retención y acceso a resultados antes de implementarlas.
@@ -87,8 +93,9 @@
 2. Obtener una ejecución de resiliencia real contra Upstash no productivo; mientras no existan secretos, registrar ese punto como bloqueado, no como aprobado.
 3. Cerrar el contrato Messenger–ActionRouter–Kernel y las pruebas end-to-end.
 4. Revisar PR #12 y #15 de forma independiente.
-5. Producir el diseño funcional de encuestas, sin modificar todavía la portada.
-6. Ejecutar validación visual/funcional de gadgets y solo entonces preparar cualquier integración.
+5. Revisar el prototipo del Generador de encuestas en PR #18 y decidir el modelo de publicación, participación y resultados.
+6. Definir almacenamiento, anonimato, consentimiento, retención, permisos y acceso antes de conectar respuestas reales.
+7. Ejecutar validación visual/funcional de gadgets y solo entonces preparar cualquier integración.
 
 ## Registro de integridad
 
