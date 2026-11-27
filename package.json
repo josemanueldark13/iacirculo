@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/run30.js && node tests/run-natural.js && node tests/axial-truthtable.test.js && node tests/action-router.test.js",
+    "test": "node tests/run30.js && node tests/run-natural.js && node tests/axial-truthtable.test.js && node tests/action-router.test.js && node tests/survey-builder.test.js",
     "test:truthtable": "node tests/axial-truthtable.test.js"
   },
   "keywords": [],
