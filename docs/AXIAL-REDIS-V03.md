@@ -43,9 +43,11 @@ The webhook schedules a bounded post-response Worker dispatch after enqueueing. 
 
 It accepts \`Authorization: Bearer <secret>\`, where the secret is \`CRON_SECRET\` or \`AXIAL_WORKER_SECRET\`. Configure a strong secret in the deployment environment; never commit it to this repository.
 
-The protected endpoint is intended for an external scheduler or a future always-on worker. This trigger is necessary because Redis stores retry due times but does not execute JavaScript when a due time arrives. `waitUntil()` only covers the current webhook invocation; it does not wake a Function when a retry's due time arrives later. If no new Messenger event arrives, a due retry remains scheduled until the Worker endpoint is called.
+The protected endpoint is intended for an external scheduler or a future always-on worker. This trigger is necessary because Redis stores retry due times but does not execute JavaScript when a due time arrives. `waitUntil()` only covers the current webhook invocation; it does not wake a Function when a retry's due time arrives later.
 
-Do not configure a frequent Vercel Cron expression on Hobby: Vercel currently limits Hobby Cron Jobs to once per day. Pro permits once per minute, which is still coarser than the five-second initial retry delay. Use a scheduler capable of calling the protected endpoint at the required cadence, or deploy a continuously running worker. See the [Vercel Cron usage limits](https://vercel.com/docs/schedules/cron-jobs/usage-and-pricing).
+This branch adds `.github/workflows/axial-worker-scheduler.yml`, which calls the protected endpoint every five minutes after the workflow is merged into the default branch. Configure the GitHub repository variable `AXIAL_WORKER_URL` as `https://iacirculo.vercel.app/api/internal/messenger-worker` and the GitHub repository secret `AXIAL_WORKER_SECRET` to match the Vercel environment secret `AXIAL_WORKER_SECRET` (or `CRON_SECRET`). The workflow also supports manual execution and exits without error when either setting is absent.
+
+This is a periodic recovery trigger, not a durable real-time scheduler. GitHub scheduled workflows have a five-minute minimum interval and can be delayed under load. A retry whose due time passes just after a scheduler run can remain pending until the next successful scheduled invocation. Use a continuously running worker or a scheduler with stronger delivery guarantees if the operational SLA requires tighter recovery. See [GitHub's schedule syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onschedule).
 
 ## Queue metrics
 
