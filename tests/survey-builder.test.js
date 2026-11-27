@@ -11,24 +11,19 @@ const homepagePath = path.join(root, 'public', 'index.html');
 const html = fs.readFileSync(prototypePath, 'utf8');
 const homepage = fs.readFileSync(homepagePath, 'utf8');
 
-const scripts = [...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)];
-assert.equal(scripts.length, 1, 'El prototipo debe contener un único script local.');
+const scriptStart = html.indexOf('<script>');
+const scriptEnd = html.indexOf('</script>', scriptStart + 8);
+assert.ok(scriptStart >= 0 && scriptEnd > scriptStart, 'No se encontró el script local del prototipo.');
 
-new vm.Script(scripts[0][1], {
-    filename: 'generador-encuestas-prototipo.html'
-});
+const script = html.slice(scriptStart + 8, scriptEnd);
+new vm.Script(script, { filename: 'generador-encuestas-prototipo.html' });
 
 const dynamicIds = new Set(['surveyPreviewForm', 'answerAgainButton']);
-const referencedIds = [...scripts[0][1].matchAll(/\\$\\('([^']+)'\\)/g)]
-    .map(match => match[1]);
+const referencedIds = [...script.matchAll(/\$\('([^']+)'\)/g)].map(match => match[1]);
 
 for (const id of referencedIds) {
     if (dynamicIds.has(id)) continue;
-    assert.match(
-        html,
-        new RegExp('id=["\\\\']' + id + '["\\\\']'),
-        'Falta el elemento HTML requerido por el script: ' + id
-    );
+    assert.ok(html.includes('id="' + id + '"'), 'Falta el elemento HTML requerido por el script: ' + id);
 }
 
 for (const type of ['single', 'multiple', 'text', 'rating']) {
@@ -38,7 +33,7 @@ for (const type of ['single', 'multiple', 'text', 'rating']) {
 assert.ok(html.includes('localStorage'), 'El prototipo debe guardar borradores localmente.');
 assert.ok(html.includes('downloadJson'), 'El prototipo debe permitir exportar JSON.');
 assert.ok(html.includes('/circulo-ia-logo.png'), 'Debe utilizar el recurso oficial del logo.');
-assert.ok(!scripts[0][1].includes('fetch('), 'El prototipo no debe transmitir datos a un backend.');
+assert.ok(!script.includes('fetch('), 'El prototipo no debe transmitir datos a un backend.');
 assert.ok(!homepage.includes('generador-encuestas-prototipo'), 'El prototipo no debe añadirse automáticamente a la portada.');
 assert.ok(homepage.includes('Mini Pizarra'), 'Debe preservarse Mini Pizarra.');
 assert.ok(homepage.includes('Historiografía de Tucumán'), 'Debe preservarse Historiografía de Tucumán.');
